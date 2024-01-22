@@ -10,7 +10,7 @@ var routing = L.Routing.control({
     
     waypoints: [
         L.latLng(48.70973285709232, 2.1626934894717214),
-        L.latLng(43.08905808334944, 2.619805863149003)
+        L.latLng(48.70577272850384, 2.185514438847031)
     ],
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
@@ -19,11 +19,14 @@ var routing = L.Routing.control({
     },
     routeLine: function(route, options) {
         var line = L.Routing.line(route, options);
-        // line.eachLayer(function(l) {
-        //     l.on('routeselected', function(e) {
-        //         console.log("mouse over");
-        //     });
-        // });
+        line.eachLayer(function(l) {
+            l.on('mousedown', function(e) {
+                map.dragging.disable();
+                mouseDown = e.latlng;
+                startDrag = true;
+                console.log("mouse down: " + mouseDown);
+            });
+        });
         return line;
     }
 }).addTo(map);
@@ -46,22 +49,48 @@ var greenIcon = new L.Icon({
     shadowSize: [41, 41]
   });
   
-  
+var mouseDown;
+var startDrag = false;
 
 map.on("click", function (e){
-    if (!isPointOnLine(e.latlng, allPos)){
-        var closest = L.GeometryUtil.closest(map, allPos, e.latlng);
-        var markerOnLine = L.marker([closest.lat, closest.lng], {icon: greenIcon}).addTo(map);
-        isPointOnLine(closest, allPos);
-        points.push(e.latlng);
-        var dist = 0;
-        for (var i = 0; i < points.length - 1; i++){
-            dist += points[i].distanceTo(points[i+1]);
+    if (!startDrag){
+        if (!isPointOnLine(e.latlng, allPos)){
+            var closest = L.GeometryUtil.closest(map, allPos, e.latlng);
+            var markerOnLine = L.marker([closest.lat, closest.lng], {icon: greenIcon}).addTo(map);
+            isPointOnLine(closest, allPos);
+            points.push(e.latlng);
+            var dist = 0;
+            for (var i = 0; i < points.length - 1; i++){
+                dist += points[i].distanceTo(points[i+1]);
+            }
+            markerOnLine.bindPopup("Distance from route: " + closest.distanceTo(e.latlng).toFixed(2) + " m. Distance from start of the route: " + dist.toFixed(2) + " m (" + (dist*100/distance).toFixed(1) + "%)").openPopup();
         }
-        markerOnLine.bindPopup("Distance from route: " + closest.distanceTo(e.latlng).toPrecision(6) + " m. Distance from start of the route: " + dist.toPrecision(6) + " m (" + (dist*100/distance).toPrecision(3) + "%)").openPopup();
+        L.marker(e.latlng, {icon: redIcon}).addTo(map);
+        points.length = 0;
     }
-    L.marker(e.latlng, {icon: redIcon}).addTo(map);
-    points.length = 0;
+    startDrag = false;
+})
+
+map.on("mouseup", function(e){
+    map.dragging.enable();
+    if(mouseDown != null){
+        if (!isPointOnLine(e.latlng, allPos)){
+            var closest = mouseDown;
+            
+            var markerOnLine = L.marker([closest.lat, closest.lng], {icon: greenIcon}).addTo(map);
+            isPointOnLine(closest, allPos);
+            points.push(e.latlng);
+            var dist = 0;
+            for (var i = 0; i < points.length - 1; i++){
+                dist += points[i].distanceTo(points[i+1]);
+            }
+            markerOnLine.bindPopup("Distance from route: " + closest.distanceTo(e.latlng).toFixed(2) + " m. Distance from start of the route: " + dist.toFixed(2) + " m (" + (dist*100/distance).toFixed(1) + "%)").openPopup();
+        }
+        L.marker(e.latlng, {icon: redIcon}).addTo(map);
+        points.length = 0;
+        mouseDown = null;
+    }
+       
 })
 
 var allPos;
@@ -75,7 +104,7 @@ routing.on("routesfound", function (e){
     distance = e.routes[0].summary.totalDistance;
     time = e.routes[0].summary.totalTime;
     
-    console.log("routesfound; dist = " + distance + " m; time = " + time + " s" + "; allpos length = " + allPos.length);
+    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time) + "; allpos length = " + allPos.length);
 })
 
 function isPointOnLine(point, path) {
@@ -88,3 +117,17 @@ function isPointOnLine(point, path) {
     }
     return false;
 }
+
+function toMinutes(time){
+    var mins = Math.floor(time/60);
+    var rest = (time - (60*mins)).toFixed(0);
+    return (mins + " min " + rest + " sec");
+}
+
+function toHour(time){
+    return toMinutes(time)/60;
+}
+
+map.on("dragend", function(e){
+    console.log(e);
+})
