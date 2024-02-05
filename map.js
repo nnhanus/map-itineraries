@@ -1,7 +1,8 @@
-var map = L.map('map').setView([52.19226,0.15216], 16);
+var map = L.map('map', {dragging: false}).setView([52.19226,0.15216], 16);
 
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    // minZoom: 10,
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     closePopupOnClick: false,
@@ -20,66 +21,46 @@ var routing = L.Routing.control({
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
     lineOptions : {
+        style: [{color: 'black', opacity: 0.15, weight: 30}, {color: 'white', opacity: 0.8, weight: 20}, {color: 'red', opacity: 1, weight: 10}],
         addWaypoints: false
+        
     },
     routeLine: function(route, options) {
         line = L.Routing.line(route, options);
-        line.eachLayer(function(l) {
-            l.on("mousedown", function(e){
-                isPointerDown = true;
-                map.dragging.disable();
-            })
-            // l.on("mouseup", function(e){
-            //     var marker = new L.marker(e.latlng, {icon: redIcon}, {draggable: 'true'}).addTo(map);
-            //     // marker.on("dragstart", function (e){
-            //     //     console.log("dragstart");
-            //     // });
-                
-            //     isPointOnLine(e.latlng, allPos);
-            //     points.push(e.latlng);
-            //     var dist = 0;
-            //     for (var i = 0; i < points.length - 1; i++){
-            //         dist += points[i].distanceTo(points[i+1]);
-            //     }
-            //     var percent = dist*100/distance;
-                
-            //     // var inhour = hours(percent*time/100);
-            //     // var inminutes = minutes(percent*time/100);
-            //     // console.log(hour + ":" + min);
-                
-            //     marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100)).openPopup();
-                
-            //     // console.log(e);
-            //     points.length = 0;
-
-            // })
-        //     l.on('mousedown touchstart', function(e) {
+        
+        // line.eachLayer(function(l) {
+        //     l.on("mousedown", function(e){
+        //         // console.log("mouse down");
+        //         isPointerDown = true;
         //         map.dragging.disable();
-        //         // dragMarker = L.marker(e.latlng, {icon: violetIcon}).addTo(map);
-        //         // isPointOnLine(e.latlng, allPos);
-        //         // points.push(e.latlng);
-        //         // var dist = 0;
-        //         // for (var i = 0; i < points.length - 1; i++){
-        //         //     dist += points[i].distanceTo(points[i+1]);
-        //         // }
-        //         // var percent = (dist*100/distance);
-        //         // dragMarker.bindPopup("Distance from start of the route: " + dist.toFixed(2) + " m (" + percent.toFixed(1) + "%); time to get there : " + toMinutes((percent*time)/100)).openPopup();
-                
-        //         // mouseDown = e.latlng;
-        //         startDrag = true;
-        //         // console.log("mouse down: " + mouseDown);
-        //     });
-        // //     l.on('pointerdown', function(e){
-        // //         console.log("pointer down");
-        // //     });
-            
-        // //     l.on('pointermove', function(e){
-        // //         console.log("pointer move");
-        // //     });
-        });
+        //     })
+        // });
         return line;
     }
 }).addTo(map);
+
+
+
+var allPos;
+var distance;
+var time;
+var points = new Array();
+
+routing.on("routesfound", function (e){
+    allPos = e.routes[0].coordinates;
+    distance = e.routes[0].summary.totalDistance;
+    time = e.routes[0].summary.totalTime;
+    
+    
+    // map.removeLayer(line);
+    
+    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+})
+
+
+
+
+
 
 
 
@@ -160,27 +141,15 @@ var dragMarker;
        
 // })
 
-var allPos;
-var distance;
-var time;
-var points = new Array();
 
-routing.on("routesfound", function (e){
-    allPos = e.routes[0].coordinates;
-    distance = e.routes[0].summary.totalDistance;
-    time = e.routes[0].summary.totalTime;
-    
-    // map.removeLayer(line);
-    
-    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-})
 
-function isPointOnLine(point, path) {
+function isPointOnLine(point, path, accuracy) {
     points.length = 0;
     // console.log(path.length);
     for (var i = 0; i < path.length - 1; i++) {
         points.push(path[i]);
-        if (L.GeometryUtil.belongsSegment(point, path[i], path[i + 1], 1.5)) {
+        
+        if (L.GeometryUtil.belongsSegment(point, path[i], path[i + 1], accuracy)) {
             return true;
         }
     }
@@ -222,25 +191,39 @@ function inHours(time){
 
 }
 
-// map.on('pointerdown', function(e){
-//     console.log("pointer down");
-// });
 
+var popupdrag = L.popup({maxWidth: 200}); 
+var onMap = false;
 
+onpointerdown = (event) => {
+    // window.alert("pointer");
+    event.preventDefault();
+    isPointerDown = true;
+    // var touch = event.touches[0];
+    // var point = L.point(touch.screenX, touch.screenY);
+    // var latlng = map.containerPointToLatLng(point);
+    
+    
+    var point = L.point(event.clientX, event.clientY);
+    var latlng = map.containerPointToLatLng(point);
+    if(isPointOnLine(latlng, allPos)){
+        onMap = true;
+        // map.dragging.disable();
+    }
+};
 
-// addEventListener("pointerdown", (event) => {pointerIsDown = true;});
-// addEventListener("pointermove", (event) => {
-//     if (pointerIsDown){
-//         console.log(event);
-//     }
-// });
-// addEventListener("pointerup", (event) => {pointerIsDown = false;});
-var popupdrag = L.popup(); 
-
-map.on("mousemove", function (e){
+onpointermove = (event) => {
+    // window.alert("touchmove");
     if(isPointerDown){
-        if(isPointOnLine(e.latlng, allPos)){
-            points.push(e.latlng);
+        // var touch = event.touches[0];
+        // var point = L.point(touch.screenX, touch.screenY);
+        var point = L.point(event.clientX, event.clientY);
+        var latlng = map.containerPointToLatLng(point);
+        
+        if(isPointOnLine(latlng, allPos, 2)){
+            // window.alert(latlng);
+            onMap = true;
+            points.push(latlng);
             var dist = 0;
             for (var i = 0; i < points.length - 1; i++){
                 dist += points[i].distanceTo(points[i+1]);
@@ -251,49 +234,44 @@ map.on("mousemove", function (e){
             // var inminutes = minutes(percent*time/100);
             // console.log(hour + ":" + min);
             popupdrag
-            .setLatLng(e.latlng)
+            .setLatLng(latlng)
             .setContent("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100))
             .openOn(map);
             // console.log(e);
             points.length = 0;
         }
     }
-})
+};
 
-map.on("mouseup", function(e){
+onpointerup = (event) => {
+    // window.alert("true");
     if (isPointerDown){
-        console.log(isPointerDown);
-        if(isPointOnLine(e.latlng, allPos)){
-            var marker = new L.marker(e.latlng, {draggable: 'false'}).addTo(map);
+        // var touch = event.touches[0];
+        // var point = L.point(touch.screenX, touch.screenY);
+        var point = L.point(event.clientX, event.clientY);
+        var latlng = map.containerPointToLatLng(point);
+        // map.closePopup();
+        if(isPointOnLine(latlng, allPos, 5) && onMap){
+            // window.alert("true");
+            var marker = new L.marker(latlng, {draggable: 'false'}).addTo(map);
             marker.on("dragstart", function (e){
                 console.log("dragstart");
             });
             
-            points.push(e.latlng);
+            points.push(latlng);
             var dist = 0;
             for (var i = 0; i < points.length - 1; i++){
                 dist += points[i].distanceTo(points[i+1]);
             }
             var percent = dist*100/distance;
             
-            marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100)).openPopup();
+            marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100), {maxWidth : 200}).openPopup();
             
             // console.log(e);
             points.length = 0;
         }
+        onMap = false;
         isPointerDown = false;
-
+        // map.dragging.enable();
     }
-    map.dragging.enable();
-   
-})
-// map.on("mousedown", function(e){
-//     console.log("mousedown: " + e.latlng);
-// })
-// map.on("dragstart", function(e){
-//     console.log(map.getCenter());
-// })
-// map.on("dragend", function(e){
-//     console.log(map.getCenter());
-// })
-
+}
