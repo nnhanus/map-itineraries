@@ -58,7 +58,31 @@ routing.on("routesfound", function (e){
 })
 
 
+var opl = new L.OverPassLayer({
+    query: "area['name'='Orsay']; node(area)['amenity'='restaurant'];out;",
+    // onSuccess: function(data) {
 
+
+    //     for(i=0;i<data.elements.length;i++) {
+    //       e = data.elements[i];
+          
+       
+        
+    //       var pos = new L.LatLng(e.lat, e.lon);
+    //       var color = 'green';
+    //     //   L.marker([closest.lat, closest.lng], ).addTo(map);
+    //       L.marker(pos, {icon: greenIcon}).addTo(map);
+    //     //   L.circle(pos, 5, {
+    //     //     color: color,
+    //     //     fillColor: '#fa3',
+    //     //     fillOpacity: 1,
+    //     //   }).addTo(map);
+         
+    //     }
+    //   },
+    });
+
+map.addLayer(opl);
 
 
 
