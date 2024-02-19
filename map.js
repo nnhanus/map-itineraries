@@ -1,7 +1,5 @@
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
-var polyline;
-
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     // minZoom: 10,
     maxZoom: 19,
@@ -9,8 +7,19 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     closePopupOnClick: false,
 }).addTo(map);
 
-var line;
+var itinerary; 
+var oultine;
+var routing_line;
 var isPointerDown = false;
+
+var allPos;
+var distance;
+var time;
+
+var allPosPixels  = new Array();
+var points = new Array();
+
+var previousLatLng;
 
 var routing = L.Routing.control({
     
@@ -27,28 +36,21 @@ var routing = L.Routing.control({
         
     },
     routeLine: function(route, options) {
-        line = L.Routing.line(route, options);
+        routing_line = L.Routing.line(route, options);
         
-        return line;
+        return routing_line;
     }
 }).addTo(map);
 
-var tooltip; 
 
 routing.on("routesfound", function (e){
-    allPos = e.routes[0].coordinates;
+    allPos = e.routes[0].coordinates; //Get the points of the intinerary
     // console.log(allPos.length);
-    distance = e.routes[0].summary.totalDistance;
-    time = e.routes[0].summary.totalTime;
-    // allPos.forEach(buildPosPixels);
-    polyline = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map);
-    polyline.bringToFront();
-    // tooltip = L.tooltip("he",{direction:'left', sticky:true})
-    // tooltip = polyline.bindTooltip("he",{direction:'left', sticky:true});
-    
-
-    // map.removeLayer(line);
-    
+    distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
+    time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
+    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25}).addTo(map);
+    // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 })
 
@@ -60,23 +62,21 @@ function buildPosPixels(latlng){
     allPosPixels.push(toPixels(latlng));
 }
 
-var allPos;
-var allPosPixels  = new Array();
-var distance;
-var time;
-var points = new Array();
-
-var popupdist = L.popup({maxWidth: 200}); 
-var previousLatLng;
-
 function getDistanceInCM(latlng, point){
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
+    var dist =  point.distanceTo(closestPixel);
+    console.log (" dist : " + dist + " distPix : " + getDistanceInPixel(dist))
     return ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio)));
 }
 
+function getDistanceInPixel(dist){
+    return (dist*((269/window.devicePixelRatio)/2.54));
+
+}
+
 function distancePixelPoints(latlng, point){
-    map.removeLayer(line);
+    map.removeLayer(routing_line);
     var dist = getDistanceInCM(latlng, point);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     
@@ -269,7 +269,7 @@ var onMap = false;
 
 onpointerdown = (event) => {
     
-        map.removeLayer(line);
+        map.removeLayer(routing_line);
         // lineExits = false;
     
     // window.alert("pointer");
@@ -293,7 +293,7 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
-    map.removeLayer(line);
+    map.removeLayer(routing_line);
 
     // if (lineExits){
     //     map.removeLayer(line);
@@ -365,14 +365,16 @@ onpointerup = (event) => {
         onMap = false;
         isPointerDown = false;
         map.dragging.enable();
+        
+        var zoom = map.getZoom();
+        console.log(itinerary.weight + "    " + map.getZoom());
+        if (zoom > 14){
+            itinerary.setStyle({weight : 5*(zoom-13)}); //keep the itinerary always bigger than road 
+        } else {
+            itinerary.setStyle({weight : 5});
+        }
+        outline.setStyle({weight:105});
+        // itinerary.setStyle({weight : 5*(map.getZoom()-5)})
+        // itinerary.weight = 5;
     }
 }
-
-
-// function objToString (obj) {
-//     let str = '';
-//     for (const [p, val] of Object.entries(obj)) {
-//         str += `${p}::${val}\n`;
-//     }
-//     return str;
-// }
