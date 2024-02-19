@@ -1,6 +1,6 @@
-var map = L.map('map', {dragging: false}).setView([52.19226,0.15216], 16);
+var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
+
 var polyline;
-var lineExits = true;
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     // minZoom: 10,
@@ -33,7 +33,7 @@ var routing = L.Routing.control({
     }
 }).addTo(map);
 
-
+var tooltip; 
 
 routing.on("routesfound", function (e){
     allPos = e.routes[0].coordinates;
@@ -41,8 +41,11 @@ routing.on("routesfound", function (e){
     distance = e.routes[0].summary.totalDistance;
     time = e.routes[0].summary.totalTime;
     // allPos.forEach(buildPosPixels);
-    polyline = L.polyline(allPos, {color: 'blue'}).addTo(map);
+    polyline = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map);
     polyline.bringToFront();
+    // tooltip = L.tooltip("he",{direction:'left', sticky:true})
+    // tooltip = polyline.bindTooltip("he",{direction:'left', sticky:true});
+    
 
     // map.removeLayer(line);
     
@@ -78,6 +81,8 @@ function distancePixelPoints(latlng, point){
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     
     if (dist < 0.5 ){
+        ETAFloatingText.style.visibility='visible';
+        
         // if (point.distanceTo(previousLatLng) > 3){
         // console.log( point.distanceTo(previousLatLng) );
         
@@ -90,22 +95,42 @@ function distancePixelPoints(latlng, point){
             dist += points[i].distanceTo(points[i+1]);
         }
         var percent = dist*100/distance;
-        popupdist
-            .setLatLng(latlng)
-            .setContent("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100))
-            .openOn(map);
+        // popupdist
+        //     .setLatLng(latlng)
+        //     .setContent("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100))
+        //     .openOn(map);
+        // polyline.setTooltipContent("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100));
+        // curTxt.innerHTML="Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100);
+        ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
         // }
     } else {
-        popupdist
-            .setLatLng(latlng)
-            // .setContent("point : " + pointPixel + ", closest : " + closestPixel + ", distance : " + pointPixel.distanceTo(closestPixel) + ", cm : " + ((pointPixel.distanceTo(closestPixel)*2.54/269)))
-            // .setContent("closestlayerpoint : " + polyline.closestLayerPoint(point) + ", closest latlng : " + closest + ", closest pixels : " + closestPixel)
-            // .setContent("cm : " + ((point.distanceTo(closestPixel)*2.54/(269* window.devicePixelRatio))) + "cm w/ : " + ((point.distanceTo(closestPixel)*2.54/(269))) +  "cm / : " + ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio))))
-            .setContent("distance (cm): " + dist)
-            .openOn(map);
+        ETAFloatingText.style.visibility='hidden';
+        // popupdist
+        //     .setLatLng(latlng)
+        //     // .setContent("point : " + pointPixel + ", closest : " + closestPixel + ", distance : " + pointPixel.distanceTo(closestPixel) + ", cm : " + ((pointPixel.distanceTo(closestPixel)*2.54/269)))
+        //     // .setContent("closestlayerpoint : " + polyline.closestLayerPoint(point) + ", closest latlng : " + closest + ", closest pixels : " + closestPixel)
+        //     // .setContent("cm : " + ((point.distanceTo(closestPixel)*2.54/(269* window.devicePixelRatio))) + "cm w/ : " + ((point.distanceTo(closestPixel)*2.54/(269))) +  "cm / : " + ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio))))
+        //     .setContent("distance (cm): " + dist)
+        //     .openOn(map);
+
 
     }
 
+}
+
+// document.body.onmousemove=moveCursor;
+var ETAFloatingText=document.createElement('div');
+ETAFloatingText.style.zIndex = 1000;
+ETAFloatingText.style.visibility='hidden';
+
+ETAFloatingText.id="cursorText";
+ETAFloatingText.innerHTML="Hello!"; /* Or whatever you want */
+
+document.body.appendChild(ETAFloatingText);
+var curTxtLen=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
+function moveCursor(e){
+    ETAFloatingText.style.left=e.clientX-curTxtLen[0]+'px';
+    ETAFloatingText.style.top=e.clientY-curTxtLen[1]*2+'px';
 }
  
 function getResolution() {
@@ -243,9 +268,14 @@ var popupdrag = L.popup({maxWidth: 200});
 var onMap = false;
 
 onpointerdown = (event) => {
+    
+        map.removeLayer(line);
+        // lineExits = false;
+    
     // window.alert("pointer");
     event.preventDefault();
     isPointerDown = true;
+    
     
     // var touch = event.touches[0];
     // var point = L.point(touch.screenX, touch.screenY);
@@ -255,78 +285,44 @@ onpointerdown = (event) => {
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
     previousLatLng = point;
-    // if(isPointOnLine(latlng, allPos)){
-    //     onMap = true;
-    //     // map.dragging.disable();
-    // }
+    var dist = getDistanceInCM(latlng, point);
+    if (dist < 0.5){
+        map.dragging.disable();
+        ETAFloatingText.style.visibility='visible';
+    }
 };
 
 onpointermove = (event) => {
-    if (lineExits){
-        map.removeLayer(line);
-    }
+    map.removeLayer(line);
+
+    // if (lineExits){
+    //     map.removeLayer(line);
+    //     // lineExits = false;
+    // }
     // window.alert("touchmove");
     if(isPointerDown){
+        
+        moveCursor(event);
         // var touch = event.touches[0];
         // var point = L.point(touch.screenX, touch.screenY);
         var point = L.point(event.clientX, event.clientY);
         var latlng = map.containerPointToLatLng(point);
         // console.log("point: " + point + "containerpoint : " + toPixels(latlng));
         distancePixelPoints(latlng, point);
-        
-        // if(isPointOnLine(latlng, allPos, 2)){
-        //     // window.alert(latlng);
-        //     onMap = true;
-        //     points.push(latlng);
-        //     var dist = 0;
-        //     for (var i = 0; i < points.length - 1; i++){
-        //         dist += points[i].distanceTo(points[i+1]);
-        //     }
-        //     var percent = dist*100/distance;
-            
-        //     // var inhour = hours(percent*time/100);
-        //     // var inminutes = minutes(percent*time/100);
-        //     // console.log(hour + ":" + min);
-        //     popupdrag
-        //     .setLatLng(latlng)
-        //     .setContent("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100))
-        //     .openOn(map);
-        //     // console.log(e);
-        //     points.length = 0;
-        // }
     }
 };
 
 onpointerup = (event) => {
     // window.alert("true");
     if (isPointerDown){
+        ETAFloatingText.style.visibility='hidden';
         // var touch = event.touches[0];
         // var point = L.point(touch.screenX, touch.screenY);
         var point = L.point(event.clientX, event.clientY);
-        var latlng = map.containerPointToLatLng(point);
-        // map.closePopup();
-        // if(isPointOnLine(latlng, allPos, 5) && onMap){
-        //     // window.alert("true");
-        //     var marker = new L.marker(latlng, {draggable: 'false'}).addTo(map);
-        //     marker.on("dragstart", function (e){
-        //         console.log("dragstart");
-        //     });
-            
-        //     points.push(latlng);
-        //     var dist = 0;
-        //     for (var i = 0; i < points.length - 1; i++){
-        //         dist += points[i].distanceTo(points[i+1]);
-        //     }
-        //     var percent = dist*100/distance;
-            
-        //     marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100), {maxWidth : 200}).openPopup();
-            
-        //     // console.log(e);
-        //     points.length = 0;
-        
+        var latlng = map.containerPointToLatLng(point);       
         if(getDistanceInCM(latlng, point) < 0.5){
             var closest = L.GeometryUtil.closest(map, allPos, latlng);
-            var marker = new L.marker(closest, {draggable: 'false'}).addTo(map);
+            // var marker = new L.marker(closest, {draggable: 'false'}).addTo(map);
             isPointOnLine(closest, allPos, 5)
             points.push(closest);
             var dist = 0;
@@ -335,40 +331,40 @@ onpointerup = (event) => {
             }
             var percent = dist*100/distance;
 
-            marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100), {maxWidth : 200}).openPopup();
+            // marker.bindPopup("Distance from start of the route: " + (dist/1000).toFixed(2) + " km (" + percent.toFixed(1) + "%). Time on arrival : " + inHours(percent*time/100), {maxWidth : 200}).openPopup();
 
-            var opl = new L.OverPassLayer({
-                minZoom: 9,
-                query: `node(around: 5000.0, ${latlng.lat}, ${latlng.lng})['amenity'='restaurant'];out;`,
-                onSuccess: function(data) {
+            // var opl = new L.OverPassLayer({
+            //     minZoom: 9,
+            //     query: `node(around: 5000.0, ${latlng.lat}, ${latlng.lng})['amenity'='restaurant'];out;`,
+            //     markerIcon : greenIcon,
+            //     minZoomIndicatorEnabled : false,
+            //     // onSuccess: function(data) {
 
-                    for(i=0;i<data.elements.length;i++) {
-                        e = data.elements[i];
-                        // console.log(JSON.stringify(e.tags));
+            //     //     for(i=0;i<data.elements.length;i++) {
+            //     //         e = data.elements[i];
+
                         
-                        var pos = new L.LatLng(e.lat, e.lon);
-                        var color = 'green';
-                        //   L.marker([closest.lat, closest.lng], ).addTo(map);
-                        // L.marker(pos, {icon: greenIcon}).addTo(map);
-                        L.circle(pos, 5, {
-                            color: color,
-                            fillColor: '#fa3',
-                            fillOpacity: 1,
-                        })
-                        // .bindPopup(JSON.stringify(e.tags))
-                        .addTo(map);
+            //     //         var pos = new L.LatLng(e.lat, e.lon);
+            //     //         var color = 'green';
+            //     //         L.circle(pos, 5, {
+            //     //             color: color,
+            //     //             fillColor: '#fa3',
+            //     //             fillOpacity: 1,
+            //     //         })
+            //     //         // .bindPopup(JSON.stringify(e.tags))
+            //     //         .addTo(map);
                     
-                    }
-                },
-            });
-            map.addLayer(opl);
+            //     //     }
+            //     // },
+            // });
+            // map.addLayer(opl);
 
         }
             
         // }
         onMap = false;
         isPointerDown = false;
-        // map.dragging.enable();
+        map.dragging.enable();
     }
 }
 
