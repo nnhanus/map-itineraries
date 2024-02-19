@@ -1,5 +1,6 @@
 var map = L.map('map', {dragging: false}).setView([52.19226,0.15216], 16);
 var polyline;
+var lineExits = true;
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     // minZoom: 10,
@@ -28,11 +29,25 @@ var routing = L.Routing.control({
     routeLine: function(route, options) {
         line = L.Routing.line(route, options);
         
-        
         return line;
     }
 }).addTo(map);
 
+
+
+routing.on("routesfound", function (e){
+    allPos = e.routes[0].coordinates;
+    // console.log(allPos.length);
+    distance = e.routes[0].summary.totalDistance;
+    time = e.routes[0].summary.totalTime;
+    // allPos.forEach(buildPosPixels);
+    polyline = L.polyline(allPos, {color: 'blue'}).addTo(map);
+    polyline.bringToFront();
+
+    // map.removeLayer(line);
+    
+    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+})
 
 function toPixels(latlng){
     return map.latLngToContainerPoint(latlng);
@@ -48,46 +63,7 @@ var distance;
 var time;
 var points = new Array();
 
-routing.on("routesfound", function (e){
-    allPos = e.routes[0].coordinates;
-    // console.log(allPos.length);
-    distance = e.routes[0].summary.totalDistance;
-    time = e.routes[0].summary.totalTime;
-    // allPos.forEach(buildPosPixels);
-    polyline = L.polyline(allPos, {color: 'red'}).addTo(map);
-
-    // map.removeLayer(line);
-    
-    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-})
-
 var popupdist = L.popup({maxWidth: 200}); 
-// var opl = new L.OverPassLayer({
-//     query: "area['name'='Orsay']; node(area)['amenity'='restaurant'];out;",
-//     // onSuccess: function(data) {
-
-
-//     //     for(i=0;i<data.elements.length;i++) {
-//     //       e = data.elements[i];
-          
-       
-        
-//     //       var pos = new L.LatLng(e.lat, e.lon);
-//     //       var color = 'green';
-//     //     //   L.marker([closest.lat, closest.lng], ).addTo(map);
-//     //       L.marker(pos, {icon: greenIcon}).addTo(map);
-//     //     //   L.circle(pos, 5, {
-//     //     //     color: color,
-//     //     //     fillColor: '#fa3',
-//     //     //     fillOpacity: 1,
-//     //     //   }).addTo(map);
-         
-//     //     }
-//     //   },
-//     });
-
-// map.addLayer(opl);
-
 var previousLatLng;
 
 function getDistanceInCM(latlng, point){
@@ -95,7 +71,9 @@ function getDistanceInCM(latlng, point){
     var closestPixel = toPixels(closest);
     return ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio)));
 }
+
 function distancePixelPoints(latlng, point){
+    map.removeLayer(line);
     var dist = getDistanceInCM(latlng, point);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     
@@ -284,6 +262,9 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
+    if (lineExits){
+        map.removeLayer(line);
+    }
     // window.alert("touchmove");
     if(isPointerDown){
         // var touch = event.touches[0];
@@ -359,6 +340,26 @@ onpointerup = (event) => {
             var opl = new L.OverPassLayer({
                 minZoom: 9,
                 query: `node(around: 5000.0, ${latlng.lat}, ${latlng.lng})['amenity'='restaurant'];out;`,
+                onSuccess: function(data) {
+
+                    for(i=0;i<data.elements.length;i++) {
+                        e = data.elements[i];
+                        // console.log(JSON.stringify(e.tags));
+                        
+                        var pos = new L.LatLng(e.lat, e.lon);
+                        var color = 'green';
+                        //   L.marker([closest.lat, closest.lng], ).addTo(map);
+                        // L.marker(pos, {icon: greenIcon}).addTo(map);
+                        L.circle(pos, 5, {
+                            color: color,
+                            fillColor: '#fa3',
+                            fillOpacity: 1,
+                        })
+                        // .bindPopup(JSON.stringify(e.tags))
+                        .addTo(map);
+                    
+                    }
+                },
             });
             map.addLayer(opl);
 
@@ -370,3 +371,12 @@ onpointerup = (event) => {
         // map.dragging.enable();
     }
 }
+
+
+// function objToString (obj) {
+//     let str = '';
+//     for (const [p, val] of Object.entries(obj)) {
+//         str += `${p}::${val}\n`;
+//     }
+//     return str;
+// }
