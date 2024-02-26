@@ -17,11 +17,12 @@ var allPos;
 var distance;
 var time;
 
-var allPosPixels  = new Array();
+// var allPosPixels  = new Array();
 var points = new Array();
 
-var previousLatLng;
+// var previousLatLng;
 
+//Create the route
 var routing = L.Routing.control({
     
     waypoints: [
@@ -43,7 +44,7 @@ var routing = L.Routing.control({
     }
 }).addTo(map);
 
-
+//Replace with itinerary and get the points, the time, and the distance
 routing.on("routesfound", function (e){
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     // console.log(allPos.length);
@@ -56,37 +57,42 @@ routing.on("routesfound", function (e){
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 })
 
+//Returns a latLng as a Point 
 function toPixels(latlng){
     return map.latLngToContainerPoint(latlng);
 }
 
-function buildPosPixels(latlng){
-    allPosPixels.push(toPixels(latlng));
-}
+// function buildPosPixels(latlng){
+//     allPosPixels.push(toPixels(latlng));
+// }
 
+//Returns the distance between a point and the itinerary in cm
 function getDistanceInCM(latlng, point){
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
-    return ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio)));
+    return ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio))); //269 = ppi from phone
 }
 
-function getDistanceInPixel(dist){
-    return (dist*((269/window.devicePixelRatio)/2.54));
+// function getDistanceInPixel(dist){
+//     return (dist*((269/window.devicePixelRatio)/2.54));
 
-}
+// }
 
+//Updates text from drag on itinerary
 function distancePixelPoints(latlng, point){
     map.removeLayer(routing_line);
-    var dist = getDistanceInCM(latlng, point);
+    var distFromLine = getDistanceInCM(latlng, point);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
+    var closestPixel = toPixels(closest);
     // console.log("distance : " + dist);
-    if (dist < 0.6 ){
+    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
         ETAFloatingText.style.visibility='visible';
+        map.dragging.disable();
         
         // if (point.distanceTo(previousLatLng) > 3){
         // console.log( point.distanceTo(previousLatLng) );
         
-        previousLatLng = point;
+        // previousLatLng = point;
         isPointOnLine(closest, allPos, 5)
         
         points.push(closest);
@@ -97,16 +103,16 @@ function distancePixelPoints(latlng, point){
         var percent = dist*100/distance;
         ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
        
-    } else {
+    
+    } else
+    
+    {
         ETAFloatingText.style.visibility='hidden';
     }
 
 }
 
 
-
-
-// document.body.onmousemove=moveCursor;
 var ETAFloatingText=document.createElement('div');
 ETAFloatingText.style.zIndex = 1000;
 ETAFloatingText.style.visibility='hidden';
@@ -117,7 +123,7 @@ document.body.appendChild(ETAFloatingText);
 var ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
 
 function moveCursor(e){
-    ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]+'px';
+    ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
     ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';
 }
 
@@ -186,7 +192,7 @@ function inHours(time){
 onpointerdown = (event) => {
     
     map.removeLayer(routing_line);
-        // lineExits = false;
+    // lineExits = false;
     
     // window.alert("pointer");
     event.preventDefault();
@@ -200,13 +206,13 @@ onpointerdown = (event) => {
 
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    previousLatLng = point;
+    // previousLatLng = point;
     var dist = getDistanceInCM(latlng, point);
-    if (dist < 0.5){ //If close to line: disable pan of map and make text appear
-        map.dragging.disable();
-        moveCursor(event);
-        ETAFloatingText.style.visibility='visible';
-    }
+    // if (dist < 0.5){ //If close to line: disable pan of map and make text appear
+    //     map.dragging.disable();
+    //     moveCursor(event);
+    //     ETAFloatingText.style.visibility='visible';
+    // }
 };
 
 onpointermove = (event) => {
@@ -229,8 +235,12 @@ onpointerup = (event) => {
         // var touch = event.touches[0];
         // var point = L.point(touch.screenX, touch.screenY);
         var point = L.point(event.clientX, event.clientY);
-        var latlng = map.containerPointToLatLng(point);       
-        if(getDistanceInCM(latlng, point) < 0.5){
+        var latlng = map.containerPointToLatLng(point);   
+        var distFromLine = getDistanceInCM(latlng, point);
+        var closest = L.GeometryUtil.closest(map, allPos, latlng);
+        var closestPixel = toPixels(closest);
+        // console.log("distance : " + dist);
+        if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
             var closest = L.GeometryUtil.closest(map, allPos, latlng);
             var marker = new L.marker(closest, {draggable: 'false'}).addTo(map);
             isPointOnLine(closest, allPos, 5)
@@ -243,31 +253,13 @@ onpointerup = (event) => {
 
             marker.bindPopup("ETA " + inHours(percent*time/100), {maxWidth : 200});
 
-            // var opl = new L.OverPassLayer({
-            //     minZoom: 9, //results appear from this zoom levem
-            //     query: `node(around: 5000.0, ${latlng.lat}, ${latlng.lng})['amenity'='restaurant'];out;`, 
-            //     markerIcon : greenIcon, //custom icon
-            //     minZoomIndicatorEnabled : false,
-            //     // onSuccess: function(data) {
-
-            //     //     for(i=0;i<data.elements.length;i++) {
-            //     //         e = data.elements[i];
-
-                        
-            //     //         var pos = new L.LatLng(e.lat, e.lon);
-            //     //         var color = 'green';
-            //     //         L.circle(pos, 5, {
-            //     //             color: color,
-            //     //             fillColor: '#fa3',
-            //     //             fillOpacity: 1,
-            //     //         })
-            //     //         // .bindPopup(JSON.stringify(e.tags))
-            //     //         .addTo(map);
-                    
-            //     //     }
-            //     // },
-            // });
-            // map.addLayer(opl);
+            var opl = new L.OverPassLayer({
+                minZoom: 9, //results appear from this zoom levem
+                query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
+                markerIcon : greenIcon, //custom icon
+                minZoomIndicatorEnabled : false,
+            });
+            map.addLayer(opl);
 
         }
             
@@ -282,7 +274,7 @@ onpointerup = (event) => {
         } else {
             itinerary.setStyle({weight : 10});
         }
-        outline.setStyle({weight:80});
+        outline.setStyle({weight:60});
         // itinerary.setStyle({weight : 5*(map.getZoom()-5)})
         // itinerary.weight = 5;
     }

@@ -1,5 +1,6 @@
 #cursorText{
     position:absolute;
     background-color: aliceblue;
-    width: 100px;
+    width: 90px;
+    padding: 1%;
 }
