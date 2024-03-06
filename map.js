@@ -7,6 +7,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     closePopupOnClick: false,
 }).addTo(map);
 
+
 var itinerary; 
 var outline;
 
@@ -14,11 +15,14 @@ var routing_line;
 var isPointerDown = false;
 
 var allPos;
-var distance;
-var time;
+var distance; //meters
+var time; //secondes
 
 // var allPosPixels  = new Array();
 var points = new Array();
+
+var markers = new Array(); //all the circles along the road.
+var itineraryJSON;
 
 // var previousLatLng;
 
@@ -52,6 +56,7 @@ routing.on("routesfound", function (e){
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
     outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25}).addTo(map);
+    itineraryJSON =  itinerary.toGeoJSON();
    
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
@@ -80,7 +85,7 @@ function getDistanceInCM(latlng, point){
 
 //Updates text from drag on itinerary
 function distancePixelPoints(latlng, point){
-    map.removeLayer(routing_line);
+    // map.removeLayer(routing_line);
     var distFromLine = getDistanceInCM(latlng, point);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
@@ -141,6 +146,28 @@ var greenIcon = new L.Icon({
     shadowSize: [41, 41]
   });
 
+var openBracket = L.icon({
+    iconUrl: 'icons/open_bracket.png',
+    shadowUrl: 'icons/shadow.png',
+
+    iconSize:     [70, 30], // size of the icon
+    shadowSize:   [50, 64], // size of the shadow
+    iconAnchor:   [35, 10], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62],  // the same for the shadow
+    popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+});
+
+var closeBracket = L.icon({
+    iconUrl: 'icons/close_bracket.png',
+    shadowUrl: 'icons/shadow.png',
+
+    iconSize:     [70, 30], // size of the icon
+    shadowSize:   [50, 64], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62],  // the same for the shadow
+    popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+});
+
 function isPointOnLine(point, path, accuracy) {
     points.length = 0;
     // console.log(path.length);
@@ -189,25 +216,72 @@ function inHours(time){
 
 }
 
+function dwellOnCircle(event){
+    //greys out rest
+    //make bracket appear
+    var closest = L.GeometryUtil.closest(map, allPos, event.latlng);
+    isPointOnLine(closest, allPos, 5);
+        
+    points.push(closest);
+    var dist = 0;
+    for (var i = 0; i < points.length - 1; i++){
+        dist += points[i].distanceTo(points[i+1]);
+    }
+    var percent = dist*100/distance;
+    var timeDiffInPercent = 1800*100/time;
+    var percentAbove = percent - timeDiffInPercent;
+    var distAbove = (percentAbove*distance)/100;
+    var percentBelow = percent + timeDiffInPercent;
+    var distBelow = (percentBelow*distance)/100;
+
+    
+    var pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
+    var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
+    L.marker(latlngAbove, {icon: openBracket}).addTo(map);
+    // L.marker(latlngAbove).addTo(map);
+
+    var pointBelow = turf.along(itineraryJSON, distBelow/1000).geometry.coordinates;
+    var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
+    L.marker(latlngBelow, {icon: closeBracket}).addTo(map);
+    // L.marker(latlngBelow).addTo(map);
+
+
+
+    // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
+    // var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
+    // L.marker(latlngAbove, {icon: openBracket}).addTo(map);
+    // // L.marker(latlngAbove).addTo(map);
+
+    // var pointBelow = turf.along(itineraryJSON, (dist/1000)+10).geometry.coordinates;
+    // var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
+    // L.marker(latlngBelow, {icon: closeBracket}).addTo(map);
+    // // L.marker(latlngBelow).addTo(map);
+
+}
+
 onpointerdown = (event) => {
     
-    map.removeLayer(routing_line);
+    // map.removeLayer(routing_line);
     // lineExits = false;
     
     // window.alert("pointer");
-    event.preventDefault();
-    isPointerDown = true;
-    
-    
-    // var touch = event.touches[0];
-    // var point = L.point(touch.screenX, touch.screenY);
+    // event.preventDefault();
+    // var point = L.point(event.clientX, event.clientY);
     // var latlng = map.containerPointToLatLng(point);
-    
-
-    var point = L.point(event.clientX, event.clientY);
-    var latlng = map.containerPointToLatLng(point);
-    // previousLatLng = point;
-    var dist = getDistanceInCM(latlng, point);
+    // var isOnMarker = true;
+    // markers.forEach(element => {
+    //     console.log("dist: " + element.distanceTo(latlng) + ", latlng1: " + latlng + ", latlng2: " + element);
+        
+    //     if (element.distanceTo(latlng) < 5000){
+    //         isOnMarker = false; 
+    //     } 
+        
+    // });
+    isPointerDown = true;
+    // var point = L.point(event.clientX, event.clientY);
+    // var latlng = map.containerPointToLatLng(point);
+    // // previousLatLng = point;
+    // var dist = getDistanceInCM(latlng, point);
     // if (dist < 0.5){ //If close to line: disable pan of map and make text appear
     //     map.dragging.disable();
     //     moveCursor(event);
@@ -216,7 +290,7 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
-    map.removeLayer(routing_line);
+    // map.removeLayer(routing_line);
     if(isPointerDown){
         moveCursor(event); //text follow mouse
         // var touch = event.touches[0];
@@ -230,7 +304,18 @@ onpointermove = (event) => {
 
 onpointerup = (event) => {
     // window.alert("true");
-    if (isPointerDown){
+    var point = L.point(event.clientX, event.clientY);
+    var latlng = map.containerPointToLatLng(point);
+    var isOnMarker = true;
+    markers.forEach(element => {
+        console.log("dist: " + element.distanceTo(latlng) + ", latlng1: " + latlng + ", latlng2: " + element);
+        
+        if (element.distanceTo(latlng) < 5000){
+            isOnMarker = false; 
+        } 
+        
+    });
+    if (isPointerDown && isOnMarker){
         ETAFloatingText.style.visibility='hidden';
         // var touch = event.touches[0];
         // var point = L.point(touch.screenX, touch.screenY);
@@ -242,7 +327,10 @@ onpointerup = (event) => {
         // console.log("distance : " + dist);
         if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
             var closest = L.GeometryUtil.closest(map, allPos, latlng);
-            var marker = new L.marker(closest, {draggable: 'false'}).addTo(map);
+            // var marker = new L.marker(closest, {draggable: 'false'}).addTo(map);
+            var circleClosest = new L.circle(closest, { fill: '#66a1ff', fillOpacity: 1, radius: 300}).addTo(map);
+            markers.push(closest);
+            circleClosest.on("contextmenu", dwellOnCircle);
             isPointOnLine(closest, allPos, 5)
             points.push(closest);
             var dist = 0;
@@ -251,19 +339,30 @@ onpointerup = (event) => {
             }
             var percent = dist*100/distance;
 
-            marker.bindPopup("ETA " + inHours(percent*time/100), {maxWidth : 200});
-
+            // marker.bindPopup("ETA " + inHours(percent*time/100), {maxWidth : 200});
+            var circle = L.circle(closest, {radius: 5000}).addTo(map);
+            // circle.on("contextmenu", function(e){
+            //     isPointerDown = false;
+            //     console.log("click circle");
+            // });
+            
+            // itinerary.bringToFront();
+            circleClosest.bringToFront();
+            
             var opl = new L.OverPassLayer({
                 minZoom: 9, //results appear from this zoom levem
                 query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
                 markerIcon : greenIcon, //custom icon
                 minZoomIndicatorEnabled : false,
+                // onSuccess: function(data) { //doesn't work the markers don't appear
+                //     map.removeLayer(circle);
+                // },
+                // afterRequest: function()  {map.removeLayer(circle);}, // we want to keep the circle
             });
             map.addLayer(opl);
 
         }
             
-
         isPointerDown = false;
         map.dragging.enable();
         
@@ -277,5 +376,7 @@ onpointerup = (event) => {
         outline.setStyle({weight:60});
         // itinerary.setStyle({weight : 5*(map.getZoom()-5)})
         // itinerary.weight = 5;
-    }
+    } 
 }
+
+

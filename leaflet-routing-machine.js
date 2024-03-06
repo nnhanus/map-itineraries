@@ -16946,14 +16946,14 @@ module.exports = L.Routing = {
 
 		options: {
 			styles: [
-				{color: 'black', opacity: 0.15, weight: 9},
-				{color: 'white', opacity: 0.8, weight: 6},
-				{color: 'red', opacity: 1, weight: 2}
+				{color: 'black', opacity: 0., weight: 9},
+				{color: 'white', opacity: 0.0, weight: 6},
+				{color: 'red', opacity: 0, weight: 2}
 			],
 			missingRouteStyles: [
-				{color: 'black', opacity: 0.15, weight: 7},
-				{color: 'white', opacity: 0.6, weight: 4},
-				{color: 'gray', opacity: 0.8, weight: 2, dashArray: '7,12'}
+				{color: 'black', opacity: 0, weight: 7},
+				{color: 'white', opacity: 0, weight: 4},
+				{color: 'gray', opacity: 0, weight: 2, dashArray: '7,12'}
 			],
 			addWaypoints: true,
 			extendToWaypoints: true,
@@ -18273,9 +18273,9 @@ module.exports = L.Routing = {
 
 		options: {
 			dragStyles: [
-				{color: 'black', opacity: 0.15, weight: 9},
-				{color: 'white', opacity: 0.8, weight: 6},
-				{color: 'red', opacity: 1, weight: 2, dashArray: '7,12'}
+				{color: 'black', opacity: 0, weight: 9},
+				{color: 'white', opacity: 0, weight: 6},
+				{color: 'red', opacity: 0, weight: 2, dashArray: '7,12'}
 			],
 			draggableWaypoints: true,
 			routeWhileDragging: false,
