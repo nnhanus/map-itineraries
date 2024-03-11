@@ -27,6 +27,7 @@ var circleMarker;
 var circleZoneOfInterest;
 var markerBracketOpen;
 var markerBracketClose;
+var polylineBracket;
 
 //Create the route
 var routing = L.Routing.control({
@@ -120,11 +121,15 @@ ETAFloatingText.id="cursorText"; //dont change i guess
 document.body.appendChild(ETAFloatingText);
 var ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
 
+
+
 //Updates the textbox
 function moveCursor(e){
     ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
     ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';
+    
 }
+
 
 //Get the screen resolution of the device 
 function getResolution() {
@@ -162,7 +167,7 @@ var closeBracket = L.icon({
     shadowSize:   [50, 64], // size of the shadow
     iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
     shadowAnchor: [4, 62],  // the same for the shadow
-    popupAnchor:  [-3, -76] // point from which the popup should open relative to the iconAnchor
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
 
 //Check is point is on path 
@@ -183,7 +188,7 @@ function isPointOnLine(point, path, accuracy) {
 function toMinutes(time){
     var mins = Math.floor(time/60);
     var rest = (time - (60*mins)).toFixed(0);
-    return (mins + " min " + rest + " sec");
+    return (mins + " min " /*+ rest + " sec"*/);
 }
 
 //Returns a string "x hour y min"
@@ -217,21 +222,23 @@ function inHours(time){
 
 }
 
+
 //Handles the dwell/right click on the circle 
 function dwellOnCircle(event){
     //greys out rest
     //make bracket appear
-    var closest = L.GeometryUtil.closest(map, allPos, event.latlng);
-    isPointOnLine(closest, allPos, 5);
+    var closest = L.GeometryUtil.closest(map, allPos, event.latlng); //get the closest point on the line
+    isPointOnLine(closest, allPos, 5); // add all the points up to this point
         
-    points.push(closest);
+    points.push(closest); //add this point
     var dist = 0;
-    for (var i = 0; i < points.length - 1; i++){
+    for (var i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
         dist += points[i].distanceTo(points[i+1]);
     }
-    var percent = dist*100/distance;
-    var timeDiffInPercent = 1800*100/time;
-    var percentAbove = percent - timeDiffInPercent;
+    var percent = dist*100/distance; //get it in %
+    var timeDiff = 1800;
+    var timeDiffInPercent = timeDiff*100/time; //get the time diff between the brackets in % 
+    var percentAbove = percent - timeDiffInPercent; 
     var distAbove = (percentAbove*distance)/100;
     var percentBelow = percent + timeDiffInPercent;
     var distBelow = (percentBelow*distance)/100;
@@ -250,13 +257,43 @@ function dwellOnCircle(event){
     if (markerBracketClose != null && markerBracketOpen != null){
         map.removeLayer(markerBracketClose);
         map.removeLayer(markerBracketOpen);
+        map.removeLayer(polylineBracket);
     
     }
     markerBracketClose = markerBelow;
     markerBracketOpen = markerAbove;
-    markers.push(markerAbove.getLatLng());
-    markers.push(markerBelow.getLatLng());
+    // markers.push(markerAbove.getLatLng());
+    // markers.push(markerBelow.getLatLng());
+    // markerBracketClose.bindPopup("TimeDiff = 30 min");
+    // markerBracketOpen.bindPopup("TimeDiff = 30 min");
+    isPointOnLine(latlngAbove, allPos, 0.5);
+    var pointsAbove = new Array();
+    points.forEach(element => {pointsAbove.push(element)});
+    isPointOnLine(latlngBelow, allPos, 0.5);
+    
+    // console.log(points);
+    // console.log(pointsAbove);
+    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
 
+    var customOptions =
+    {
+    'maxWidth': '110',
+    'width': '110',
+    'autoPan': 'false',
+    'autoClose': 'false',
+    'closeButton': 'false',
+    'className' : 'popupCustom'
+    }
+    var PopupBelow = "Time Diff = "+toMinutes(timeDiff);
+    markerBracketClose.bindPopup(PopupBelow,customOptions);
+    markerBracketClose.openPopup(latlngBelow);
+    // markerBracketClose.getPopup().openOn(map);
+
+    // var PopupaBOVE = "Time Diff = "+toMinutes(timeDiff);
+    markerBracketOpen.bindPopup(PopupBelow,customOptions);
+    markerBracketOpen.openPopup(latlngAbove);
+    // markerBracketOpen.getPopup().openOn(map);
 
     //By distance instead of time
     // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
@@ -283,6 +320,9 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
+   
+    
+    // }
     if(isPointerDown){
         moveCursor(event); //text follow mouse
         var point = L.point(event.clientX, event.clientY); //point in pixel
@@ -295,11 +335,19 @@ onpointerup = (event) => {
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
     var isOnMarker = true;
-    markers.forEach(element => {
-        if (element.distanceTo(latlng) < 5000){
-            isOnMarker = false; 
-        } 
-    });
+    // markers.forEach(element => {
+        if (circleMarker != null){
+            if (circleMarker.getLatLng().distanceTo(latlng) < 5000){
+                isOnMarker = false; 
+            } 
+        }
+        console.log("isonmarker circle: " + isOnMarker);
+        if (markerBracketClose != null){
+        if (markerBracketClose.getLatLng().distanceTo(latlng) < 5000 || markerBracketOpen.getLatLng().distanceTo(latlng) < 5000){
+            isOnMarker = false;
+        }}
+        console.log("isonmarker brackets: " + isOnMarker);
+    // });
     if (isPointerDown && isOnMarker){
         ETAFloatingText.style.visibility='hidden';
         var point = L.point(event.clientX, event.clientY);
@@ -313,12 +361,16 @@ onpointerup = (event) => {
             if (circleMarker != null){
                 map.removeLayer(circleMarker);
                 map.removeLayer(circleZoneOfInterest);
-                map.removeLayer(markerBracketClose);
-                map.removeLayer(markerBracketOpen);
+                markers.forEach(element => {map.removeLayer(element);});
+                if (markerBracketClose != null){
+                    map.removeLayer(markerBracketClose);
+                    map.removeLayer(markerBracketOpen);
+                    map.removeLayer(polylineBracket);
+                }
             }
             
             circleMarker = circleClosest;
-            markers.push(closest);
+            // markers.push(closest);
             circleClosest.on("contextmenu", dwellOnCircle);
             isPointOnLine(closest, allPos, 5)
             points.push(closest);
@@ -337,10 +389,47 @@ onpointerup = (event) => {
                 query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
                 markerIcon : greenIcon, //custom icon
                 minZoomIndicatorEnabled : false,
-                // onSuccess: function(data) { //doesn't work the markers don't appear
-                //     map.removeLayer(circle);
-                // },
-                // afterRequest: function()  {map.removeLayer(circle);}, // we want to keep the circle
+                onSuccess: function(data) { //doesn't work the markers don't appear
+                    for (let i = 0; i < data.elements.length; i++) {
+                        let pos;
+                        let marker;
+                        const e = data.elements[i];
+                
+                        if (e.id in this._ids) {
+                          continue;
+                        }
+                
+                        this._ids[e.id] = true;
+                
+                        if (e.type === 'node') {
+                          pos = L.latLng(e.lat, e.lon);
+                        } else {
+                          pos = L.latLng(e.center.lat, e.center.lon);
+                        }
+                
+                        if (this.options.markerIcon) {
+                          marker = L.marker(pos, { icon: this.options.markerIcon });
+                        } else {
+                          marker = L.circle(pos, 20, {
+                            stroke: false,
+                            fillColor: '#E54041',
+                            fillOpacity: 0.9
+                          });
+                        }
+                
+                        const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+                        const popup = L.popup().setContent(popupContent);
+                        marker.bindPopup(popup);
+                        markers.push(marker);
+                
+                        this._markers.addLayer(marker);
+                      }
+                    // data.elements.forEach(element => { markers.push(element); });
+                    // console.log(data);
+                },
+                // afterRequest: function()  {
+                   
+                // }, // we want to keep the circle
             });
             map.addLayer(opl);
 

@@ -4,3 +4,20 @@
     width: 90px;
     padding: 1%;
 }
+
+#bracketText{
+    position:absolute;
+    background-color: aliceblue;
+    width: 90px;
+    padding: 1%;
+}
+
+
+/* css to customize Leaflet default styles  */
+.popupCustom .leaflet-popup-tip{
+    opacity: 0;
+}
+.popupCustom .leaflet-popup-content-wrapper {
+    background: aliceblue;
+    /* width: 100px; */
+}
