@@ -14,6 +14,7 @@ var outline;
 var routing_line;
 var isPointerDown = false;
 var isMovingMarker = false;
+var isMovingBrackets = false;
 
 var allPos;
 var distance; //meters
@@ -26,8 +27,8 @@ var itineraryJSON;
 
 var circleMarker;
 var circleZoneOfInterest;
-var markerBracketOpen;
-var markerBracketClose;
+var markerBracketOpen = null;
+var markerBracketClose = null;
 var polylineBracket;
 
 //Create the route
@@ -61,6 +62,25 @@ routing.on("routesfound", function (e){
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
     outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25}).addTo(map);
     itineraryJSON =  itinerary.toGeoJSON();
+
+    // var dist = 0;
+    // for (var i = 0; i < allPos.length - 1; i++){
+    //     dist += allPos[i].distanceTo(allPos[i+1]);
+    //     if (dist > 100000){
+    //         var marker = L.marker(allPos[i+1]).addTo(map);
+    //         marker.bindPopup("dist: " + dist/1000 + "km");
+
+    //         dist = 0;
+    //     }
+    // }
+    // var dist = distance/1000;
+    // var intervalMarker = 100;
+    // while(dist >= intervalMarker){
+    //     var pointDist = turf.along(itineraryJSON, intervalMarker).geometry.coordinates;
+    //     var marker = L.marker(L.latLng(pointDist[1], pointDist[0])).addTo(map);
+    //     marker.bindPopup("dist: " + intervalMarker + "km");
+    //     intervalMarker+=100;
+    // }
    
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
@@ -117,11 +137,18 @@ var ETAFloatingText=document.createElement('div');
 ETAFloatingText.style.zIndex = 1000;
 ETAFloatingText.style.visibility='hidden';
 
-ETAFloatingText.id="cursorText"; //dont change i guess
+ETAFloatingText.id="cursorText"; 
 
 document.body.appendChild(ETAFloatingText);
 var ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
 
+var bracketOpenText=document.createElement('div');
+bracketOpenText.style.zIndex = 1000;
+bracketOpenText.style.visibility='hidden';
+bracketOpenText.id="bracketText";
+
+
+document.body.appendChild(bracketOpenText);
 
 
 //Updates the textbox
@@ -280,18 +307,32 @@ function dwellOnCircle(event){
     markerBracketClose.dragging.enable();
     markerBracketOpen.dragging.enable();
 
-    markerBracketClose.on("dragend", function(e){
-        isMovingMarker = true;
-        markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
-        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-    });
+    markerBracketClose
+                .on("dragend", function(e){
+                    isMovingBrackets = true;
+                    markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
+                    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+                })
+                .on("dragstart", function(e){
+                    isMovingBrackets = true;
+                })
 
     
-    markerBracketOpen.on("dragend", function(e){
-        isMovingMarker = true;
-        markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
-        lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
-    });
+    markerBracketOpen
+                .on("dragend", function(e){
+                    isMovingBrackets = true;
+                    markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
+                    lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
+                })
+                .on("dragstart", function(e){
+                    isMovingBrackets = true;
+                })
+
+    bracketOpenText.style.visibility='visible';
+    bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
+    console.log(markerBracketOpen.getLatLng().lat);
+    bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
+    bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
 
     isPointOnLine(latlngAbove, allPos, 0.5);
     var pointsAbove = new Array();
@@ -302,25 +343,6 @@ function dwellOnCircle(event){
     // console.log(pointsAbove);
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
-
-    // var customOptions =
-    // {
-    // 'maxWidth': '110',
-    // 'width': '110',
-    // 'autoPan': 'false',
-    // 'autoClose': 'false',
-    // 'closeButton': 'false',
-    // 'className' : 'popupCustom'
-    // }
-    // var PopupBelow = "Time Diff = "+toMinutes(timeDiff);
-    // markerBracketClose.bindPopup(PopupBelow,customOptions);
-    // markerBracketClose.openPopup(latlngBelow);
-    // markerBracketClose.getPopup().openOn(map);
-
-    // var PopupaBOVE = "Time Diff = "+toMinutes(timeDiff);
-    // markerBracketOpen.bindPopup(PopupBelow,customOptions);
-    // markerBracketOpen.openPopup(latlngAbove);
-    // markerBracketOpen.getPopup().openOn(map);
 
     //By distance instead of time
     // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
@@ -345,10 +367,20 @@ function moveMarkers(latlng){
         if (markerBracketClose != null){
             markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, L.latLng(markerBracketClose.getLatLng().lat-diff.lat, markerBracketClose.getLatLng().lng-diff.lng)));
             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, L.latLng(markerBracketOpen.getLatLng().lat-diff.lat, markerBracketOpen.getLatLng().lng-diff.lng)));
+            bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
+            bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
         //     markerBracketOpen.setLatLng(markerBracketOpen.getLatLng()+diff);
         }
     } 
 }
+
+map.on("zoomanim", function(e){
+    if(markerBracketClose != null){
+    bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
+    bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+    bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
+    }
+})
 
 onpointerdown = (event) => {
     isPointerDown = true;
@@ -362,6 +394,12 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
+    if(markerBracketClose != null){
+        bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
+        bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+        bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
+    
+    }
     if(isPointerDown){
         moveCursor(event); //text follow mouse
         var point = L.point(event.clientX, event.clientY); //point in pixel
@@ -391,10 +429,10 @@ onpointerup = (event) => {
     }
     // console.log("isonmarker brackets: " + isOnMarker);
     // console.log(isMovingMarker);
-    if (isMovingMarker && markerBracketClose != null){
+    if ((isMovingMarker || isMovingBrackets) && markerBracketClose != null){
         lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
     }
-    if (isPointerDown && isOnMarker && !isMovingMarker){
+    if (isPointerDown && isOnMarker && !isMovingMarker && !isMovingBrackets){
         ETAFloatingText.style.visibility='hidden';
         var point = L.point(event.clientX, event.clientY);
         var latlng = map.containerPointToLatLng(point);   
@@ -412,6 +450,8 @@ onpointerup = (event) => {
                     map.removeLayer(markerBracketClose);
                     map.removeLayer(markerBracketOpen);
                     map.removeLayer(polylineBracket);
+                    markerBracketClose = null;
+                    markerBracketOpen = null;
                 }
             }
             
@@ -487,6 +527,7 @@ onpointerup = (event) => {
     } 
     isPointerDown = false;
     isMovingMarker = false;
+    isMovingBrackets = false;
     map.dragging.enable();
     // console.log(isMovingMarker);
     
