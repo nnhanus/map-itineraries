@@ -12,6 +12,21 @@
     padding: 1%;
 }
 
+#bracketCloseText{
+    position:absolute;
+    background-color: aliceblue;
+    width: 90px;
+    padding: 1%;
+}
+
+#circleText{
+    position:absolute;
+    background-color: aliceblue;
+    width: 90px;
+    padding: 1%;
+}
+
+
 
 /* css to customize Leaflet default styles  */
 .popupCustom .leaflet-popup-tip{

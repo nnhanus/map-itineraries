@@ -59,28 +59,57 @@ routing.on("routesfound", function (e){
     // console.log(allPos.length);
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
-    itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
-    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25}).addTo(map);
-    itineraryJSON =  itinerary.toGeoJSON();
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 5, lineCap: 'butt'}).addTo(map); //Draw a new polyline with the points
+    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25, lineCap: 'butt'}).addTo(map); // Draw the interaction zone
+    itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
+    /**************************************
+     * 2 ways to add something every x km *
+     *************************************/
     // var dist = 0;
     // for (var i = 0; i < allPos.length - 1; i++){
     //     dist += allPos[i].distanceTo(allPos[i+1]);
     //     if (dist > 100000){
-    //         var marker = L.marker(allPos[i+1]).addTo(map);
+    //         var marker = L.marker(allPos[i+1]).addTo(map); 
     //         marker.bindPopup("dist: " + dist/1000 + "km");
 
     //         dist = 0;
     //     }
     // }
+
+    // var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
+    // isPointOnLine(closestAbove, allPos, 0.5);
+    // var pointsAbove = new Array();
+    // points.forEach(element => {pointsAbove.push(element)});
+    // var closestBelow = L.GeometryUtil.closest(map, allPos, latlngBelow);
+    // isPointOnLine(closestBelow, allPos, 0.5);
+    
+    // var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+    // map.removeLayer(polylineBracket);
+    // polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
+
     // var dist = distance/1000;
     // var intervalMarker = 100;
+    // var previousClosest = new Array();
+    // var weight = 2;
+    // // // var previousPoint = allPos[0];
     // while(dist >= intervalMarker){
     //     var pointDist = turf.along(itineraryJSON, intervalMarker).geometry.coordinates;
-    //     var marker = L.marker(L.latLng(pointDist[1], pointDist[0])).addTo(map);
-    //     marker.bindPopup("dist: " + intervalMarker + "km");
+    //     isPointOnLine(L.latLng(pointDist[1], pointDist[0]), allPos, 0.5);
+    //     var pointsToKeep = points.filter(n => !previousClosest.includes(n));
+    //     L.polyline(pointsToKeep, {color: 'red', weight: weight, opacity: 0.5}).addTo(map);
+    //     console.log(weight);
+    //     weight++;
+    //     pointsToKeep.forEach(element => {previousClosest.push(element)});
+    //     // var marker = L.marker(L.latLng(pointDist[1], pointDist[0])).addTo(map);
+    //     // marker.bindPopup("dist: " + intervalMarker + "km");
+
     //     intervalMarker+=100;
     // }
+    // isPointOnLine(allPos[allPos.length-1], allPos, 0.5);
+    // var pointsToKeep = points.filter(n => !previousClosest.includes(n));
+    // L.polyline(pointsToKeep, {color: 'red', weight: weight, opacity: 0.5}).addTo(map);
+    
    
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
@@ -147,8 +176,20 @@ bracketOpenText.style.zIndex = 1000;
 bracketOpenText.style.visibility='hidden';
 bracketOpenText.id="bracketText";
 
+var bracketCloseText=document.createElement('div');
+bracketCloseText.style.zIndex = 1000;
+bracketCloseText.style.visibility='hidden';
+bracketCloseText.id="bracketCloseText";
+
+var circleMarkerText=document.createElement('div');
+circleMarkerText.style.zIndex = 1000;
+circleMarkerText.style.visibility='hidden';
+circleMarkerText.id="circleText";
+
 
 document.body.appendChild(bracketOpenText);
+document.body.appendChild(bracketCloseText);
+document.body.appendChild(circleMarkerText);
 
 
 //Updates the textbox
@@ -261,7 +302,7 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
     map.removeLayer(polylineBracket);
-    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
+    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5, lineCap: 'butt'}).addTo(map);
 }
 
 
@@ -307,6 +348,8 @@ function dwellOnCircle(event){
     markerBracketClose.dragging.enable();
     markerBracketOpen.dragging.enable();
 
+    
+
     markerBracketClose
                 .on("dragend", function(e){
                     isMovingBrackets = true;
@@ -315,6 +358,21 @@ function dwellOnCircle(event){
                 })
                 .on("dragstart", function(e){
                     isMovingBrackets = true;
+                })
+                .on("drag", function(e){
+                    var closestAbove = L.GeometryUtil.closest(map, allPos, circleMarker.getLatLng());
+                    isPointOnLine(closestAbove, allPos, 0.5);
+                    var pointsAbove = new Array();
+                    points.forEach(element => {pointsAbove.push(element)});
+                    var closestBelow = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
+                    isPointOnLine(closestBelow, allPos, 0.5);
+                    
+                    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+                    var distCircleBracket = 0;
+                    for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+                        distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
+                    }
+                    bracketCloseText.innerHTML="distance "+ (distCircleBracket/1000).toFixed(2) +" km";
                 })
 
     
@@ -327,12 +385,38 @@ function dwellOnCircle(event){
                 .on("dragstart", function(e){
                     isMovingBrackets = true;
                 })
+                .on("drag", function(e){
+                    
+                    var closestAbove = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
+                    isPointOnLine(closestAbove, allPos, 0.5);
+                    var pointsAbove = new Array();
+                    points.forEach(element => {pointsAbove.push(element)});
+                    var closestBelow = L.GeometryUtil.closest(map, allPos, circleMarker.getLatLng());
+                    isPointOnLine(closestBelow, allPos, 0.5);
+                    
+                    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+                    var distCircleBracket = 0;
+                    for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+                        distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
+                    }
+                    console.log(distCircleBracket);
+                    bracketOpenText.innerHTML="distance "+ (distCircleBracket/1000).toFixed(2) +" km";
+                })
 
-    bracketOpenText.style.visibility='visible';
-    bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
-    console.log(markerBracketOpen.getLatLng().lat);
+    // bracketOpenText.style.visibility='visible';
+    bracketOpenText.innerHTML="distance "+(distAbove/1000).toFixed(2) +" km";
     bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
     bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+
+    // bracketCloseText.style.visibility='visible';
+    bracketCloseText.innerHTML="distance "+(distBelow/1000).toFixed(2) +" km";
+    bracketCloseText.style.left=map.latLngToContainerPoint(markerBracketClose.getLatLng()).x+20+'px';
+    bracketCloseText.style.top=map.latLngToContainerPoint(markerBracketClose.getLatLng()).y-50+'px';
+
+    // circleMarkerText.style.visibility='visible';
+    circleMarkerText.innerHTML="distance " +(dist/1000).toFixed(2) + "km";
+    circleMarkerText.style.left=map.latLngToContainerPoint(circleMarker.getLatLng()).x+20+'px';
+    circleMarkerText.style.top=map.latLngToContainerPoint(circleMarker.getLatLng()).y-50+'px';
 
     isPointOnLine(latlngAbove, allPos, 0.5);
     var pointsAbove = new Array();
@@ -342,7 +426,7 @@ function dwellOnCircle(event){
     // console.log(points);
     // console.log(pointsAbove);
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
+    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5, lineCap: 'butt'}).addTo(map);
 
     //By distance instead of time
     // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
@@ -371,14 +455,31 @@ function moveMarkers(latlng){
             bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
         //     markerBracketOpen.setLatLng(markerBracketOpen.getLatLng()+diff);
         }
+        isPointOnLine(closest, allPos, 5)
+        
+        points.push(closest);
+        var dist = 0;
+        for (var i = 0; i < points.length - 1; i++){
+            dist += points[i].distanceTo(points[i+1]);
+        }
+        var percent = dist*100/distance;
+        circleMarkerText.innerHTML="distance " + (dist/1000).toFixed(2) +"km";
     } 
 }
 
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
-    bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
-    bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
-    bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
+        bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
+        bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+        // bracketOpenText.innerHTML="distance "+isMovingBrackets;
+
+        bracketCloseText.style.left=map.latLngToContainerPoint(markerBracketClose.getLatLng()).x+20+'px';
+        bracketCloseText.style.top=map.latLngToContainerPoint(markerBracketClose.getLatLng()).y-50+'px';
+        // bracketCloseText.innerHTML="distance "+isMovingBrackets;
+
+        circleMarkerText.style.left=map.latLngToContainerPoint(circleMarker.getLatLng()).x+20+'px';
+        circleMarkerText.style.top=map.latLngToContainerPoint(circleMarker.getLatLng()).y-50+'px';
+        // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
 })
 
@@ -388,8 +489,8 @@ onpointerdown = (event) => {
     //check if it is close to the markers
     //if close to a bracket, drag bracket
     //if close to the dot, drag interval
-    var point = L.point(event.clientX, event.clientY); //point in pixel
-    var latlng = map.containerPointToLatLng(point); //point in latlng
+    // var point = L.point(event.clientX, event.clientY); //point in pixel
+    // var latlng = map.containerPointToLatLng(point); //point in latlng
 
 };
 
@@ -397,7 +498,15 @@ onpointermove = (event) => {
     if(markerBracketClose != null){
         bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
         bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
-        bracketOpenText.innerHTML="movemarkers "+isMovingBrackets;
+        // bracketOpenText.innerHTML="distance ";
+
+        bracketCloseText.style.left=map.latLngToContainerPoint(markerBracketClose.getLatLng()).x+20+'px';
+        bracketCloseText.style.top=map.latLngToContainerPoint(markerBracketClose.getLatLng()).y-50+'px';
+        // bracketCloseText.innerHTML="distance ";
+
+        circleMarkerText.style.left=map.latLngToContainerPoint(circleMarker.getLatLng()).x+20+'px';
+        circleMarkerText.style.top=map.latLngToContainerPoint(circleMarker.getLatLng()).y-50+'px';
+        // circleMarkerText.innerHTML="distance ";
     
     }
     if(isPointerDown){
