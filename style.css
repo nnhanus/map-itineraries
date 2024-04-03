@@ -26,6 +26,10 @@
     padding: 1%;
 }
 
+.route{
+    filter: drop-shadow(0px 16px 10px black);
+}
+
 
 
 /* css to customize Leaflet default styles  */
