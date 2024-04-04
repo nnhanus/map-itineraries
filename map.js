@@ -1,3 +1,4 @@
+
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -61,10 +62,15 @@ routing.on("routesfound", function (e){
     // console.log(allPos.length);
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
-    itinerary = L.polyline(allPos, {color: 'blue', weight: 5, lineCap: 'butt'}).addTo(map); //Draw a new polyline with the points
-    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25/*lineCap: 'butt'*/, className: "route"}).addTo(map); // Draw the interaction zone
-    itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 5/*, lineCap: 'butt', smoothFactor: 5*/}).addTo(map); //Draw a new polyline with the points
+    outline = L.polyline(allPos, {color: 'blue', weight: 18, opacity: 0.25/*, lineCap: 'butt', className: "route", smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     
+    
+    itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
+
+    
+    // L.polyline(allPos, {lineJoin: 'round', offset: 25, smoothFactor: 5}).addTo(map);
+    // L.polyline(allPos, {lineJoin: 'round', offset: -25, smoothFactor: 5}).addTo(map);
     
     /**************************************
      * 2 ways to add something every x km *
@@ -198,8 +204,7 @@ document.body.appendChild(circleMarkerText);
 //Updates the textbox
 function moveCursor(e){
     ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
-    ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';
-    
+    ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';    
 }
 
 
@@ -444,6 +449,17 @@ function dwellOnCircle(event){
 
 }
 
+function openMenu(event){
+    var menuDiv = document.getElementById("menu");
+    console.log(menuDiv);
+    menuDiv.style.visibility = "visible";
+    console.log(menuDiv.style.left);
+    var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+    menuDiv.style.left=circlePos.x - 50 + 'px';
+    menuDiv.style.top=circlePos.y - 100 +  'px';
+    console.log(menuDiv.style.left);
+}
+
 function moveMarkers(latlng){
     if(isMovingMarker){
         var closest = L.GeometryUtil.closest(map, allPos, latlng);
@@ -470,6 +486,57 @@ function moveMarkers(latlng){
     } 
 }
 
+function makeQuery(){
+    // var opl = new L.OverPassLayer({
+    //         minZoom: 9, //results appear from this zoom levem
+    //         query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
+    //         markerIcon : greenIcon, //custom icon
+    //         minZoomIndicatorEnabled : false,
+    //         onSuccess: function(data) { //doesn't work the markers don't appear
+    //             for (let i = 0; i < data.elements.length; i++) {
+    //                 let pos;
+    //                 let marker;
+    //                 const e = data.elements[i];
+            
+    //                 if (e.id in this._ids) {
+    //                   continue;
+    //                 }
+            
+    //                 this._ids[e.id] = true;
+            
+    //                 if (e.type === 'node') {
+    //                   pos = L.latLng(e.lat, e.lon);
+    //                 } else {
+    //                   pos = L.latLng(e.center.lat, e.center.lon);
+    //                 }
+            
+    //                 if (this.options.markerIcon) {
+    //                   marker = L.marker(pos, { icon: this.options.markerIcon });
+    //                 } else {
+    //                   marker = L.circle(pos, 20, {
+    //                     stroke: false,
+    //                     fillColor: '#E54041',
+    //                     fillOpacity: 0.9
+    //                   });
+    //                 }
+            
+    //                 const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+    //                 const popup = L.popup().setContent(popupContent);
+    //                 marker.bindPopup(popup);
+    //                 markers.push(marker);
+            
+    //                 this._markers.addLayer(marker);
+    //               }
+    //             // data.elements.forEach(element => { markers.push(element); });
+    //             // console.log(data);
+    //         },
+    //         // afterRequest: function()  {
+               
+    //         // }, // we want to keep the circle
+    //     });
+    //     map.addLayer(opl);
+
+}
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
         bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
@@ -484,10 +551,19 @@ map.on("zoomanim", function(e){
         circleMarkerText.style.top=map.latLngToContainerPoint(circleMarker.getLatLng()).y-50+'px';
         // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
+    var zoom = map.getZoom();
+    console.log(itinerary.weight + "    " + zoom);
+    if (zoom > 14){
+        itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
+    } else {
+        itinerary.setStyle({weight : 8});
+    }
+    outline.setStyle({weight:48});
 })
 
 onpointerdown = (event) => {
     isPointerDown = true;
+    console.log(event);
     //get the points
     //check if it is close to the markers
     //if close to a bracket, drag bracket
@@ -517,37 +593,48 @@ onpointermove = (event) => {
         var point = L.point(event.clientX, event.clientY); //point in pixel
         var latlng = map.containerPointToLatLng(point); //point in latlng
         distancePixelPoints(latlng, point);
-        if(latlng.distanceTo(circleMarker.getLatLng()) < 5000){
-            isMovingMarker = true;
+        if (circleMarker != null){
+            if(latlng.distanceTo(circleMarker.getLatLng()) < 5000){
+                isMovingMarker = true;
+            }
+            moveMarkers(latlng); //move the threemarkers together
         }
-        moveMarkers(latlng); //move the threemarkers together
+        
     }
 };
 
 onpointerup = (event) => {
+    document.getElementById("menu").style.visibility = "hidden";
+    //Get the pointer coords
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    var isOnMarker = true;
+
+    //check if the pointer went up on the circle ùmarker or the brackets
+    var isNotOnMarker = true;
         if (circleMarker != null){
             if (circleMarker.getLatLng().distanceTo(latlng) < 5000){
-                isOnMarker = false; 
+                isNotOnMarker = false; 
             } 
         }
         // console.log("isonmarker circle: " + isOnMarker);
         if (markerBracketClose != null){
             if (markerBracketClose.getLatLng().distanceTo(latlng) < 5000 || markerBracketOpen.getLatLng().distanceTo(latlng) < 5000){
-                isOnMarker = false;
+                isNotOnMarker = false;
             }
     }
     // console.log("isonmarker brackets: " + isOnMarker);
     // console.log(isMovingMarker);
+
+    //If we're in brackets mode the pointer went up on a marker or if we were moving markers, then we redraw the highlight because the markers moved
     if ((isMovingMarker || isMovingBrackets) && markerBracketClose != null){
         lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
     }
-    if (isPointerDown && isOnMarker && !isMovingMarker && !isMovingBrackets){
-        ETAFloatingText.style.visibility='hidden';
-        var point = L.point(event.clientX, event.clientY);
-        var latlng = map.containerPointToLatLng(point);   
+
+    //If we're not on markers, we add a point
+    if (isPointerDown && isNotOnMarker && !isMovingMarker && !isMovingBrackets){
+        ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
+
+        //Calculate if we're on the line or not
         var distFromLine = getDistanceInCM(latlng, point);
         var closest = L.GeometryUtil.closest(map, allPos, latlng);
         var closestPixel = toPixels(closest);
@@ -570,6 +657,7 @@ onpointerup = (event) => {
             circleMarker = circleClosest;
             // markers.push(closest);
             circleClosest.on("contextmenu", dwellOnCircle);
+            circleClosest.on("click", openMenu);
             
             isPointOnLine(closest, allPos, 5)
             points.push(closest);
@@ -583,55 +671,56 @@ onpointerup = (event) => {
             circleZoneOfInterest = circle;    
             circleClosest.bringToFront();
             circleZoneOfInterest.on("contextmenu", dwellOnCircle);
+            circleZoneOfInterest.on("click", openMenu);
             
-            var opl = new L.OverPassLayer({
-                minZoom: 9, //results appear from this zoom levem
-                query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
-                markerIcon : greenIcon, //custom icon
-                minZoomIndicatorEnabled : false,
-                onSuccess: function(data) { //doesn't work the markers don't appear
-                    for (let i = 0; i < data.elements.length; i++) {
-                        let pos;
-                        let marker;
-                        const e = data.elements[i];
+            // var opl = new L.OverPassLayer({
+            //     minZoom: 9, //results appear from this zoom levem
+            //     query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
+            //     markerIcon : greenIcon, //custom icon
+            //     minZoomIndicatorEnabled : false,
+            //     onSuccess: function(data) { //doesn't work the markers don't appear
+            //         for (let i = 0; i < data.elements.length; i++) {
+            //             let pos;
+            //             let marker;
+            //             const e = data.elements[i];
                 
-                        if (e.id in this._ids) {
-                          continue;
-                        }
+            //             if (e.id in this._ids) {
+            //               continue;
+            //             }
                 
-                        this._ids[e.id] = true;
+            //             this._ids[e.id] = true;
                 
-                        if (e.type === 'node') {
-                          pos = L.latLng(e.lat, e.lon);
-                        } else {
-                          pos = L.latLng(e.center.lat, e.center.lon);
-                        }
+            //             if (e.type === 'node') {
+            //               pos = L.latLng(e.lat, e.lon);
+            //             } else {
+            //               pos = L.latLng(e.center.lat, e.center.lon);
+            //             }
                 
-                        if (this.options.markerIcon) {
-                          marker = L.marker(pos, { icon: this.options.markerIcon });
-                        } else {
-                          marker = L.circle(pos, 20, {
-                            stroke: false,
-                            fillColor: '#E54041',
-                            fillOpacity: 0.9
-                          });
-                        }
+            //             if (this.options.markerIcon) {
+            //               marker = L.marker(pos, { icon: this.options.markerIcon });
+            //             } else {
+            //               marker = L.circle(pos, 20, {
+            //                 stroke: false,
+            //                 fillColor: '#E54041',
+            //                 fillOpacity: 0.9
+            //               });
+            //             }
                 
-                        const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-                        const popup = L.popup().setContent(popupContent);
-                        marker.bindPopup(popup);
-                        markers.push(marker);
+            //             const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+            //             const popup = L.popup().setContent(popupContent);
+            //             marker.bindPopup(popup);
+            //             markers.push(marker);
                 
-                        this._markers.addLayer(marker);
-                      }
-                    // data.elements.forEach(element => { markers.push(element); });
-                    // console.log(data);
-                },
-                // afterRequest: function()  {
+            //             this._markers.addLayer(marker);
+            //           }
+            //         // data.elements.forEach(element => { markers.push(element); });
+            //         // console.log(data);
+            //     },
+            //     // afterRequest: function()  {
                    
-                // }, // we want to keep the circle
-            });
-            map.addLayer(opl);
+            //     // }, // we want to keep the circle
+            // });
+            // map.addLayer(opl);
 
         }
             
@@ -644,13 +733,13 @@ onpointerup = (event) => {
     // console.log(isMovingMarker);
     
     var zoom = map.getZoom();
-    // console.log(itinerary.weight + "    " + zoom);
+    console.log(itinerary.weight + "    " + zoom);
     if (zoom > 14){
-        itinerary.setStyle({weight : 10*(zoom-13)}); //keep the itinerary always bigger than road 
+        itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
     } else {
-        itinerary.setStyle({weight : 10});
+        itinerary.setStyle({weight : 8});
     }
-    outline.setStyle({weight:60});
+    outline.setStyle({weight:48});
 }
 
 
