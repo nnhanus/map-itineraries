@@ -62,9 +62,10 @@ routing.on("routesfound", function (e){
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5, lineCap: 'butt'}).addTo(map); //Draw a new polyline with the points
-    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25, lineCap: 'butt'}).addTo(map); // Draw the interaction zone
+    outline = L.polyline(allPos, {color: 'blue', weight: 20, opacity: 0.25/*lineCap: 'butt'*/, className: "route"}).addTo(map); // Draw the interaction zone
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
-
+    
+    
     /**************************************
      * 2 ways to add something every x km *
      *************************************/
