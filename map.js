@@ -38,9 +38,11 @@ var routing = L.Routing.control({
         L.latLng(48.70973285709232, 2.1626934894717214),
         // L.latLng(48.70577272850384, 2.185514438847031)
         L.latLng(43.089068907903574, 2.6198013248458296)
+        // L.latLng(53.55562497332884, 7.9839136794782375)
     ],
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
+    showAlternatives: true,
     lineOptions : {
         style: [{color: 'black', opacity: 0.15, weight: 30}, {color: 'white', opacity: 0.8, weight: 20}, {color: 'red', opacity: 1, weight: 10}],
         addWaypoints: false
@@ -581,54 +583,54 @@ onpointerup = (event) => {
             circleClosest.bringToFront();
             circleZoneOfInterest.on("contextmenu", dwellOnCircle);
             
-            // var opl = new L.OverPassLayer({
-            //     minZoom: 9, //results appear from this zoom levem
-            //     query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
-            //     markerIcon : greenIcon, //custom icon
-            //     minZoomIndicatorEnabled : false,
-            //     onSuccess: function(data) { //doesn't work the markers don't appear
-            //         for (let i = 0; i < data.elements.length; i++) {
-            //             let pos;
-            //             let marker;
-            //             const e = data.elements[i];
+            var opl = new L.OverPassLayer({
+                minZoom: 9, //results appear from this zoom levem
+                query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
+                markerIcon : greenIcon, //custom icon
+                minZoomIndicatorEnabled : false,
+                onSuccess: function(data) { //doesn't work the markers don't appear
+                    for (let i = 0; i < data.elements.length; i++) {
+                        let pos;
+                        let marker;
+                        const e = data.elements[i];
                 
-            //             if (e.id in this._ids) {
-            //               continue;
-            //             }
+                        if (e.id in this._ids) {
+                          continue;
+                        }
                 
-            //             this._ids[e.id] = true;
+                        this._ids[e.id] = true;
                 
-            //             if (e.type === 'node') {
-            //               pos = L.latLng(e.lat, e.lon);
-            //             } else {
-            //               pos = L.latLng(e.center.lat, e.center.lon);
-            //             }
+                        if (e.type === 'node') {
+                          pos = L.latLng(e.lat, e.lon);
+                        } else {
+                          pos = L.latLng(e.center.lat, e.center.lon);
+                        }
                 
-            //             if (this.options.markerIcon) {
-            //               marker = L.marker(pos, { icon: this.options.markerIcon });
-            //             } else {
-            //               marker = L.circle(pos, 20, {
-            //                 stroke: false,
-            //                 fillColor: '#E54041',
-            //                 fillOpacity: 0.9
-            //               });
-            //             }
+                        if (this.options.markerIcon) {
+                          marker = L.marker(pos, { icon: this.options.markerIcon });
+                        } else {
+                          marker = L.circle(pos, 20, {
+                            stroke: false,
+                            fillColor: '#E54041',
+                            fillOpacity: 0.9
+                          });
+                        }
                 
-            //             const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-            //             const popup = L.popup().setContent(popupContent);
-            //             marker.bindPopup(popup);
-            //             markers.push(marker);
+                        const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+                        const popup = L.popup().setContent(popupContent);
+                        marker.bindPopup(popup);
+                        markers.push(marker);
                 
-            //             this._markers.addLayer(marker);
-            //           }
-            //         // data.elements.forEach(element => { markers.push(element); });
-            //         // console.log(data);
-            //     },
-            //     // afterRequest: function()  {
+                        this._markers.addLayer(marker);
+                      }
+                    // data.elements.forEach(element => { markers.push(element); });
+                    // console.log(data);
+                },
+                // afterRequest: function()  {
                    
-            //     // }, // we want to keep the circle
-            // });
-            // map.addLayer(opl);
+                // }, // we want to keep the circle
+            });
+            map.addLayer(opl);
 
         }
             
