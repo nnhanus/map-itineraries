@@ -30,11 +30,36 @@
     position:absolute;
 }
 
+#slider{
+    border: solid blue;
+    background-color: aliceblue;
+    padding: 10px;
+}
+
 /* .route{
     filter: drop-shadow(4px 16px 10px black); */
     /* filter: drop-shadow(-5px 0px  red);
 } */
 
+
+.selected{
+    background-color: #78c0ff;
+    cursor: pointer;
+    /* border: solid blue; */
+}
+
+.unselected{
+    background-color: aliceblue;
+    cursor: pointer;
+}
+
+.button{
+    /* color: rgba(0, 0 0, 0); */
+    /* background-color: aliceblue; */
+    cursor: pointer;
+    background-color: rgb(0, 4, 255);
+    border-radius: 50%;
+}
 
 
 /* css to customize Leaflet default styles  */
@@ -45,3 +70,12 @@
     background: aliceblue;
     /* width: 100px; */
 }
+
+datalist {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    writing-mode: horizontal-tb;
+    width: 155px;
+    padding-left: 8px;
+  }

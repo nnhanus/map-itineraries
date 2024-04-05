@@ -32,6 +32,8 @@ var markerBracketOpen = null;
 var markerBracketClose = null;
 var polylineBracket;
 
+var isMenuOn = false;
+
 //Create the route
 var routing = L.Routing.control({
     
@@ -247,6 +249,17 @@ var closeBracket = L.icon({
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
 
+var bracket = L.icon({
+    iconUrl: 'brackets.svg',
+    shadowUrl: 'icons/shadow.png',
+
+    iconSize:     [100, 45], // size of the icon
+    shadowSize:   [50, 64], // size of the shadow
+    iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+})
+
 //Check is point is on path 
 function isPointOnLine(point, path, accuracy) {
     points.length = 0;
@@ -310,7 +323,9 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
     map.removeLayer(polylineBracket);
-    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5, lineCap: 'butt'}).addTo(map);
+    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
+
+    circleZoneOfInterest.bringToFront()
 }
 
 
@@ -337,12 +352,12 @@ function dwellOnCircle(event){
     
     var pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
     var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-    var markerAbove = L.marker(latlngAbove, {icon: openBracket}).addTo(map);
+    var markerAbove = L.marker(latlngAbove, {icon: bracket}).addTo(map);
     // L.marker(latlngAbove).addTo(map);
 
     var pointBelow = turf.along(itineraryJSON, distBelow/1000).geometry.coordinates;
     var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
-    var markerBelow = L.marker(latlngBelow, {icon: closeBracket}).addTo(map);
+    var markerBelow = L.marker(latlngBelow, {icon: bracket}).addTo(map);
     // L.marker(latlngBelow).addTo(map);
 
     if (markerBracketClose != null && markerBracketOpen != null){
@@ -434,7 +449,8 @@ function dwellOnCircle(event){
     // console.log(points);
     // console.log(pointsAbove);
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5, lineCap: 'butt'}).addTo(map);
+    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
+    circleZoneOfInterest.bringToFront();
 
     //By distance instead of time
     // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
@@ -450,17 +466,29 @@ function dwellOnCircle(event){
 }
 
 function openMenu(event){
-    var menuDiv = document.getElementById("menu");
-    console.log(menuDiv);
-    menuDiv.style.visibility = "visible";
-    console.log(menuDiv.style.left);
-    var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
-    menuDiv.style.left=circlePos.x - 50 + 'px';
-    menuDiv.style.top=circlePos.y - 100 +  'px';
-    console.log(menuDiv.style.left);
+    // var menuDiv = document.getElementById("menu");
+    // var restaurant = document.getElementById("restaurant");
+    // restaurant.onclick = function(){console.log("restaurant clicked hello remi the rat")};
+    // menuDiv.style.visibility = "visible";
+    // var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+    // menuDiv.style.left=circlePos.x - 50 + 'px';
+    // menuDiv.style.top=circlePos.y - 100 +  'px';
+    // isMenuOn = true;
+    // if (circleCreated){
+        window.alert("clicked");
+    // }
+    
+    circleCreated = true;
+}
+var circleCreated = false;
+function clickedOnRestaurant(){
+    makeQuery("restaurant");
+    document.getElementById("menu").style.visibility = "hidden";
+
 }
 
 function moveMarkers(latlng){
+    console.log("movemarkers");
     if(isMovingMarker){
         var closest = L.GeometryUtil.closest(map, allPos, latlng);
         var diff = L.latLng(circleMarker.getLatLng().lat - closest.lat, circleMarker.getLatLng().lng - closest.lng);
@@ -486,7 +514,7 @@ function moveMarkers(latlng){
     } 
 }
 
-function makeQuery(){
+function makeQuery(type){
     // var opl = new L.OverPassLayer({
     //         minZoom: 9, //results appear from this zoom levem
     //         query: `node(around: 5000.0, ${closest.lat}, ${closest.lng})['amenity'='restaurant'];out;`, 
@@ -552,18 +580,25 @@ map.on("zoomanim", function(e){
         // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
     var zoom = map.getZoom();
-    console.log(itinerary.weight + "    " + zoom);
+    
     if (zoom > 14){
         itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
     } else {
         itinerary.setStyle({weight : 8});
     }
     outline.setStyle({weight:48});
+
+    if (circleZoneOfInterest != null){
+        zoomMult = 2560000/(Math.pow(2,zoom+1));
+        circleZoneOfInterest.setRadius(zoomMult);
+        console.log("zoom level: " + zoom + ", circle radius: " + circleZoneOfInterest.getRadius());
+
+    }
+    
 })
 
 onpointerdown = (event) => {
     isPointerDown = true;
-    console.log(event);
     //get the points
     //check if it is close to the markers
     //if close to a bracket, drag bracket
@@ -594,7 +629,8 @@ onpointermove = (event) => {
         var latlng = map.containerPointToLatLng(point); //point in latlng
         distancePixelPoints(latlng, point);
         if (circleMarker != null){
-            if(latlng.distanceTo(circleMarker.getLatLng()) < 5000){
+            if(latlng.distanceTo(circleMarker.getLatLng()) < circleZoneOfInterest.getRadius()){
+            
                 isMovingMarker = true;
             }
             moveMarkers(latlng); //move the threemarkers together
@@ -604,11 +640,11 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    document.getElementById("menu").style.visibility = "hidden";
+    // document.getElementById("menu").style.visibility = "hidden";
     //Get the pointer coords
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-
+    if(!isMenuOn){
     //check if the pointer went up on the circle ùmarker or the brackets
     var isNotOnMarker = true;
         if (circleMarker != null){
@@ -657,7 +693,7 @@ onpointerup = (event) => {
             circleMarker = circleClosest;
             // markers.push(closest);
             circleClosest.on("contextmenu", dwellOnCircle);
-            circleClosest.on("click", openMenu);
+            // circleClosest.on("click", openMenu);
             
             isPointOnLine(closest, allPos, 5)
             points.push(closest);
@@ -667,11 +703,13 @@ onpointerup = (event) => {
             }
             var percent = dist*100/distance;
 
-            var circle = L.circle(closest, {radius: 5000}).addTo(map);
+            var circle = L.circle(closest, {color: 'blue', fillColor: '#2B8DFF', fillOpacity: 1, radius: 2500}).addTo(map);
+            // circleCreated = false;
+            
             circleZoneOfInterest = circle;    
             circleClosest.bringToFront();
             circleZoneOfInterest.on("contextmenu", dwellOnCircle);
-            circleZoneOfInterest.on("click", openMenu);
+            // circleZoneOfInterest.on("click", openMenu);
             
             // var opl = new L.OverPassLayer({
             //     minZoom: 9, //results appear from this zoom levem
@@ -725,7 +763,7 @@ onpointerup = (event) => {
         }
             
         
-    } 
+    } }
     isPointerDown = false;
     isMovingMarker = false;
     isMovingBrackets = false;
@@ -733,13 +771,18 @@ onpointerup = (event) => {
     // console.log(isMovingMarker);
     
     var zoom = map.getZoom();
-    console.log(itinerary.weight + "    " + zoom);
+    console.log("   zoom level   " + zoom);
     if (zoom > 14){
         itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
     } else {
         itinerary.setStyle({weight : 8});
     }
     outline.setStyle({weight:48});
+    if (circleZoneOfInterest != null){
+        zoomMult = 2560000/(Math.pow(2,zoom));
+        circleZoneOfInterest.setRadius(zoomMult);
+
+    }
 }
 
 
