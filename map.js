@@ -43,10 +43,9 @@ L.Control.Layers = L.Control.extend({
     onAdd: function(map) {
         var container = document.getElementById("layers");
         container.onclick =  function(e){
-            var menu = document.getElementById("menuLayers");
-            
-            menu.style.visibility = "visible";
-            L.DomUtil.addClass(menu, 'leaflet-control');
+            var menu = document.getElementById("listLayers");
+            visibilityToggle(menu);
+            // menu.style.visibility = "visible";
         };
         return container;
         
@@ -61,6 +60,15 @@ L.control.layers = function(opts) {
     return new L.Control.Layers(opts);
 }
 
+
+function visibilityToggle(element){
+    if (element.style.visibility == "visible"){
+        element.style.visibility = "collapse";
+    } else {
+        element.style.visibility = "visible";
+    }
+
+}
 
 //Create the route
 var routing = L.Routing.control({
@@ -178,6 +186,46 @@ routing.on("routesfound", function (e){
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 })
+
+function itineraryPass(itinerary, distValue){
+    
+    var dist = 0;
+    var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
+    var circleBounds = circleDist.getBounds();
+    map.removeLayer(circleDist);
+    var WestCircle = circleBounds.getWest();
+    var EastCircle = circleBounds.getEast();
+    var polygon = [L.latLng(itinerary[0].lat, WestCircle), L.latLng(itinerary[0].lat, EastCircle)];
+    for (var i = 0; i < itinerary.length - 1; i++){
+        dist += itinerary[i].distanceTo(itinerary[i+1]);
+        if (dist > distValue){
+            // var marker = L.marker(itinerary[i+1]).addTo(map); 
+            // marker.bindPopup("dist: " + dist/1000 + "km");
+            var circleDist = L.circle(itinerary[i+1], {radius : distValue}).addTo(map);
+            var circleBounds = circleDist.getBounds();
+            map.removeLayer(circleDist);
+            var WestCircle = circleBounds.getWest();
+            var EastCircle = circleBounds.getEast();
+            polygon.splice(polygon.length/2, 0, L.latLng(itinerary[i+1].lat, WestCircle), L.latLng(itinerary[i+1].lat, EastCircle));
+
+
+            dist = 0;
+        }
+    }
+    var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
+    var circleBounds = circleDist.getBounds();
+    map.removeLayer(circleDist);
+    var WestCircle = circleBounds.getWest();
+    var EastCircle = circleBounds.getEast();
+    polygon.splice(polygon.length/2, 0, L.latLng(itinerary[itinerary.length-1].lat, WestCircle), L.latLng(itinerary[itinerary.length-1].lat, EastCircle));
+
+
+
+    L.polygon(polygon, {color:'blue'}).addTo(map);
+    console.log(polygon);
+    return polygon;
+
+}
 
 function latLngToJSTS(coords){
     var coordsJSTS = [];
@@ -537,14 +585,17 @@ function dwellOnCircle(event){
 
 function openMenu(event){
     var menuDiv = document.getElementById("menu");
+    // menuDiv.bringToFront();
     var restaurant = document.getElementById("restaurant");
     var gasstation = document.getElementById("gasstation");
-    restaurant.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("restaurant")};
-    gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("fuel")};;
+    var supermarket = document.getElementById("supermarket");
+    restaurant.onclick = function(e){console.log("click"); menuDiv.style.visibility="hidden"; openSlider("'amenity'='restaurant'")};
+    gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
+    supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
     menuDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
     menuDiv.style.left=circlePos.x - 50 + 'px';
-    menuDiv.style.top=circlePos.y - 100 +  'px';
+    menuDiv.style.top=circlePos.y - 70 +  'px';
     isMenuOn = true;
     // if (circleCreated){
         // window.alert("clicked");
@@ -566,6 +617,7 @@ function openSlider(type){
     goButton.onclick = function(e){sliderDiv.style.visibility = "hidden"; makeQuery(type, getSliderValue())};
 
 }
+
 function getSliderValue(){
     var value = document.getElementById("range").value;
     console.log(value);
@@ -606,12 +658,14 @@ function makeQuery(type, distValue){
     var latLngCircle = circleZoneOfInterest.getLatLng();
     
     if (markerBracketOpen == null){
-        queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")['amenity'='" + type + "'];out;";
+        queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
         queryZone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue"}).addTo(map);
 
     } else {
         //circle for the center
         
+        itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
+
         var circleDist = L.circle(latLngCircle, {radius: distValue*1000}).addTo(map);
         var circleBounds = circleDist.getBounds();
         map.removeLayer(circleDist);
@@ -640,85 +694,85 @@ function makeQuery(type, distValue){
 
         var latlngs = [[openLatLng.lat, WestOpen], [latLngCircle.lat, WestCircle], [closeLatLng.lat, WestClose], [closeLatLng.lat, EastClose], [latLngCircle.lat, EastCircle], [openLatLng.lat, EastOpen]];
         console.log(latlngs);
-        queryZone = L.polygon(latlngs, {color: 'blue'}).addTo(map);
+        // queryZone = L.polygon(latlngs, {color: 'blue'}).addTo(map);
 
         // queryZone =  L.rectangle(bounds, {color: "blue", weight: 1}).addTo(map);
         queryString = "node(poly:\"" + openLatLng.lat + " " + WestOpen + " " + latLngCircle.lat + " " + WestCircle + " " + closeLatLng.lat + " " + WestClose + " " + 
-                                     closeLatLng.lat + " " + EastClose + " " + latLngCircle.lat + " " + EastCircle + " " + openLatLng.lat + " " + EastOpen + "\")['amenity'='" + type + "'];out;";
+                                     closeLatLng.lat + " " + EastClose + " " + latLngCircle.lat + " " + EastCircle + " " + openLatLng.lat + " " + EastOpen + "\")[" + type + "];out;";
 
     }
     console.log(queryString);
 
     // var NorthWest = L.latLng(markerBracketOpen.getLatLng().lat, West);
     // var SouthEast = L.latLng(markerBracketClose.getLatLng().lat, East);
-    var opl = new L.OverPassLayer({
-    minZoom: 9, //results appear from this zoom levem
-    // query: `node(${markerBracketClose.getLatLng().lat}, ${West}, ${markerBracketOpen.getLatLng().lat}, ${East})['amenity'='${type}'];out;`, 
-    query: queryString,
-    markerIcon : greenIcon, //custom icon
-    minZoomIndicatorEnabled : false,
-    onSuccess: function(data) { //doesn't work the markers don't appear
-        console.log("eureka");
-        console.log(data);
-        for (let i = 0; i < data.elements.length; i++) {
-            let pos;
-            let marker;
-            const e = data.elements[i];
+    // var opl = new L.OverPassLayer({
+    // minZoom: 9, //results appear from this zoom levem
+    // // query: `node(${markerBracketClose.getLatLng().lat}, ${West}, ${markerBracketOpen.getLatLng().lat}, ${East})['amenity'='${type}'];out;`, 
+    // query: queryString,
+    // markerIcon : greenIcon, //custom icon
+    // minZoomIndicatorEnabled : false,
+    // onSuccess: function(data) { //doesn't work the markers don't appear
+    //     console.log("eureka");
+    //     console.log(data);
+    //     for (let i = 0; i < data.elements.length; i++) {
+    //         let pos;
+    //         let marker;
+    //         const e = data.elements[i];
     
-            if (e.id in this._ids) {
-                continue;
-            }
+    //         if (e.id in this._ids) {
+    //             continue;
+    //         }
     
-            this._ids[e.id] = true;
+    //         this._ids[e.id] = true;
     
-            if (e.type === 'node') {
-                pos = L.latLng(e.lat, e.lon);
-            } else {
-                pos = L.latLng(e.center.lat, e.center.lon);
-            }
+    //         if (e.type === 'node') {
+    //             pos = L.latLng(e.lat, e.lon);
+    //         } else {
+    //             pos = L.latLng(e.center.lat, e.center.lon);
+    //         }
     
-            if (this.options.markerIcon) {
-                marker = L.marker(pos, { icon: this.options.markerIcon });
-            } else {
-                marker = L.circle(pos, 20, {
-                stroke: false,
-                fillColor: '#E54041',
-                fillOpacity: 0.9
-                });
-            }
+    //         if (this.options.markerIcon) {
+    //             marker = L.marker(pos, { icon: this.options.markerIcon });
+    //         } else {
+    //             marker = L.circle(pos, 20, {
+    //             stroke: false,
+    //             fillColor: '#E54041',
+    //             fillOpacity: 0.9
+    //             });
+    //         }
     
-            const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-            const popup = L.popup().setContent(popupContent);
-            marker.bindPopup(popup);
-            markers.push(marker);
+    //         const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+    //         const popup = L.popup().setContent(popupContent);
+    //         marker.bindPopup(popup);
+    //         markers.push(marker);
 
-            marker.on("contextmenu", function(e){
-                var container = L.DomUtil.create('div'),
-                startBtn = createButton('Add to route', container);
-                L.DomEvent.on(startBtn, 'click', function() {
-                    routing.spliceWaypoints(1, 0, e.latlng);
-                    map.closePopup();
-                });
+    //         marker.on("contextmenu", function(e){
+    //             var container = L.DomUtil.create('div'),
+    //             startBtn = createButton('Add to route', container);
+    //             L.DomEvent.on(startBtn, 'click', function() {
+    //                 routing.spliceWaypoints(1, 0, e.latlng);
+    //                 map.closePopup();
+    //             });
 
-                L.popup({className:"popupCustom"})
-                    .setContent(container)
-                    .setLatLng(e.latlng)
-                    .openOn(map);
-                })
+    //             L.popup({className:"popupCustom"})
+    //                 .setContent(container)
+    //                 .setLatLng(e.latlng)
+    //                 .openOn(map);
+    //             })
 
-            this._markers.addLayer(marker);
-            }
-        // data.elements.forEach(element => { markers.push(element); });
-        // console.log(data);
-        },
-        onError: function(xhr){
-            console.log("error");
-        }
-        // afterRequest: function()  {
+    //         this._markers.addLayer(marker);
+    //         }
+    //     // data.elements.forEach(element => { markers.push(element); });
+    //     // console.log(data);
+    //     },
+    //     onError: function(xhr){
+    //         console.log("error");
+    //     }
+    //     // afterRequest: function()  {
             
-        // }, // we want to keep the circle
-    });
-    map.addLayer(opl);
+    //     // }, // we want to keep the circle
+    // });
+    // map.addLayer(opl);
 }
 
 function createButton(label, container) {
@@ -805,93 +859,95 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    console.log("onpointerup");
+    // console.log(event);
+    // openMenu();
     // document.getElementById("menu").style.visibility = "hidden";
-    //Get the pointer coords
+    // Get the pointer coords
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
     if(!isMenuOn){
-    //check if the pointer went up on the circle ùmarker or the brackets
-    var isNotOnMarker = true;
-    if (circleMarker != null){
-        if (circleMarker.getLatLng().distanceTo(latlng) < 5000){
-            isNotOnMarker = false; 
+        //check if the pointer went up on the circle ùmarker or the brackets
+        var isNotOnMarker = true;
+        if (circleMarker != null){
+            if (circleMarker.getLatLng().distanceTo(latlng) < 5000){
+                isNotOnMarker = false; 
+            } 
+        }
+        // console.log("isonmarker circle: " + isOnMarker);
+        if (markerBracketClose != null){
+            if (markerBracketClose.getLatLng().distanceTo(latlng) < 5000 || markerBracketOpen.getLatLng().distanceTo(latlng) < 5000){
+                isNotOnMarker = false;
+            }
+        }
+        // console.log("isonmarker brackets: " + isOnMarker);
+        // console.log(isMovingMarker);
+
+        //If we're in brackets mode the pointer went up on a marker or if we were moving markers, then we redraw the highlight because the markers moved
+        if ((isMovingMarker || isMovingBrackets) && markerBracketClose != null){
+            // console.log("line should be redrawn");
+            lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+        }
+        // console.log("isPointerDown: " + isPointerDown + " isNotOnMarker: " + isNotOnMarker + " isMovingMarker: " + !isMovingMarker + " isMovingBrackets: " + !isMovingBrackets)
+        //If we're not on markers, we add a point
+        if (isPointerDown && isNotOnMarker && !isMovingMarker && !isMovingBrackets){
+            // console.log("we should be here hello hello");
+            ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
+
+            //Calculate if we're on the line or not
+            var distFromLine = getDistanceInCM(latlng, point);
+            var closest = L.GeometryUtil.closest(map, allPos, latlng);
+            var closestPixel = toPixels(closest);
+            if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+                var closest = L.GeometryUtil.closest(map, allPos, latlng);
+                var circleClosest = new L.circle(closest, { fill: '#66a1ff', fillOpacity: 1, radius: 300}).addTo(map);
+                if (circleMarker != null){
+                    map.removeLayer(circleMarker);
+                    map.removeLayer(circleZoneOfInterest);
+                    markers.forEach(element => {map.removeLayer(element);});
+                    if (markerBracketClose != null){
+                        map.removeLayer(markerBracketClose);
+                        map.removeLayer(markerBracketOpen);
+                        map.removeLayer(polylineBracket);
+                        markerBracketClose = null;
+                        markerBracketOpen = null;
+                    }
+                }
+                
+                circleMarker = circleClosest;
+                // markers.push(closest);
+                circleClosest.on("contextmenu", dwellOnCircle);
+                circleClosest.on("click", openMenu);
+                
+                isPointOnLine(closest, allPos, 5)
+                points.push(closest);
+                var dist = 0;
+                for (var i = 0; i < points.length - 1; i++){
+                    dist += points[i].distanceTo(points[i+1]);
+                }
+                var percent = dist*100/distance;
+
+                var circle = L.circle(closest, {color: 'blue', fillColor: '#2B8DFF', fillOpacity: 1, radius: 2500}).addTo(map);
+                // circleCreated = false;
+                
+                circleZoneOfInterest = circle;    
+                circleClosest.bringToFront();
+                circleZoneOfInterest.on("contextmenu", dwellOnCircle);
+                circleZoneOfInterest.on("click", openMenu);
+                if (queryZone != null){
+                    map.removeLayer(queryZone);
+                    queryZone = null;
+                }
+                
+                
+            
+            
+
+            }
+                
+        
         } 
     }
-    // console.log("isonmarker circle: " + isOnMarker);
-    if (markerBracketClose != null){
-        if (markerBracketClose.getLatLng().distanceTo(latlng) < 5000 || markerBracketOpen.getLatLng().distanceTo(latlng) < 5000){
-            isNotOnMarker = false;
-        }
-    }
-    // console.log("isonmarker brackets: " + isOnMarker);
-    // console.log(isMovingMarker);
-
-    //If we're in brackets mode the pointer went up on a marker or if we were moving markers, then we redraw the highlight because the markers moved
-    if ((isMovingMarker || isMovingBrackets) && markerBracketClose != null){
-        console.log("line should be redrawn");
-        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-    }
-    console.log("isPointerDown: " + isPointerDown + " isNotOnMarker: " + isNotOnMarker + " isMovingMarker: " + !isMovingMarker + " isMovingBrackets: " + !isMovingBrackets)
-    //If we're not on markers, we add a point
-    if (isPointerDown && isNotOnMarker && !isMovingMarker && !isMovingBrackets){
-        console.log("we should be here hello hello");
-        ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
-
-        //Calculate if we're on the line or not
-        var distFromLine = getDistanceInCM(latlng, point);
-        var closest = L.GeometryUtil.closest(map, allPos, latlng);
-        var closestPixel = toPixels(closest);
-        if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
-            var closest = L.GeometryUtil.closest(map, allPos, latlng);
-            var circleClosest = new L.circle(closest, { fill: '#66a1ff', fillOpacity: 1, radius: 300}).addTo(map);
-            if (circleMarker != null){
-                map.removeLayer(circleMarker);
-                map.removeLayer(circleZoneOfInterest);
-                markers.forEach(element => {map.removeLayer(element);});
-                if (markerBracketClose != null){
-                    map.removeLayer(markerBracketClose);
-                    map.removeLayer(markerBracketOpen);
-                    map.removeLayer(polylineBracket);
-                    markerBracketClose = null;
-                    markerBracketOpen = null;
-                }
-            }
-            
-            circleMarker = circleClosest;
-            // markers.push(closest);
-            circleClosest.on("contextmenu", dwellOnCircle);
-            circleClosest.on("click", openMenu);
-            
-            isPointOnLine(closest, allPos, 5)
-            points.push(closest);
-            var dist = 0;
-            for (var i = 0; i < points.length - 1; i++){
-                dist += points[i].distanceTo(points[i+1]);
-            }
-            var percent = dist*100/distance;
-
-            var circle = L.circle(closest, {color: 'blue', fillColor: '#2B8DFF', fillOpacity: 1, radius: 2500}).addTo(map);
-            // circleCreated = false;
-            
-            circleZoneOfInterest = circle;    
-            circleClosest.bringToFront();
-            circleZoneOfInterest.on("contextmenu", dwellOnCircle);
-            circleZoneOfInterest.on("click", openMenu);
-            if (queryZone != null){
-                map.removeLayer(queryZone);
-                queryZone = null;
-            }
-            
-            
-           
-         
-
-        }
-            
-        
-    } }
     isPointerDown = false;
     isMovingMarker = false;
     isMovingBrackets = false;

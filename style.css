@@ -81,29 +81,6 @@ datalist {
     padding-left: 8px;
   }
 
-  .route {
-    position: relative;
-    transform-style: preserve-3d;
-  }
-
-  .route::before {
-    content: "";
-    position: absolute;	
-    inset: -22px;
-    background: conic-gradient(from 90deg at 40% -25%, #ffd700, #f79d03, #ee6907, #e6390a, #de0d0d, #d61039, #cf1261, #c71585, #cf1261, #d61039, #de0d0d, #ee6907, #f79d03, #ffd700, #ffd700, #ffd700);
-    filter: blur(27px);
-    transform: translate3d(0px,0px,-1px);
-    /* clip-path: polygon(-100vmax -100vmax,100vmax -100vmax,100vmax 100vmax,-100vmax 100vmax,-100vmax -100vmax,calc(22px - 0px) calc(22px - 0px),calc(22px - 0px) calc(100% - 0px - 22px),calc(100% - 0px - 22px) calc(100% - 0px - 22px),calc(100% - 0px - 22px) calc(22px - 0px),calc(22px - 0px) calc(22px - 0px)); */
-    pointer-events: none;
-  }
-
-  #layerButton{
-    background-color: white;
-    padding: 5px 5px 0px 5px;
-    border: 2px solid rgba(0, 4, 255, 0.566);
-  }
-
-
   li{
     display: inline;
   }
