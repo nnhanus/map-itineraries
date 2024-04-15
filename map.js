@@ -11,6 +11,7 @@ L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 var itinerary; 
 var outline;
+var stroke;
 
 var routing_line;
 var isPointerDown = false;
@@ -114,6 +115,13 @@ routing.on("routesfound", function (e){
     // console.log(document.getElementsByClassName("leaflet-zoom-animated"));
     console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
 
+    stroke = L.polyline(allPos, {color: 'blue', weight: 20/*, lineCap: 'butt', */,className: "outline"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    var strokeHTML = stroke._path;
+    strokeHTML.id = "strokeRoute";
+    // outlinePathHTML = outline._path;
+    // console.log(outlinePathHTML);
+
+
     // document.querySelectorAll("p.intro");
     
     // L.rectangle(outline.getBounds(), {color: "#ff7800", weight: 1}).addTo(map);
@@ -141,7 +149,9 @@ routing.on("routesfound", function (e){
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
     createFilterShadow();
-    outlinePathHTML.setAttribute("filter", "url(#filterShadow)");
+    createFilterStroke();
+    strokeHTML.setAttribute("filter", "url(#filterStroke)");
+    // outlinePathHTML.setAttribute("filter", "url(#filterShadow)");
     // L.polyline(allPos, {lineJoin: 'round', offset: 25, smoothFactor: 5}).addTo(map);
     // L.polyline(allPos, {lineJoin: 'round', offset: -25, smoothFactor: 5}).addTo(map);
     
@@ -199,6 +209,7 @@ routing.on("routesfound", function (e){
 
 function createFilterShadow(){
     var defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
+    defs.id = "defs";
     
     var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
     filter.id = "filterShadow";
@@ -257,6 +268,32 @@ function createFilterShadow(){
 
     var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
     svg[0].appendChild(defs);
+}
+
+function createFilterStroke(){
+    var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
+    filter.id = "filterStroke";
+    filter.setAttribute("filterUnits", "userSpaceOnUse");
+    // filterUnits="userSpaceOnUse"
+
+    var image = document.createElementNS("http://www.w3.org/2000/svg",'feImage');
+    image.setAttribute("xlink:href", "#strokeRoute");
+    image.setAttribute("result", "imported-route");
+
+    var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    composite.setAttribute("in2", "SourceGraphic");
+    composite.setAttribute("in", "imported-route");
+    composite.setAttribute("operator", "out");
+    composite.setAttribute("result", "overlap");
+
+    filter.appendChild(image);
+    filter.appendChild(composite);
+
+    var defs = document.getElementById("defs");
+    defs.appendChild(filter);
+
+    // <feImage xlink:href="#ani-path" x="0" y="0" result="imported-ani"/>
+    // <feComposite operator="in" in="SourceGraphic" in2="imported-ani" result="overlap"/>
 }
 
 
@@ -1063,6 +1100,7 @@ onpointerup = (event) => {
         itinerary.setStyle({weight : 8});
     }
     outline.setStyle({weight:48});
+    stroke.setStyle({weight:60});
     if (circleZoneOfInterest != null){
         var zoomMult = 2560000/(Math.pow(2,zoom));
         circleZoneOfInterest.setRadius(zoomMult);
