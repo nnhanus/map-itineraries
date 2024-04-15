@@ -34,7 +34,7 @@ var polylineBracket;
 
 var isMenuOn = false;
 var queryZone = null;
-
+var outlinePathHTML;
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -42,7 +42,8 @@ L.Control.Layers = L.Control.extend({
     },
     onAdd: function(map) {
         var container = document.getElementById("layers");
-        container.onclick =  function(e){
+        var button = document.getElementById("layersButton");;
+        button.onclick =  function(e){
             var menu = document.getElementById("listLayers");
             visibilityToggle(menu);
             // menu.style.visibility = "visible";
@@ -78,6 +79,7 @@ var routing = L.Routing.control({
         // L.latLng(48.70577272850384, 2.185514438847031)
         L.latLng(43.089068907903574, 2.6198013248458296)
         // L.latLng(53.55562497332884, 7.9839136794782375)
+        // L.latLng(43.32361856747493, -0.3548212423438274)
     ],
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
@@ -107,6 +109,13 @@ routing.on("routesfound", function (e){
     }
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5/*, lineCap: 'butt', smoothFactor: 5*/}).addTo(map); //Draw a new polyline with the points
     outline = L.polyline(allPos, {color: 'blue', weight: 18, opacity: 0.25/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    outlinePathHTML = outline._path;
+    console.log(outlinePathHTML);
+    // console.log(document.getElementsByClassName("leaflet-zoom-animated"));
+    console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
+
+    // document.querySelectorAll("p.intro");
+    
     // L.rectangle(outline.getBounds(), {color: "#ff7800", weight: 1}).addTo(map);
 
     // document.getElementById("myspan").textContent="newtext";
@@ -131,7 +140,8 @@ routing.on("routesfound", function (e){
     // var polygon = L.polygon(JSTStoLatLng(polygonCoords), {color: 'blue'}).addTo(map);
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    
+    createFilterShadow();
+    outlinePathHTML.setAttribute("filter", "url(#filterShadow)");
     // L.polyline(allPos, {lineJoin: 'round', offset: 25, smoothFactor: 5}).addTo(map);
     // L.polyline(allPos, {lineJoin: 'round', offset: -25, smoothFactor: 5}).addTo(map);
     
@@ -187,44 +197,153 @@ routing.on("routesfound", function (e){
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 })
 
+function createFilterShadow(){
+    var defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
+    
+    var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
+    filter.id = "filterShadow";
+    // filter.setAttribute("x", "0.526855");
+    // filter.setAttribute("y", "-0.00317383");
+    // filter.setAttribute("width", "105.784");
+    // filter.setAttribute("height", "335.685");
+    filter.setAttribute("filterUnits", "userSpaceOnUse");
+    filter.setAttribute("color-interpolation-filters", "sRGB");
+
+    var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
+    flood.setAttribute("flood-opacity", "0");
+    flood.setAttribute("result", "BackgroundImageFix");
+
+    var colorMatrix1 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
+    colorMatrix1.setAttribute("in", "SourceAlpha");
+    colorMatrix1.setAttribute("type", "matrix");
+    colorMatrix1.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0");
+    colorMatrix1.setAttribute("result", "hardAlpha");
+
+    var offset = document.createElementNS("http://www.w3.org/2000/svg",'feOffset');
+    offset.setAttribute("dy", "4");
+
+    var gaussianBlur = document.createElementNS("http://www.w3.org/2000/svg",'feGaussianBlur');
+    gaussianBlur.setAttribute("stdDeviation", "6");
+
+    var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    composite.setAttribute("in2", "hardAlpha");
+    composite.setAttribute("operator", "out");
+
+    var colorMatrix2 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
+    colorMatrix2.setAttribute("type", "matrix");
+    colorMatrix2.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.75 0");
+
+    var blend1 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
+    blend1.setAttribute("mode", "normal");
+    blend1.setAttribute("in2", "BackgroundImageFix");
+    blend1.setAttribute("result", "effect1_dropShadow_269_714");
+
+    var blend2 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
+    blend2.setAttribute("mode", "normal");
+    blend2.setAttribute("in", "SourceGraphic");
+    blend2.setAttribute("in2", "effect1_dropShadow_269_714");
+    blend2.setAttribute("result", "shape");
+
+    filter.appendChild(flood);
+    filter.appendChild(colorMatrix1);
+    filter.appendChild(offset);
+    filter.appendChild(gaussianBlur);
+    filter.appendChild(composite);
+    filter.appendChild(colorMatrix2);
+    filter.appendChild(blend1);
+    filter.appendChild(blend2);
+
+    defs.appendChild(filter);
+
+    var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
+    svg[0].appendChild(defs);
+}
+
+
 function itineraryPass(itinerary, distValue){
     
     var dist = 0;
-    var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
-    var circleBounds = circleDist.getBounds();
-    map.removeLayer(circleDist);
-    var WestCircle = circleBounds.getWest();
-    var EastCircle = circleBounds.getEast();
-    var polygon = [L.latLng(itinerary[0].lat, WestCircle), L.latLng(itinerary[0].lat, EastCircle)];
+    var polygon = [];
+    var prevPoint = itinerary[0];
+    var forstPoint;
     for (var i = 0; i < itinerary.length - 1; i++){
         dist += itinerary[i].distanceTo(itinerary[i+1]);
         if (dist > distValue){
             // var marker = L.marker(itinerary[i+1]).addTo(map); 
             // marker.bindPopup("dist: " + dist/1000 + "km");
+            // console.log(isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[i+1])));
+            // var circleDist;
+            if (forstPoint == null){
+                forstPoint = itinerary[i+1];
+            }
+            // var circleColor;
+            var isVerticaal = isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[i+1]));
+            // if (isVerticaal){
+            //         circleColor = L.circle(itinerary[i+1], {radius : distValue, color: "red"}).addTo(map);
+            //     } else {
+            //         circleColor = L.circle(itinerary[i+1], {radius : distValue, color: "green"}).addTo(map);
+            //     }
+            var pointDown;
+            var pointUp;
             var circleDist = L.circle(itinerary[i+1], {radius : distValue}).addTo(map);
             var circleBounds = circleDist.getBounds();
             map.removeLayer(circleDist);
-            var WestCircle = circleBounds.getWest();
-            var EastCircle = circleBounds.getEast();
-            polygon.splice(polygon.length/2, 0, L.latLng(itinerary[i+1].lat, WestCircle), L.latLng(itinerary[i+1].lat, EastCircle));
-
+            if (isVerticaal){
+                pointDown = L.latLng(itinerary[i+1].lat, circleBounds.getWest());
+                pointUp = L.latLng(itinerary[i+1].lat, circleBounds.getEast());
+            } else {
+                pointDown = L.latLng(circleBounds.getSouth(), itinerary[i+1].lng);
+                pointUp = L.latLng(circleBounds.getNorth(), itinerary[i+1].lng);
+            }
+            
+            
+            polygon.splice(polygon.length/2, 0,pointDown, pointUp);
+            prevPoint = itinerary[i+1];
 
             dist = 0;
         }
     }
+
+    var pointDown;
+    var pointUp;
     var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
     var circleBounds = circleDist.getBounds();
     map.removeLayer(circleDist);
-    var WestCircle = circleBounds.getWest();
-    var EastCircle = circleBounds.getEast();
-    polygon.splice(polygon.length/2, 0, L.latLng(itinerary[itinerary.length-1].lat, WestCircle), L.latLng(itinerary[itinerary.length-1].lat, EastCircle));
+    if (isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[itinerary.length-1]))){
+        pointDown = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getWest());
+        pointUp = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getEast());
+    } else {
+        pointDown = L.latLng(circleBounds.getSouth(), itinerary[itinerary.length-1].lng);
+        pointUp = L.latLng(circleBounds.getNorth(), itinerary[itinerary.length-1].lng);
+    }
+    polygon.splice(polygon.length/2, 0, pointDown, pointUp);
 
+    var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
+    var circleBounds = circleDist.getBounds();
+    map.removeLayer(circleDist);
+    if (isVertical(map.latLngToContainerPoint(itinerary[0]), map.latLngToContainerPoint(forstPoint))){
+        pointDown = L.latLng(itinerary[0].lat, circleBounds.getWest());
+        pointUp = L.latLng(itinerary[0].lat, circleBounds.getEast());
+    } else {
+        pointDown = L.latLng(circleBounds.getSouth(), itinerary[0].lng);
+        pointUp = L.latLng(circleBounds.getNorth(), itinerary[0].lng);
+    }
+    polygon.splice(0, 0, pointDown);
+    polygon.splice(polygon.length, 0, pointUp);
 
+    queryZone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
 
-    L.polygon(polygon, {color:'blue'}).addTo(map);
-    console.log(polygon);
     return polygon;
 
+}
+
+function isVertical(pointA, pointB){
+    if ((pointB.y - pointA.y) == 0){
+        return false;
+    } else {
+        var coeff = (pointB.x - pointA.x)/(pointB.y - pointA.y);
+        return coeff > -3 && coeff < 1;
+    }
 }
 
 function latLngToJSTS(coords){
@@ -441,6 +560,8 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     map.removeLayer(polylineBracket);
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
 
+    // console.log(isVertical(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(markerBracketClose.getLatLng())));
+
     circleZoneOfInterest.bringToFront()
 }
 
@@ -487,7 +608,7 @@ function dwellOnCircle(event){
     markerBracketClose.dragging.enable();
     markerBracketOpen.dragging.enable();
 
-    
+    // console.log(isVertical(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(markerBracketClose.getLatLng())));
 
     markerBracketClose
                 .on("dragend", function(e){
@@ -661,118 +782,85 @@ function makeQuery(type, distValue){
         queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
         queryZone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue"}).addTo(map);
 
-    } else {
-        //circle for the center
-        
-        itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
-
-        var circleDist = L.circle(latLngCircle, {radius: distValue*1000}).addTo(map);
-        var circleBounds = circleDist.getBounds();
-        map.removeLayer(circleDist);
-        var WestCircle = circleBounds.getWest();
-        var EastCircle = circleBounds.getEast();
-        
-        // var bounds = [[markerBracketOpen.getLatLng().lat, EastCircle], [markerBracketClose.getLatLng().lat,WestCircle]];
-
-        //circle for marker on top
-        var openLatLng = markerBracketOpen.getLatLng();
-        var openDist = L.circle(openLatLng, {radius: distValue*1000}).addTo(map);
-        var openBounds = openDist.getBounds();
-        map.removeLayer(openDist);
-        var WestOpen = openBounds.getWest();
-        var EastOpen = openBounds.getEast();
-        // var bounds = [[markerBracketOpen.getLatLng().lat, EastCircle], [markerBracketClose.getLatLng().lat,WestCircle]];
-
-
-        //circle for marker on the bottom
-        var closeLatLng = markerBracketClose.getLatLng();
-        var closeDist = L.circle(closeLatLng, {radius: distValue*1000}).addTo(map);
-        var closeBounds = closeDist.getBounds();
-        map.removeLayer(closeDist);
-        var WestClose = closeBounds.getWest();
-        var EastClose = closeBounds.getEast();
-
-        var latlngs = [[openLatLng.lat, WestOpen], [latLngCircle.lat, WestCircle], [closeLatLng.lat, WestClose], [closeLatLng.lat, EastClose], [latLngCircle.lat, EastCircle], [openLatLng.lat, EastOpen]];
-        console.log(latlngs);
-        // queryZone = L.polygon(latlngs, {color: 'blue'}).addTo(map);
-
-        // queryZone =  L.rectangle(bounds, {color: "blue", weight: 1}).addTo(map);
-        queryString = "node(poly:\"" + openLatLng.lat + " " + WestOpen + " " + latLngCircle.lat + " " + WestCircle + " " + closeLatLng.lat + " " + WestClose + " " + 
-                                     closeLatLng.lat + " " + EastClose + " " + latLngCircle.lat + " " + EastCircle + " " + openLatLng.lat + " " + EastOpen + "\")[" + type + "];out;";
+    } else {        
+        var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
+        queryString = stringToQuery(polygon, type);
 
     }
     console.log(queryString);
 
-    // var NorthWest = L.latLng(markerBracketOpen.getLatLng().lat, West);
-    // var SouthEast = L.latLng(markerBracketClose.getLatLng().lat, East);
-    // var opl = new L.OverPassLayer({
-    // minZoom: 9, //results appear from this zoom levem
-    // // query: `node(${markerBracketClose.getLatLng().lat}, ${West}, ${markerBracketOpen.getLatLng().lat}, ${East})['amenity'='${type}'];out;`, 
-    // query: queryString,
-    // markerIcon : greenIcon, //custom icon
-    // minZoomIndicatorEnabled : false,
-    // onSuccess: function(data) { //doesn't work the markers don't appear
-    //     console.log("eureka");
-    //     console.log(data);
-    //     for (let i = 0; i < data.elements.length; i++) {
-    //         let pos;
-    //         let marker;
-    //         const e = data.elements[i];
+    var opl = new L.OverPassLayer({
+    minZoom: 9, //results appear from this zoom levem 
+    query: queryString,
+    markerIcon : greenIcon, //custom icon
+    minZoomIndicatorEnabled : false,
+    onSuccess: function(data) { //doesn't work the markers don't appear
+        // console.log("eureka");
+        // console.log(data);
+        for (let i = 0; i < data.elements.length; i++) {
+            let pos;
+            let marker;
+            const e = data.elements[i];
     
-    //         if (e.id in this._ids) {
-    //             continue;
-    //         }
+            if (e.id in this._ids) {
+                continue;
+            }
     
-    //         this._ids[e.id] = true;
+            this._ids[e.id] = true;
     
-    //         if (e.type === 'node') {
-    //             pos = L.latLng(e.lat, e.lon);
-    //         } else {
-    //             pos = L.latLng(e.center.lat, e.center.lon);
-    //         }
+            if (e.type === 'node') {
+                pos = L.latLng(e.lat, e.lon);
+            } else {
+                pos = L.latLng(e.center.lat, e.center.lon);
+            }
     
-    //         if (this.options.markerIcon) {
-    //             marker = L.marker(pos, { icon: this.options.markerIcon });
-    //         } else {
-    //             marker = L.circle(pos, 20, {
-    //             stroke: false,
-    //             fillColor: '#E54041',
-    //             fillOpacity: 0.9
-    //             });
-    //         }
+            if (this.options.markerIcon) {
+                marker = L.marker(pos, { icon: this.options.markerIcon });
+            } else {
+                marker = L.circle(pos, 20, {
+                stroke: false,
+                fillColor: '#E54041',
+                fillOpacity: 0.9
+                });
+            }
     
-    //         const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-    //         const popup = L.popup().setContent(popupContent);
-    //         marker.bindPopup(popup);
-    //         markers.push(marker);
+            const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+            const popup = L.popup().setContent(popupContent);
+            marker.bindPopup(popup);
+            markers.push(marker);
 
-    //         marker.on("contextmenu", function(e){
-    //             var container = L.DomUtil.create('div'),
-    //             startBtn = createButton('Add to route', container);
-    //             L.DomEvent.on(startBtn, 'click', function() {
-    //                 routing.spliceWaypoints(1, 0, e.latlng);
-    //                 map.closePopup();
-    //             });
+            marker.on("contextmenu", function(e){
+                var container = L.DomUtil.create('div'),
+                startBtn = createButton('Add to route', container);
+                L.DomEvent.on(startBtn, 'click', function() {
+                    routing.spliceWaypoints(1, 0, e.latlng);
+                    map.closePopup();
+                });
 
-    //             L.popup({className:"popupCustom"})
-    //                 .setContent(container)
-    //                 .setLatLng(e.latlng)
-    //                 .openOn(map);
-    //             })
+                L.popup({className:"popupCustom"})
+                    .setContent(container)
+                    .setLatLng(e.latlng)
+                    .openOn(map);
+                })
 
-    //         this._markers.addLayer(marker);
-    //         }
-    //     // data.elements.forEach(element => { markers.push(element); });
-    //     // console.log(data);
-    //     },
-    //     onError: function(xhr){
-    //         console.log("error");
-    //     }
-    //     // afterRequest: function()  {
+            this._markers.addLayer(marker);
+            }
             
-    //     // }, // we want to keep the circle
-    // });
-    // map.addLayer(opl);
+            // console.log(queryZone._path);
+        // data.elements.forEach(element => { markers.push(element); });
+        // console.log(data);
+    },
+    onError: function(xhr){
+        console.log("error");
+    },
+    afterRequest: function()  {
+        var poly = queryZone.getLatLngs();
+        map.removeLayer(queryZone);
+        queryZone = L.polygon(poly, {color:"blue"}).addTo(map);
+        
+    } // we want to keep the circle
+    });
+    map.addLayer(opl);
 }
 
 function createButton(label, container) {
@@ -782,7 +870,15 @@ function createButton(label, container) {
     return btn;
 }
 
-
+function stringToQuery(itinerary, type){
+    var queryString = "node(poly:\"";
+    for (var i = 0; i < itinerary.length - 1; i++){
+        queryString += itinerary[i].lat + " " + itinerary[i].lng + " ";
+    }
+    queryString += itinerary[itinerary.length-1].lat + " " + itinerary[itinerary.length-1].lng + "\")[" + type + "];out;";
+    return queryString;
+    
+}
 
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
@@ -813,6 +909,11 @@ map.on("zoomanim", function(e){
     //     // console.log("zoom level: " + zoom + ", circle radius: " + circleZoneOfInterest.getRadius());
 
     // }
+    if (circleZoneOfInterest != null){
+        var zoomMult = 2560000/(Math.pow(2,zoom));
+        circleZoneOfInterest.setRadius(zoomMult);
+
+    }
     
 })
 
@@ -963,7 +1064,7 @@ onpointerup = (event) => {
     }
     outline.setStyle({weight:48});
     if (circleZoneOfInterest != null){
-        zoomMult = 2560000/(Math.pow(2,zoom));
+        var zoomMult = 2560000/(Math.pow(2,zoom));
         circleZoneOfInterest.setRadius(zoomMult);
 
     }
