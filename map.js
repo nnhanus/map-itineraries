@@ -156,7 +156,8 @@ routing.on("routesfound", function (e){
     createFilterStroke();
     // strokeHTML.setAttribute("mask", "url(#strokeMask)")
     // outlinePathHTML.setAttribute("filter", "url(#filterShadow)");
-    strokeHTML.setAttribute("filter", "url(#filterStroke)");
+    // strokeHTML.setAttribute("filter", "url(#filterStroke)");
+    strokeHTML.setAttribute("clip-path", "url(#clipStroke)");
 
     // L.polyline(allPos, {lineJoin: 'round', offset: 25, smoothFactor: 5}).addTo(map);
     // L.polyline(allPos, {lineJoin: 'round', offset: -25, smoothFactor: 5}).addTo(map);
@@ -294,7 +295,19 @@ function createFilterShadow(){
 }
 
 function createFilterStroke(){
-    
+    var clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
+    clipPath.id = "clipStroke";
+
+    var path = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    path.setAttribute("href", "#strokeRoute");
+    path.setAttribute("x", "0");
+    path.setAttribute("y", "0");
+
+    clipPath.appendChild(path);
+    var defs = document.getElementById("defs");
+    defs.appendChild(clipPath);
+
+
     // var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
     // filter.id = "filterStroke";
     // filter.setAttribute("filterUnits", "userSpaceOnUse");
