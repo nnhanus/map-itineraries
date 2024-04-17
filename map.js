@@ -116,7 +116,7 @@ routing.on("routesfound", function (e){
     stroke = L.polyline(allPos, {color: 'blue', weight: 58/*, lineCap: 'butt', */,className: "outline"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     var strokeHTML = stroke._path;
     
-    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.5/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
     console.log(outlinePathHTML);
@@ -133,7 +133,7 @@ routing.on("routesfound", function (e){
     createFilterStroke();
     strokeHTML.setAttribute("mask", "url(#strokeMask)");
     // outline.bringToFront();
-    // itinerary.bringToFront();
+    itinerary.bringToFront();
     // map.removeLayer(outline);
     // strokeHTML.setAttribute("filter", "url(#filterShadow)");
     // strokeHTML.setAttribute("filter", "url(#filterStroke)");
@@ -361,7 +361,7 @@ function createFilterStroke(){
     // mask.appendChild(image);
     
 
-    // var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1/*, lineCap: 'butt', */,className: "routeInvisible"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1/*, lineCap: 'butt', */,className: "routeInvisible"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     // // lineMask._path.id = "strokeBlack";
 
     // var lineMaskPath = lineMask._path;
@@ -382,7 +382,7 @@ function createFilterStroke(){
     // // d="M187 116L188 115L189 118L184 123L176 127L176 135L173 146L173 180L180 193L182 217L181 220L171 228L168 239L163 244L164 247L162 249L161 254L157 258L157 268L153 277L154 278L152 282L152 290L147 307L151 319L157 325L159 331L158 336L161 337L161 343L156 352L159 361L157 365L157 375L161 381L160 386L157 387L157 409L159 415L156 418L156 420L154 420L152 426L149 429L149 437L152 440L153 447L157 451L159 459L163 463L184 475L197 478L200 477L214 479L210 481L208 484" 
     // // id="strokeRoute"></path>
     
-    var path = outline._path;
+    var path = lineMask._path;
     path.id = "maskStrokePath";
     path.setAttribute("stroke", "black");
     path.setAttribute("stroke-opacity", "1");
