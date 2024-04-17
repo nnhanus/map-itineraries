@@ -62,7 +62,6 @@
     border-radius: 50%;
 }
 
-
 /* css to customize Leaflet default styles  */
 .popupCustom .leaflet-popup-tip{
     opacity: 0;

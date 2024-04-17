@@ -116,47 +116,26 @@ routing.on("routesfound", function (e){
     stroke = L.polyline(allPos, {color: 'blue', weight: 58/*, lineCap: 'butt', */,className: "outline"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     var strokeHTML = stroke._path;
     
-    outline = L.polyline(allPos, {color: 'white', weight: 48, opacity: 0.25/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.5/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
     console.log(outlinePathHTML);
-    // outlinePathHTML = outline._path;
+    
+    // strokeHTML = outline._path;
     // console.log(outlinePathHTML);
 
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5/*, lineCap: 'butt', smoothFactor: 5*/}).addTo(map); //Draw a new polyline with the points
    
-
-
-    // document.querySelectorAll("p.intro");
-    
-    // L.rectangle(outline.getBounds(), {color: "#ff7800", weight: 1}).addTo(map);
-
-    // document.getElementById("myspan").textContent="newtext";
-    
-    //pathCoords should be an array of jsts.geom.Coordinate
-    // var pathCoords = latLngToJSTS(allPos);
-    // console.log(pathCoords.length);
-    // var geometryFactory = new jsts.geom.GeometryFactory();
-
-    // // // on what distance new polygon should be built
-    // var dist = 50/111.12;
-    // var shell = geometryFactory.createLineString(pathCoords);
-
-    // // // // building a new polygon
-    // var polygon = shell.buffer(dist);
-
-    // // // // finally get your new polygon coordinates
-    // var polygonCoords = polygon.getCoordinates();
-    // console.log(polygonCoords.length);
-    // console.log(JSTStoLatLng(polygonCoords).length);
-
     // var polygon = L.polygon(JSTStoLatLng(polygonCoords), {color: 'blue'}).addTo(map);
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
     createFilterShadow();
-    // createFilterStroke();
-    // // strokeHTML.setAttribute("mask", "url(#strokeMask)")
-    strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    createFilterStroke();
+    strokeHTML.setAttribute("mask", "url(#strokeMask)");
+    // outline.bringToFront();
+    // itinerary.bringToFront();
+    // map.removeLayer(outline);
+    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
     // strokeHTML.setAttribute("filter", "url(#filterStroke)");
     // strokeHTML.setAttribute("clip-path", "url(#clipStroke)");
 
@@ -221,10 +200,6 @@ function createFilterShadow(){
     
     var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
     filter.id = "filterShadow";
-    // filter.setAttribute("x", "0.526855");
-    // filter.setAttribute("y", "-0.00317383");
-    // filter.setAttribute("width", "105.784");
-    // filter.setAttribute("height", "335.685");
     filter.setAttribute("filterUnits", "userSpaceOnUse");
     filter.setAttribute("color-interpolation-filters", "sRGB");
 
@@ -232,23 +207,27 @@ function createFilterShadow(){
     image.setAttribute("href", "#strokeRoute");
     image.setAttribute("x", "0");
     image.setAttribute("y", "0");
-    // image.setAttribute("width", "100%");
-    // image.setAttribute("height", "100%");
-    image.setAttribute("result", "imported-route");
+    image.setAttribute("result", "importedRoute");
     console.log(image);
 
-    var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    composite.setAttribute("operator", "out");
-    composite.setAttribute("in2", "imported-route");
-    composite.setAttribute("in", "SourceGraphic");
-    composite.setAttribute("result", "overlap");
+    // var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    // composite.setAttribute("operator", "out");
+    // composite.setAttribute("in2", "SourceGraphic");
+    // // composite.setAttribute("in", "SourceGraphic");
+    // composite.setAttribute("result", "background");
+
+    // var compositeSecond = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    // compositeSecond.setAttribute("operator", "out");
+    // compositeSecond.setAttribute("in2", "imported-route");
+    // compositeSecond.setAttribute("in", "background");
+    // compositeSecond.setAttribute("result", "overlap");
 
     var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
     flood.setAttribute("flood-opacity", "0");
     flood.setAttribute("result", "BackgroundImageFix");
 
     var colorMatrix1 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
-    colorMatrix1.setAttribute("in", "SourceAlpha");
+    colorMatrix1.setAttribute("in", "importedRoute");
     colorMatrix1.setAttribute("type", "matrix");
     colorMatrix1.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0");
     colorMatrix1.setAttribute("result", "hardAlpha");
@@ -260,6 +239,7 @@ function createFilterShadow(){
     gaussianBlur.setAttribute("stdDeviation", "6");
 
     var compositeShadow = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    // compositeShadow.setAttribute("in", "hardAlpha");
     compositeShadow.setAttribute("in2", "hardAlpha");
     compositeShadow.setAttribute("operator", "out");
 
@@ -274,20 +254,35 @@ function createFilterShadow(){
 
     var blend2 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
     blend2.setAttribute("mode", "normal");
-    blend2.setAttribute("in", "overlap");
+    blend2.setAttribute("in", "SourceGraphic");
     blend2.setAttribute("in2", "effect1_dropShadow_269_714");
     blend2.setAttribute("result", "shape");
 
+    // // var blend3 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
+    // // blend3.setAttribute("mode", "normal");
+    // // blend3.setAttribute("in", "overlap");
+    // // blend3.setAttribute("in2", "background");
+    // // blend3.setAttribute("result", "shape");
+
+    // // var dilate = document.createElementNS("http://www.w3.org/2000/svg",'feMorphology');
+    // // dilate.setAttribute("operator", "dilate");
+    // // dilate.setAttribute("radius", "2");
+
+    
     filter.appendChild(image);
-    filter.appendChild(composite);
+    // // filter.appendChild(flood);
+    // // // filter.appendChild(colorMatrix1);
+    // // filter.appendChild(composite);
+    // // filter.appendChild(compositeSecond);
     filter.appendChild(flood);
     filter.appendChild(colorMatrix1);
-    filter.appendChild(offset);
-    filter.appendChild(gaussianBlur);
+    // filter.appendChild(offset);
+    // filter.appendChild(gaussianBlur);
     filter.appendChild(compositeShadow);
-    filter.appendChild(colorMatrix2);
+    // filter.appendChild(colorMatrix2);
     filter.appendChild(blend1);
     filter.appendChild(blend2);
+    // // filter.appendChild(blend3);
 
     defs.appendChild(filter);
 
@@ -296,6 +291,116 @@ function createFilterShadow(){
 }
 
 function createFilterStroke(){
+/* <svg>
+    <!-- Define the filter -->
+    <filter id="filter">
+        <feFlood flood-color="white" result="white"/>
+        <feComposite in="white" in2="SourceGraphic" operator="in" result="masked"/>
+        <feBlend in="SourceGraphic" in2="masked" mode="normal"/>
+    </filter>
+    
+    <!-- Define the element with ID 'strokeRoute' -->
+    <path id="strokeRoute" d="M10,80 Q95,10 180,80" fill="none" stroke="black"/>
+    
+    <!-- Apply the filter to a shape -->
+    <rect x="0" y="0" width="200" height="200" fill="red" filter="url(#filter)"/>
+// </svg> */
+
+
+
+//     <!DOCTYPE html>
+// <html lang="en">
+// <head>
+// <meta charset="UTF-8">
+// <meta name="viewport" content="width=device-width, initial-scale=1.0">
+// <title>Partial Opaque Object with SVG Mask</title>
+// </head>
+// <body>
+
+// <div style="position: relative; width: 300px; height: 300px;">
+//     <div style="position: absolute; top: 50px; left: 50px; width: 200px; height: 200px; background-color: #ccc;"></div>
+//     <svg style="position: absolute; top: 100px; left: 100px;" width="150" height="150">
+//         <defs>
+//             <mask id="mask" x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse">
+//                 <rect x="0" y="0" width="150" height="150" fill="white"/>
+//                 <rect x="0" y="0" width="150" height="90" fill="black"/>
+//             </mask>
+//         </defs>
+//         <rect x="0" y="0" width="150" height="150" fill="rgba(255, 0, 0, 0.5)" mask="url(#mask)"/>
+//     </svg>
+// </div>
+
+// </body>
+// </html>
+
+    var mask = document.createElementNS("http://www.w3.org/2000/svg",'mask');
+    mask.id = "strokeMask";
+    mask.setAttribute("maskUnits", "userSpaceOnUse");
+    // maskUnits="userSpaceOnUse"
+    var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "1000");
+    rect.setAttribute("height", "1000");
+    rect.setAttribute("fill", "white");
+    // rect.setAttribute("opacity", "100%");
+    mask.appendChild(rect);
+
+
+    // var image = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+
+    // var image = document.createElementNS("http://www.w3.org/2000/svg", "use");
+    // image.setAttribute("href", "#strokeRoute");
+    // image.setAttribute("fill", "black");
+    // image.setAttribute("stroke", "black");
+    // image.setAttribute("stroke-opacity", "1");
+    // image.setAttribute("width", "200%"); //doesn't change a thing
+    // image.setAttribute("height", "200%");
+    // // image.setAttribute("x", "134");
+    // // image.setAttribute("y", "436");
+    // mask.appendChild(image);
+    
+
+    // var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1/*, lineCap: 'butt', */,className: "routeInvisible"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    // // lineMask._path.id = "strokeBlack";
+
+    // var lineMaskPath = lineMask._path;
+    // map.removeLayer(lineMask);
+    // console.log(lineMaskPath);
+
+    // var path = document.createElement("path");
+    // path.innerHTML = lineMaskPath;
+    // mask.appendChild(path);
+
+    // var path = outline._path.cloneNode(true);
+    // console.log(document.getElementById("strokeRoute"))
+    // var path = document.getElementById("strokeRoute").cloneNode(true);
+    // // path.outerHTML = 
+    // path.id ="pathClone";
+    // // <path class="route leaflet-interactive" stroke="blue" stroke-opacity="0.5" stroke-width="48" stroke-linecap="round" 
+    // // stroke-linejoin="round" fill="none" 
+    // // d="M187 116L188 115L189 118L184 123L176 127L176 135L173 146L173 180L180 193L182 217L181 220L171 228L168 239L163 244L164 247L162 249L161 254L157 258L157 268L153 277L154 278L152 282L152 290L147 307L151 319L157 325L159 331L158 336L161 337L161 343L156 352L159 361L157 365L157 375L161 381L160 386L157 387L157 409L159 415L156 418L156 420L154 420L152 426L149 429L149 437L152 440L153 447L157 451L159 459L163 463L184 475L197 478L200 477L214 479L210 481L208 484" 
+    // // id="strokeRoute"></path>
+    
+    var path = outline._path;
+    path.id = "maskStrokePath";
+    path.setAttribute("stroke", "black");
+    path.setAttribute("stroke-opacity", "1");
+    mask.append(path);
+    
+    // console.log(path);
+    // path.setAttribute("stroke-opacity", "1");
+    // path.setAttribute("stroke", "black");
+
+    // mask.appendChild(path);
+
+    var defs = document.getElementById("defs");
+    defs.appendChild(mask);
+
+    
+
+
+
     // var clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
     // clipPath.id = "clipStroke";
 
@@ -309,52 +414,52 @@ function createFilterStroke(){
     // defs.appendChild(clipPath);
 
 
-    var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
-    filter.id = "filterStroke";
-    filter.setAttribute("filterUnits", "userSpaceOnUse");
-    filter.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-    filter.setAttribute("xmlns", "http://www.w3.org/2000/svg")
-    // xmlns:xlink="http://www.w3.org/1999/xlink"
-    // filterUnits="userSpaceOnUse"
+    // var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
+    // filter.id = "filterStroke";
+    // filter.setAttribute("filterUnits", "userSpaceOnUse");
+    // filter.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
+    // filter.setAttribute("xmlns", "http://www.w3.org/2000/svg")
+    // // xmlns:xlink="http://www.w3.org/1999/xlink"
+    // // filterUnits="userSpaceOnUse"
 
-    var image = document.createElementNS("http://www.w3.org/2000/svg",'feImage');
-    image.setAttribute("href", "#strokeRoute");
-    image.setAttribute("x", "0");
-    image.setAttribute("y", "0");
-    // image.setAttribute("width", "100%");
-    // image.setAttribute("height", "100%");
-    image.setAttribute("result", "imported-route");
-    // console.log(image);
+    // var image = document.createElementNS("http://www.w3.org/2000/svg",'feImage');
+    // image.setAttribute("href", "#strokeRoute");
+    // image.setAttribute("x", "0");
+    // image.setAttribute("y", "0");
+    // // image.setAttribute("width", "100%");
+    // // image.setAttribute("height", "100%");
+    // image.setAttribute("result", "imported-route");
+    // // console.log(image);
 
-    var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
-    flood.setAttribute("flood-opacity", "0.5");
-    flood.setAttribute("result", "BackgroundImageFix");
+    // var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
+    // flood.setAttribute("flood-opacity", "0.5");
+    // flood.setAttribute("result", "BackgroundImageFix");
 
 
 
-    var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    composite.setAttribute("operator", "out");
-    composite.setAttribute("in2", "imported-route");
-    composite.setAttribute("in", "BackgroundImageFix");
+    // var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
+    // composite.setAttribute("operator", "out");
+    // composite.setAttribute("in2", "imported-route");
+    // composite.setAttribute("in", "BackgroundImageFix");
 
-    // var colorMatrix2 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
-    // colorMatrix2.setAttribute("type", "matrix");
-    // colorMatrix2.setAttribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.75 0");
+    // // var colorMatrix2 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
+    // // colorMatrix2.setAttribute("type", "matrix");
+    // // colorMatrix2.setAttribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.75 0");
 
-    var blend2 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
-    blend2.setAttribute("mode", "normal");
-    blend2.setAttribute("in", "SourceGraphic");
-    blend2.setAttribute("in2", "BackgroundImageFix");
-    blend2.setAttribute("result", "shape");
+    // var blend2 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
+    // blend2.setAttribute("mode", "normal");
+    // blend2.setAttribute("in", "SourceGraphic");
+    // blend2.setAttribute("in2", "BackgroundImageFix");
+    // blend2.setAttribute("result", "shape");
 
-    filter.appendChild(image);
-    filter.appendChild(flood);
-    filter.appendChild(composite);
-    // filter.appendChild(colorMatrix2);
-    // filter.appendChild(blend2);
+    // filter.appendChild(image);
+    // filter.appendChild(flood);
+    // filter.appendChild(composite);
+    // // filter.appendChild(colorMatrix2);
+    // // filter.appendChild(blend2);
 
-    var defs = document.getElementById("defs");
-    defs.appendChild(filter);
+    // var defs = document.getElementById("defs");
+    // defs.appendChild(filter);
 
     // <feImage xlink:href="#ani-path" x="0" y="0" result="imported-ani"/>
     // <feComposite operator="in" in="SourceGraphic" in2="imported-ani" result="overlap"/>
@@ -369,30 +474,7 @@ function createFilterStroke(){
     // stroke-width="10" stroke="blue" fill="none"
     // mask="url(#outsideHeartOnly)"/>
 
-    // var mask = document.createElementNS("http://www.w3.org/2000/svg",'mask');
-    // mask.id = "strokeMask";
-    // var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    // rect.setAttribute("x", "0");
-    // rect.setAttribute("y", "0");
-    // rect.setAttribute("width", "1000");
-    // rect.setAttribute("height", "1000");
-    // rect.setAttribute("fill", "white");
-    // // rect.setAttribute("opacity", "100%");
-    // mask.appendChild(rect);
-
-
-    // // var image = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-
-    // var image = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    // image.setAttribute("href", "#strokeRoute");
-    // image.setAttribute("fill", "black");
-    // image.setAttribute("width", "200%"); //doesn't change a thing
-    // image.setAttribute("height", "200%");
-    // // image.setAttribute("x", "134");
-    // // image.setAttribute("y", "436");
-    // mask.appendChild(image);
-    // var defs = document.getElementById("defs");
-    // defs.appendChild(mask);
+    
 
 
 }
