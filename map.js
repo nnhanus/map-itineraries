@@ -101,47 +101,38 @@ var routing = L.Routing.control({
 routing.on("routesfound", function (e){
     L.control.layers({}).addTo(map);
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
-    // console.log(allPos.length);
+    
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
     if (itinerary != null){
         map.removeLayer(itinerary);
         map.removeLayer(outline);
     }
-    // itinerary = L.polyline(allPos, {color: 'blue', weight: 5/*, lineCap: 'butt', smoothFactor: 5*/}).addTo(map); //Draw a new polyline with the points
-    
-    // console.log(document.getElementsByClassName("leaflet-zoom-animated"));
-    console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
 
-    stroke = L.polyline(allPos, {color: 'blue', weight: 58/*, lineCap: 'butt', */,className: "outline"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    // console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
+
+    stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline"}).addTo(map); // Draw the interaction zone
     var strokeHTML = stroke._path;
     
-    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25/*, lineCap: 'butt', */,className: "route"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
+    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route"}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
-    console.log(outlinePathHTML);
-    
-    // strokeHTML = outline._path;
     // console.log(outlinePathHTML);
 
-    itinerary = L.polyline(allPos, {color: 'blue', weight: 5/*, lineCap: 'butt', smoothFactor: 5*/}).addTo(map); //Draw a new polyline with the points
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
    
-    // var polygon = L.polygon(JSTStoLatLng(polygonCoords), {color: 'blue'}).addTo(map);
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
     createFilterShadow();
     createFilterStroke();
-    strokeHTML.setAttribute("mask", "url(#strokeMask)");
-    // outline.bringToFront();
-    itinerary.bringToFront();
-    // map.removeLayer(outline);
-    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
-    // strokeHTML.setAttribute("filter", "url(#filterStroke)");
-    // strokeHTML.setAttribute("clip-path", "url(#clipStroke)");
-
-    // L.polyline(allPos, {lineJoin: 'round', offset: 25, smoothFactor: 5}).addTo(map);
-    // L.polyline(allPos, {lineJoin: 'round', offset: -25, smoothFactor: 5}).addTo(map);
     
+    strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    strokeHTML.setAttribute("mask", "url(#strokeMask)");
+    itinerary.bringToFront();
+
+    createGradient();
+    // strokeHTML.setAttribute("stroke", "url(#gradienStroke)");
+
     /**************************************
      * 2 ways to add something every x km *
      *************************************/
@@ -203,31 +194,12 @@ function createFilterShadow(){
     filter.setAttribute("filterUnits", "userSpaceOnUse");
     filter.setAttribute("color-interpolation-filters", "sRGB");
 
-    var image = document.createElementNS("http://www.w3.org/2000/svg",'feImage');
-    image.setAttribute("href", "#strokeRoute");
-    image.setAttribute("x", "0");
-    image.setAttribute("y", "0");
-    image.setAttribute("result", "importedRoute");
-    console.log(image);
-
-    // var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    // composite.setAttribute("operator", "out");
-    // composite.setAttribute("in2", "SourceGraphic");
-    // // composite.setAttribute("in", "SourceGraphic");
-    // composite.setAttribute("result", "background");
-
-    // var compositeSecond = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    // compositeSecond.setAttribute("operator", "out");
-    // compositeSecond.setAttribute("in2", "imported-route");
-    // compositeSecond.setAttribute("in", "background");
-    // compositeSecond.setAttribute("result", "overlap");
-
     var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
     flood.setAttribute("flood-opacity", "0");
     flood.setAttribute("result", "BackgroundImageFix");
 
     var colorMatrix1 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
-    colorMatrix1.setAttribute("in", "importedRoute");
+    colorMatrix1.setAttribute("in", "SourceAlpha");
     colorMatrix1.setAttribute("type", "matrix");
     colorMatrix1.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0");
     colorMatrix1.setAttribute("result", "hardAlpha");
@@ -236,16 +208,15 @@ function createFilterShadow(){
     offset.setAttribute("dy", "4");
 
     var gaussianBlur = document.createElementNS("http://www.w3.org/2000/svg",'feGaussianBlur');
-    gaussianBlur.setAttribute("stdDeviation", "6");
+    gaussianBlur.setAttribute("stdDeviation", "4");
 
     var compositeShadow = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    // compositeShadow.setAttribute("in", "hardAlpha");
     compositeShadow.setAttribute("in2", "hardAlpha");
     compositeShadow.setAttribute("operator", "out");
 
     var colorMatrix2 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
     colorMatrix2.setAttribute("type", "matrix");
-    colorMatrix2.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.75 0");
+    colorMatrix2.setAttribute("values", "0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 0");
 
     var blend1 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
     blend1.setAttribute("mode", "normal");
@@ -257,32 +228,15 @@ function createFilterShadow(){
     blend2.setAttribute("in", "SourceGraphic");
     blend2.setAttribute("in2", "effect1_dropShadow_269_714");
     blend2.setAttribute("result", "shape");
-
-    // // var blend3 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
-    // // blend3.setAttribute("mode", "normal");
-    // // blend3.setAttribute("in", "overlap");
-    // // blend3.setAttribute("in2", "background");
-    // // blend3.setAttribute("result", "shape");
-
-    // // var dilate = document.createElementNS("http://www.w3.org/2000/svg",'feMorphology');
-    // // dilate.setAttribute("operator", "dilate");
-    // // dilate.setAttribute("radius", "2");
-
     
-    filter.appendChild(image);
-    // // filter.appendChild(flood);
-    // // // filter.appendChild(colorMatrix1);
-    // // filter.appendChild(composite);
-    // // filter.appendChild(compositeSecond);
     filter.appendChild(flood);
     filter.appendChild(colorMatrix1);
-    // filter.appendChild(offset);
-    // filter.appendChild(gaussianBlur);
+    filter.appendChild(offset);
+    filter.appendChild(gaussianBlur);
     filter.appendChild(compositeShadow);
-    // filter.appendChild(colorMatrix2);
+    filter.appendChild(colorMatrix2);
     filter.appendChild(blend1);
     filter.appendChild(blend2);
-    // // filter.appendChild(blend3);
 
     defs.appendChild(filter);
 
@@ -291,96 +245,19 @@ function createFilterShadow(){
 }
 
 function createFilterStroke(){
-/* <svg>
-    <!-- Define the filter -->
-    <filter id="filter">
-        <feFlood flood-color="white" result="white"/>
-        <feComposite in="white" in2="SourceGraphic" operator="in" result="masked"/>
-        <feBlend in="SourceGraphic" in2="masked" mode="normal"/>
-    </filter>
-    
-    <!-- Define the element with ID 'strokeRoute' -->
-    <path id="strokeRoute" d="M10,80 Q95,10 180,80" fill="none" stroke="black"/>
-    
-    <!-- Apply the filter to a shape -->
-    <rect x="0" y="0" width="200" height="200" fill="red" filter="url(#filter)"/>
-// </svg> */
-
-
-
-//     <!DOCTYPE html>
-// <html lang="en">
-// <head>
-// <meta charset="UTF-8">
-// <meta name="viewport" content="width=device-width, initial-scale=1.0">
-// <title>Partial Opaque Object with SVG Mask</title>
-// </head>
-// <body>
-
-// <div style="position: relative; width: 300px; height: 300px;">
-//     <div style="position: absolute; top: 50px; left: 50px; width: 200px; height: 200px; background-color: #ccc;"></div>
-//     <svg style="position: absolute; top: 100px; left: 100px;" width="150" height="150">
-//         <defs>
-//             <mask id="mask" x="0" y="0" width="100%" height="100%" maskUnits="userSpaceOnUse">
-//                 <rect x="0" y="0" width="150" height="150" fill="white"/>
-//                 <rect x="0" y="0" width="150" height="90" fill="black"/>
-//             </mask>
-//         </defs>
-//         <rect x="0" y="0" width="150" height="150" fill="rgba(255, 0, 0, 0.5)" mask="url(#mask)"/>
-//     </svg>
-// </div>
-
-// </body>
-// </html>
-
+    //Everything under white will appear, everything thing under black will not
     var mask = document.createElementNS("http://www.w3.org/2000/svg",'mask');
     mask.id = "strokeMask";
     mask.setAttribute("maskUnits", "userSpaceOnUse");
-    // maskUnits="userSpaceOnUse"
     var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", "0");
     rect.setAttribute("y", "0");
     rect.setAttribute("width", "1000");
     rect.setAttribute("height", "1000");
     rect.setAttribute("fill", "white");
-    // rect.setAttribute("opacity", "100%");
     mask.appendChild(rect);
 
-
-    // var image = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-
-    // var image = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    // image.setAttribute("href", "#strokeRoute");
-    // image.setAttribute("fill", "black");
-    // image.setAttribute("stroke", "black");
-    // image.setAttribute("stroke-opacity", "1");
-    // image.setAttribute("width", "200%"); //doesn't change a thing
-    // image.setAttribute("height", "200%");
-    // // image.setAttribute("x", "134");
-    // // image.setAttribute("y", "436");
-    // mask.appendChild(image);
-    
-
-    var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1/*, lineCap: 'butt', */,className: "routeInvisible"/*, smoothFactor: 5*/}).addTo(map); // Draw the interaction zone
-    // // lineMask._path.id = "strokeBlack";
-
-    // var lineMaskPath = lineMask._path;
-    // map.removeLayer(lineMask);
-    // console.log(lineMaskPath);
-
-    // var path = document.createElement("path");
-    // path.innerHTML = lineMaskPath;
-    // mask.appendChild(path);
-
-    // var path = outline._path.cloneNode(true);
-    // console.log(document.getElementById("strokeRoute"))
-    // var path = document.getElementById("strokeRoute").cloneNode(true);
-    // // path.outerHTML = 
-    // path.id ="pathClone";
-    // // <path class="route leaflet-interactive" stroke="blue" stroke-opacity="0.5" stroke-width="48" stroke-linecap="round" 
-    // // stroke-linejoin="round" fill="none" 
-    // // d="M187 116L188 115L189 118L184 123L176 127L176 135L173 146L173 180L180 193L182 217L181 220L171 228L168 239L163 244L164 247L162 249L161 254L157 258L157 268L153 277L154 278L152 282L152 290L147 307L151 319L157 325L159 331L158 336L161 337L161 343L156 352L159 361L157 365L157 375L161 381L160 386L157 387L157 409L159 415L156 418L156 420L154 420L152 426L149 429L149 437L152 440L153 447L157 451L159 459L163 463L184 475L197 478L200 477L214 479L210 481L208 484" 
-    // // id="strokeRoute"></path>
+    var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
     
     var path = lineMask._path;
     path.id = "maskStrokePath";
@@ -388,97 +265,43 @@ function createFilterStroke(){
     path.setAttribute("stroke-opacity", "1");
     mask.append(path);
     
-    // console.log(path);
-    // path.setAttribute("stroke-opacity", "1");
-    // path.setAttribute("stroke", "black");
-
-    // mask.appendChild(path);
-
     var defs = document.getElementById("defs");
     defs.appendChild(mask);
+}
 
-    
+function createGradient(){
+    //0000FF
+    //E6E6FD
+    //6566FF
+    //D9D9ED
+    //00029C
+    //7173FF
+    //000299
+    var gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
+    gradient.id="gradienStroke";
+    // gradient.setAttribute("gradientUnits","userSpaceOnUse");
+    // gradient.setAttribute("x1","0");
+    // gradient.setAttribute("y1","0");
+    // gradient.setAttribute("x2","0");
+    // gradient.setAttribute("y2","1");
+    // gradient.setAttribute("gradientUnits","userSpaceOnUse");
+    console.log(gradient);
 
+    var stop0 = document.createElement("stop");
+    stop0.setAttribute("stop-color","#0000FF");
 
+    var stop1 = document.createElement("stop");
+    stop1.setAttribute("stop-color","#00029C");
+    stop1.setAttribute("offset","1");
 
-    // var clipPath = document.createElementNS("http://www.w3.org/2000/svg", "clipPath");
-    // clipPath.id = "clipStroke";
+    gradient.appendChild(stop0);
+    gradient.appendChild(stop1);
 
-    // var path = document.createElementNS("http://www.w3.org/2000/svg", "use");
-    // path.setAttribute("href", "#strokeRoute");
-    // path.setAttribute("x", "0");
-    // path.setAttribute("y", "0");
-
-    // clipPath.appendChild(path);
-    // var defs = document.getElementById("defs");
-    // defs.appendChild(clipPath);
-
-
-    // var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
-    // filter.id = "filterStroke";
-    // filter.setAttribute("filterUnits", "userSpaceOnUse");
-    // filter.setAttribute("xmlns:xlink", "http://www.w3.org/1999/xlink");
-    // filter.setAttribute("xmlns", "http://www.w3.org/2000/svg")
-    // // xmlns:xlink="http://www.w3.org/1999/xlink"
-    // // filterUnits="userSpaceOnUse"
-
-    // var image = document.createElementNS("http://www.w3.org/2000/svg",'feImage');
-    // image.setAttribute("href", "#strokeRoute");
-    // image.setAttribute("x", "0");
-    // image.setAttribute("y", "0");
-    // // image.setAttribute("width", "100%");
-    // // image.setAttribute("height", "100%");
-    // image.setAttribute("result", "imported-route");
-    // // console.log(image);
-
-    // var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
-    // flood.setAttribute("flood-opacity", "0.5");
-    // flood.setAttribute("result", "BackgroundImageFix");
-
-
-
-    // var composite = document.createElementNS("http://www.w3.org/2000/svg",'feComposite');
-    // composite.setAttribute("operator", "out");
-    // composite.setAttribute("in2", "imported-route");
-    // composite.setAttribute("in", "BackgroundImageFix");
-
-    // // var colorMatrix2 = document.createElementNS("http://www.w3.org/2000/svg",'feColorMatrix');
-    // // colorMatrix2.setAttribute("type", "matrix");
-    // // colorMatrix2.setAttribute("values", "1 0 0 0 0 0 1 0 0 0 0 0 1 0 0 0 0 0 0.75 0");
-
-    // var blend2 = document.createElementNS("http://www.w3.org/2000/svg",'feBlend');
-    // blend2.setAttribute("mode", "normal");
-    // blend2.setAttribute("in", "SourceGraphic");
-    // blend2.setAttribute("in2", "BackgroundImageFix");
-    // blend2.setAttribute("result", "shape");
-
-    // filter.appendChild(image);
-    // filter.appendChild(flood);
-    // filter.appendChild(composite);
-    // // filter.appendChild(colorMatrix2);
-    // // filter.appendChild(blend2);
-
-    // var defs = document.getElementById("defs");
-    // defs.appendChild(filter);
-
-    // <feImage xlink:href="#ani-path" x="0" y="0" result="imported-ani"/>
-    // <feComposite operator="in" in="SourceGraphic" in2="imported-ani" result="overlap"/>
-
-    // <mask id="outsideHeartOnly">
-    //   <rect x="0" y="0" width="100" height="100" fill="white"/>
-    //   <use xlink:href="#heart" fill="black"/>
-    // </mask>
-
-    // <use
-    // xlink:href="#heart"
-    // stroke-width="10" stroke="blue" fill="none"
-    // mask="url(#outsideHeartOnly)"/>
-
-    
+    var defs = document.getElementById("defs");
+    defs.appendChild(gradient);
 
 
 }
-
 
 function itineraryPass(itinerary, distValue){
     
@@ -767,7 +590,7 @@ function inHours(time){
 
 }
 
-
+//Draws/updates the selected part of the route
 function lineBracketsHighlight(latlngAbove, latlngBelow){
     var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
     isPointOnLine(closestAbove, allPos, 0.5);
@@ -784,7 +607,6 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
 
     circleZoneOfInterest.bringToFront()
 }
-
 
 //Handles the dwell/right click on the circle 
 function dwellOnCircle(event){
@@ -923,7 +745,7 @@ function dwellOnCircle(event){
 
 }
 
-
+//Handles Interactions with the query menu
 function openMenu(event){
     var menuDiv = document.getElementById("menu");
     // menuDiv.bringToFront();
@@ -946,6 +768,7 @@ function openMenu(event){
 }
 var circleCreated = false;
 
+//Handles Interactions with the query slider
 function openSlider(type){
     var sliderDiv = document.getElementById("slider");
     sliderDiv.style.visibility = "visible";
@@ -993,6 +816,7 @@ function moveMarkers(latlng){
     } 
 }
 
+//Builds the string for the query and makes the query
 function makeQuery(type, distValue){
     var queryString = "";
     isMenuOn = false;
@@ -1000,11 +824,11 @@ function makeQuery(type, distValue){
     
     if (markerBracketOpen == null){
         queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
-        queryZone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue"}).addTo(map);
+        queryZone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
 
     } else {        
         var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
-        queryString = stringToQuery(polygon, type);
+        queryString = arrayToQuery(polygon, type);
 
     }
     console.log(queryString);
@@ -1090,7 +914,7 @@ function createButton(label, container) {
     return btn;
 }
 
-function stringToQuery(itinerary, type){
+function arrayToQuery(itinerary, type){
     var queryString = "node(poly:\"";
     for (var i = 0; i < itinerary.length - 1; i++){
         queryString += itinerary[i].lat + " " + itinerary[i].lng + " ";
