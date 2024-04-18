@@ -37,13 +37,30 @@ var isMenuOn = false;
 var queryZone = null;
 var outlinePathHTML;
 
+var weatherLayerGroup = null;
+var isWeatherDisplayed = false;
+var isFuelDisplayed = false;
+var isRestaurantDisplayed = false;
+
 L.Control.Layers = L.Control.extend({
     options:{
         position: 'topright'
     },
     onAdd: function(map) {
         var container = document.getElementById("layers");
-        var button = document.getElementById("layersButton");;
+        var button = document.getElementById("layersButton");
+        var weatherLayer = document.getElementById("weatherLayer");
+        var restaurantLayer = document.getElementById("restaurantLayer");
+        var fuelLayer = document.getElementById("gasstationLayer");
+        fuelLayer.onclick = function(e){
+            loadFuelDistribution();
+        }
+        restaurantLayer.onclick = function(e){
+            loadRestaurantDistribution();
+        }
+        weatherLayer.onclick = function(e){
+            loadWeather();
+        }
         button.onclick =  function(e){
             var menu = document.getElementById("listLayers");
             visibilityToggle(menu);
@@ -130,7 +147,12 @@ routing.on("routesfound", function (e){
     strokeHTML.setAttribute("mask", "url(#strokeMask)");
     itinerary.bringToFront();
 
-    createGradient();
+    createGradientRestaurant();
+    createGradientFuel();
+    // outlinePathHTML.setAttribute("stroke", "url(#gradientStroke)");
+
+    // outlinePathHTML.setAttribute("stroke", "red");
+    // createGradient();
     // strokeHTML.setAttribute("stroke", "url(#gradienStroke)");
 
     /**************************************
@@ -269,38 +291,102 @@ function createFilterStroke(){
     defs.appendChild(mask);
 }
 
-function createGradient(){
-    //0000FF
-    //E6E6FD
-    //6566FF
-    //D9D9ED
-    //00029C
-    //7173FF
-    //000299
-    var gradient = document.createElementNS("http://www.w3.org/2000/svg", "linearGradient");
-    gradient.id="gradienStroke";
-    // gradient.setAttribute("gradientUnits","userSpaceOnUse");
-    // gradient.setAttribute("x1","0");
-    // gradient.setAttribute("y1","0");
-    // gradient.setAttribute("x2","0");
-    // gradient.setAttribute("y2","1");
-    // gradient.setAttribute("gradientUnits","userSpaceOnUse");
-    console.log(gradient);
+function createGradientRestaurant(){
+    var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
+    gradient.id = "gradientRestaurant";
+    gradient.setAttribute("x1", "0%");
+    gradient.setAttribute("y1", "0%");
+    gradient.setAttribute("x2", "0%");
+    gradient.setAttribute("y2", "100%");
+    gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
-    var stop0 = document.createElement("stop");
-    stop0.setAttribute("stop-color","#0000FF");
+    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    // stop1.setAttribute("offset", "0.0");
+    stop1.setAttribute("stop-color", '#0000FF');
+    
+    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop2.setAttribute("offset", "0.16");
+    stop2.setAttribute("stop-color", "#E6E6FD");
 
-    var stop1 = document.createElement("stop");
-    stop1.setAttribute("stop-color","#00029C");
-    stop1.setAttribute("offset","1");
+    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop3.setAttribute("offset", "0.29");
+    stop3.setAttribute("stop-color", "#6566FF");
+    
+    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop4.setAttribute("offset", "0.41");
+    stop4.setAttribute("stop-color", "#D9D9ED");
+    
+    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop5.setAttribute("offset", "0.58");
+    stop5.setAttribute("stop-color", "#00029C");
+    
+    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop6.setAttribute("offset", "0.81");
+    stop6.setAttribute("stop-color", "#7173FF");
+    
+    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop7.setAttribute("offset", "100%");
+    stop7.setAttribute("stop-color", '#000299');
 
-    gradient.appendChild(stop0);
     gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    gradient.appendChild(stop4);
+    gradient.appendChild(stop5);
+    gradient.appendChild(stop6);
+    gradient.appendChild(stop7);
 
     var defs = document.getElementById("defs");
     defs.appendChild(gradient);
+}
 
+function createGradientFuel(){
+    var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
+    gradient.id = "gradientFuel";
+    gradient.setAttribute("x1", "0%");
+    gradient.setAttribute("y1", "0%");
+    gradient.setAttribute("x2", "0%");
+    gradient.setAttribute("y2", "100%");
+    gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
+    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    // stop1.setAttribute("offset", "0.0");
+    stop1.setAttribute("stop-color", '#000299');
+    
+    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop2.setAttribute("offset", "0.16");
+    stop2.setAttribute("stop-color", "#D9D9ED");
+
+    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop3.setAttribute("offset", "0.22");
+    stop3.setAttribute("stop-color", "#00029C");
+    
+    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop4.setAttribute("offset", "0.41");
+    stop4.setAttribute("stop-color", "#7173FF");
+    
+    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop5.setAttribute("offset", "0.58");
+    stop5.setAttribute("stop-color", "#6566FF");
+    
+    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop6.setAttribute("offset", "0.81");
+    stop6.setAttribute("stop-color", "#0100CC");
+    
+    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop7.setAttribute("offset", "100%");
+    stop7.setAttribute("stop-color", '#E6E6FD');
+
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    gradient.appendChild(stop4);
+    gradient.appendChild(stop5);
+    gradient.appendChild(stop6);
+    gradient.appendChild(stop7);
+
+    var defs = document.getElementById("defs");
+    defs.appendChild(gradient);
 }
 
 function itineraryPass(itinerary, distValue){
@@ -503,32 +589,8 @@ var greenIcon = new L.Icon({
     shadowSize: [41, 41]
   });
 
-//Left bracket marker icon
-var openBracket = L.icon({
-    iconUrl: 'icons/open_bracket.png',
-    shadowUrl: 'icons/shadow.png',
-
-    iconSize:     [70, 30], // size of the icon
-    shadowSize:   [50, 64], // size of the shadow
-    iconAnchor:   [35, 10], // point of the icon which will correspond to marker's location
-    shadowAnchor: [4, 62],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-
-//Right bracket marker icon
-var closeBracket = L.icon({
-    iconUrl: 'icons/close_bracket.png',
-    shadowUrl: 'icons/shadow.png',
-
-    iconSize:     [70, 30], // size of the icon
-    shadowSize:   [50, 64], // size of the shadow
-    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [4, 62],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-
 var bracket = L.icon({
-    iconUrl: 'brackets.svg',
+    iconUrl: 'icons/brackets.svg',
     shadowUrl: 'icons/shadow.png',
 
     iconSize:     [100, 45], // size of the icon
@@ -536,7 +598,148 @@ var bracket = L.icon({
     iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
     shadowAnchor: [4, 62],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-})
+});
+
+
+
+function loadWeather(){
+    var weatherSunny = L.icon({
+        iconUrl: 'icons/sunny.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherRainy = L.icon({
+        iconUrl: 'icons/rain.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherCloudy = L.icon({
+        iconUrl: 'icons/cloud.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherWindy = L.icon({
+        iconUrl: 'icons/wind.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherSnowy = L.icon({
+        iconUrl: 'icons/snow.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherStormy = L.icon({
+        iconUrl: 'icons/storm.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    var weatherCloudSun = L.icon({
+        iconUrl: 'icons/cloudSun.svg',
+        shadowUrl: 'icons/shadow.png',
+    
+        iconSize:     [100, 45], // size of the icon
+        shadowSize:   [50, 64], // size of the shadow
+        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+        shadowAnchor: [4, 62],  // the same for the shadow
+        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+    });
+
+    if (weatherLayerGroup == null){
+        var length = allPos.length;
+        // console.log(Math.floor(length*(1/8)));
+        // var marker1 = L.marker(allPos[Math.floor(length*(1/8))], {icon: weatherCloudSun});
+        // var marker2 = L.marker(allPos[Math.floor(length*(2/8))], {icon: weatherCloudy});
+        // var marker3 = L.marker(allPos[Math.floor(length*(3/8))], {icon: weatherRainy});
+        // var marker4 = L.marker(allPos[Math.floor(length*(4/8))], {icon: weatherSnowy});
+        // var marker5 = L.marker(allPos[Math.floor(length*(5/8))], {icon: weatherStormy});
+        // var marker6 = L.marker(allPos[Math.floor(length*(6/8))], {icon: weatherSunny});
+        // var marker7 = L.marker(allPos[Math.floor(length*(7/8))], {icon: weatherWindy});
+
+        var marker1 = L.marker(allPos[Math.floor(length*(1/8))], {icon: weatherRainy});
+        var marker2 = L.marker(allPos[Math.floor(length*(2/8))], {icon: weatherCloudSun});
+        var marker3 = L.marker(allPos[Math.floor(length*(3/8))], {icon: weatherCloudy});
+        var marker4 = L.marker(allPos[Math.floor(length*(4/8))], {icon: weatherCloudSun});
+        var marker6 = L.marker(allPos[Math.floor(length*(6/8))], {icon: weatherSunny});
+
+        weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker6]).addTo(map);
+        isWeatherDisplayed = true;
+    } else if (!isWeatherDisplayed){
+        weatherLayerGroup.addTo(map);
+        isWeatherDisplayed = true;
+    } else {
+        weatherLayerGroup.removeFrom(map);
+        isWeatherDisplayed = false;
+    }
+
+}
+
+function loadRestaurantDistribution(){
+    var outlineHTML = document.getElementById("strokeRoute");
+    if(isRestaurantDisplayed){
+        outlineHTML.setAttribute("stroke", "blue");
+        outlineHTML.setAttribute("stroke-opacity", "0.25");
+        isRestaurantDisplayed = false;
+    } else {
+        outlineHTML.setAttribute("stroke", "url(#gradientRestaurant)");
+        outlineHTML.setAttribute("stroke-opacity", "0.7");
+        isRestaurantDisplayed = true;
+        isFuelDisplayed = false;
+    
+    }
+    // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
+}
+
+function loadFuelDistribution(){
+    var outlineHTML = document.getElementById("strokeRoute");
+    if(isFuelDisplayed){
+        outlineHTML.setAttribute("stroke", "blue");
+        outlineHTML.setAttribute("stroke-opacity", "0.25");
+        isFuelDisplayed = false;
+    } else {
+        outlineHTML.setAttribute("stroke", "url(#gradientFuel)");
+        outlineHTML.setAttribute("stroke-opacity", "0.7");
+        isFuelDisplayed = true;
+        isRestaurantDisplayed = false;
+    
+    }
+    // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
+}
 
 //Check is point is on path 
 function isPointOnLine(point, path, accuracy) {
@@ -768,6 +971,11 @@ function openMenu(event){
 }
 var circleCreated = false;
 
+function closeMenu(){
+    var menuDiv = document.getElementById("menu");
+    menuDiv.style.visibility="hidden";
+}
+
 //Handles Interactions with the query slider
 function openSlider(type){
     var sliderDiv = document.getElementById("slider");
@@ -898,9 +1106,15 @@ function makeQuery(type, distValue){
         console.log("error");
     },
     afterRequest: function()  {
-        var poly = queryZone.getLatLngs();
-        map.removeLayer(queryZone);
-        queryZone = L.polygon(poly, {color:"blue"}).addTo(map);
+        if (markerBracketOpen == null){
+            var cirlce = queryZone;
+            map.removeLayer(queryZone);
+            queryZone = L.circle(cirlce.getLatLng(), {radius : cirlce.getRadius(), color:"blue"}).addTo(map);
+        } else {
+            var poly = queryZone.getLatLngs();
+            map.removeLayer(queryZone);
+            queryZone = L.polygon(poly, {color:"blue"}).addTo(map);        
+        }
         
     } // we want to keep the circle
     });
@@ -963,6 +1177,7 @@ map.on("zoomanim", function(e){
 
 onpointerdown = (event) => {
     isPointerDown = true;
+    
     //get the points
     //check if it is close to the markers
     //if close to a bracket, drag bracket
@@ -1106,6 +1321,7 @@ onpointerup = (event) => {
     } else {
         itinerary.setStyle({weight : 8});
     }
+    closeMenu();
     outline.setStyle({weight:48});
     // stroke.setStyle({weight:58});
     if (circleZoneOfInterest != null){
