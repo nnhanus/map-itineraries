@@ -1,3 +1,4 @@
+// import Openrouteservice from "./ors-js-client";
 
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
@@ -41,6 +42,9 @@ var weatherLayerGroup = null;
 var isWeatherDisplayed = false;
 var isFuelDisplayed = false;
 var isRestaurantDisplayed = false;
+var isInKM = true;
+var orService;
+
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -53,7 +57,8 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         fuelLayer.onclick = function(e){
-            loadFuelDistribution();
+            // loadFuelDistribution();
+            isochroneMinutes();
         }
         restaurantLayer.onclick = function(e){
             loadRestaurantDistribution();
@@ -205,6 +210,9 @@ routing.on("routesfound", function (e){
    
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+
+    var apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
+    orService = new Openrouteservice.Directions({api_key : apiKey});
 })
 
 function createFilterShadow(){
@@ -389,6 +397,178 @@ function createGradientFuel(){
     defs.appendChild(gradient);
 }
 
+function isochroneMinutes(type, value){
+    // try{
+    //     let response = await Isochrones.calculate({
+    //         locations: [[circleZoneOfInterest.getLatLng().lat, circleZoneOfInterest.getLatLng().lng]],
+    //         profile: 'driving-car',
+    //         range: [600],
+    //         range_type: 'time'
+    //     })
+    //     console.log(response);
+    // } catch (err){
+    //     console.log("An error occurred: " + err.status);
+    //     console.log(err);
+    // }
+
+    let request = new XMLHttpRequest();
+
+    request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
+
+    request.responseType = "json";
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');
+
+    request.onreadystatechange = function () {
+    if (this.readyState === 4) {
+        console.log('Status:', this.status);
+        console.log('Headers:', this.getAllResponseHeaders());
+        console.log('Body:', this.response);
+        console.log('Body:', this.response.features[0].geometry.coordinates[0]);
+        isochroneToPolygon(this.response.features, type);
+    }
+    };
+
+    if (markerBracketClose != null){
+        // const body = '{"locations":[[8.681495,49.41461],[8.686507,49.41943]],"range":[300,200]}';
+        const body = '{"locations":[[' + markerBracketOpen.getLatLng().lng + ',' + markerBracketOpen.getLatLng().lat + '],[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat +
+                    '],[' + markerBracketClose.getLatLng().lng + ',' + markerBracketClose.getLatLng().lat+ ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+                    console.log(body);
+        request.send(body);
+    } else {
+        const body = '{"locations":[[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+                    console.log(body);
+        request.send(body);
+
+    }
+
+
+    
+} 
+
+
+function isochroneToPolygon(body, type){
+    console.log(body);
+    // var coords = body[0].geometry.coordinates[0];
+    body.forEach(element => {
+        var coords = element.geometry.coordinates[0];
+    
+        var latLngs = [];
+        coords.forEach(element =>{
+            latLngs.push(L.latLng(element[1], element[0]));
+        });
+        console.log(latLngs);
+
+        var polygon = [latLngs[0]];
+        for (var i = 1; i < latLngs.length; i++){
+            if (latLngs[i].distanceTo(polygon[polygon.length-1]) > 1000){
+                polygon.push(latLngs[i]);
+            }
+        } 
+        console.log(polygon);
+
+        if (polygon.length < 350){
+            L.polygon(latLngs, {color:'red'/*, className:"pulse"*/}).addTo(map);
+            queryZone = L.polygon(polygon, {color:'blue'/*, className:"pulse"*/}).addTo(map);
+            var queryString = arrayToQuery(polygon, type);
+            oplQuery(queryString);
+        } else {
+            // window.alert("too long, query will fail");
+            
+            var polygonReduced = [polygon[0]];
+            for (var i = 1; i < polygon.length; i++){
+                if (polygon[i].distanceTo(polygonReduced[polygonReduced.length-1]) > 2000){
+                    polygonReduced.push(polygon[i]);
+                }
+                
+            } 
+            L.polygon(latLngs, {color:'red'/*, className:"pulse"*/}).addTo(map);
+            L.polygon(polygon, {color:'green'/*, className:"pulse"*/}).addTo(map);
+            queryZone = L.polygon(polygonReduced, {color:'blue'/*, className:"pulse"*/}).addTo(map);
+            var queryString = arrayToQuery(polygonReduced, type);
+            oplQuery(queryString);
+        }
+    })
+}
+
+function oplQuery(queryString){
+    var opl = new L.OverPassLayer({
+        minZoom: 9, //results appear from this zoom levem 
+        query: queryString,
+        markerIcon : greenIcon, //custom icon
+        minZoomIndicatorEnabled : false,
+        onSuccess: function(data) { //doesn't work the markers don't appear
+            // console.log(data);
+            for (let i = 0; i < data.elements.length; i++) {
+                let pos;
+                let marker;
+                const e = data.elements[i];
+        
+                if (e.id in this._ids) {
+                    continue;
+                }
+        
+                this._ids[e.id] = true;
+        
+                if (e.type === 'node') {
+                    pos = L.latLng(e.lat, e.lon);
+                } else {
+                    pos = L.latLng(e.center.lat, e.center.lon);
+                }
+        
+                if (this.options.markerIcon) {
+                    marker = L.marker(pos, { icon: this.options.markerIcon });
+                } else {
+                    marker = L.circle(pos, 20, {
+                    stroke: false,
+                    fillColor: '#E54041',
+                    fillOpacity: 0.9
+                    });
+                }
+        
+                const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+                const popup = L.popup().setContent(popupContent);
+                marker.bindPopup(popup);
+                markers.push(marker);
+    
+                marker.on("contextmenu", function(e){
+                    var container = L.DomUtil.create('div'),
+                    startBtn = createButton('Add to route', container);
+                    L.DomEvent.on(startBtn, 'click', function() {
+                        routing.spliceWaypoints(1, 0, e.latlng);
+                        map.closePopup();
+                    });
+    
+                    L.popup({className:"popupCustom"})
+                        .setContent(container)
+                        .setLatLng(e.latlng)
+                        .openOn(map);
+                    })
+    
+                this._markers.addLayer(marker);
+                }
+                
+                // console.log(queryZone._path);
+            // data.elements.forEach(element => { markers.push(element); });
+            // console.log(data);
+        },
+        onError: function(xhr){
+            console.log("error");
+        },
+        afterRequest: function()  {
+            console.log("afterRequest");
+            
+        } // we want to keep the circle
+        });
+        map.addLayer(opl);
+
+
+}
+
+
+// Body: {"type":"FeatureCollection","bbox":[1.470376,46.41925,1.481074,46.438904],"features":[{"type":"Feature","properties":{"group_index":0,"value":1000.0,"center":[1.4610298885531272,46.40757002482798]},"geometry":{"coordinates":[[[1.470699,46.41925],[1.470942,46.419746],[1.471185,46.420242],[1.471339,46.420624],[1.471487,46.420993],[1.471926,46.422265],[1.474727,46.427569],[1.475513,46.428658],[1.47585,46.429179],[1.476182,46.429692],[1.476504,46.430258],[1.476821,46.430815],[1.477885,46.432798],[1.478948,46.434777],[1.480011,46.436755],[1.481074,46.438734],[1.480757,46.438904],[1.479694,46.436926],[1.478631,46.434947],[1.477568,46.432968],[1.476508,46.430993],[1.474435,46.42778],[1.473643,46.426682],[1.473307,46.426156],[1.472966,46.42562],[1.472758,46.425244],[1.472543,46.424853],[1.472285,46.424256],[1.472021,46.423646],[1.470376,46.419408],[1.470699,46.41925]]],"type":"Polygon"}}],"metadata":{"attribution":"openrouteservice.org | OpenStreetMap contributors","service":"isochrones","timestamp":1713526360253,"query":{"profile":"driving-car","locations":[[1.4610299999999834,46.40757000000002]],"range":[1000.0],"range_type":"distance"},"engine":{"version":"8.0.0","build_date":"2024-03-21T13:55:54Z","graph_date":"2024-04-07T16:50:19Z"}}}
 function itineraryPass(itinerary, distValue){
     
     var dist = 0;
@@ -977,16 +1157,60 @@ function closeMenu(){
 }
 
 //Handles Interactions with the query slider
-function openSlider(type){
+function openSlider(type){  
     var sliderDiv = document.getElementById("slider");
     sliderDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
     sliderDiv.style.left=circlePos.x - 65 + 'px';
     sliderDiv.style.top=circlePos.y - 150 +  'px';
+    var kmButton = document.getElementById("km");
+    var minButton = document.getElementById("min");
+    kmButton.onclick = function(e){toggleMinKM(true)};
+    minButton.onclick = function(e){toggleMinKM(false)};
     //recup la valeur du slider
     //recup le bouton clicked du menu d'avant
     var goButton = document.getElementById("go");
-    goButton.onclick = function(e){sliderDiv.style.visibility = "hidden"; makeQuery(type, getSliderValue())};
+    goButton.onclick = function(e){clickGoButton(type)};
+    
+}
+
+function toggleMinKM(isKiloMeter){
+    var kmButton = document.getElementById("km");
+    var minButton = document.getElementById("min");
+    if (isKiloMeter){
+        isInKM = true;
+        kmButton.setAttribute("class", "selected");
+        minButton.setAttribute("class", "unselected");
+        document.getElementById("value2").setAttribute("label","15");
+        document.getElementById("value3").setAttribute("label","30");
+        document.getElementById("value4").setAttribute("label","45");
+    } else {
+        isInKM = false;
+        minButton.setAttribute("class", "selected");
+        kmButton.setAttribute("class", "unselected");
+        document.getElementById("value2").setAttribute("label","10");
+        document.getElementById("value3").setAttribute("label","20");
+        document.getElementById("value4").setAttribute("label","30");
+    }
+    // updateSlider();
+}
+
+function updateSlider(){
+    if (isInKM){
+        
+    } else {
+        
+    }
+}
+
+function clickGoButton(type){
+    var sliderDiv = document.getElementById("slider");
+    sliderDiv.style.visibility = "hidden";
+    if (isInKM){
+        makeQuery(type, getSliderValue());
+    } else {
+        isochroneMinutes(type, getSliderValue());
+    }
 
 }
 
@@ -1040,85 +1264,7 @@ function makeQuery(type, distValue){
 
     }
     console.log(queryString);
-
-    var opl = new L.OverPassLayer({
-    minZoom: 9, //results appear from this zoom levem 
-    query: queryString,
-    markerIcon : greenIcon, //custom icon
-    minZoomIndicatorEnabled : false,
-    onSuccess: function(data) { //doesn't work the markers don't appear
-        // console.log("eureka");
-        // console.log(data);
-        for (let i = 0; i < data.elements.length; i++) {
-            let pos;
-            let marker;
-            const e = data.elements[i];
-    
-            if (e.id in this._ids) {
-                continue;
-            }
-    
-            this._ids[e.id] = true;
-    
-            if (e.type === 'node') {
-                pos = L.latLng(e.lat, e.lon);
-            } else {
-                pos = L.latLng(e.center.lat, e.center.lon);
-            }
-    
-            if (this.options.markerIcon) {
-                marker = L.marker(pos, { icon: this.options.markerIcon });
-            } else {
-                marker = L.circle(pos, 20, {
-                stroke: false,
-                fillColor: '#E54041',
-                fillOpacity: 0.9
-                });
-            }
-    
-            const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-            const popup = L.popup().setContent(popupContent);
-            marker.bindPopup(popup);
-            markers.push(marker);
-
-            marker.on("contextmenu", function(e){
-                var container = L.DomUtil.create('div'),
-                startBtn = createButton('Add to route', container);
-                L.DomEvent.on(startBtn, 'click', function() {
-                    routing.spliceWaypoints(1, 0, e.latlng);
-                    map.closePopup();
-                });
-
-                L.popup({className:"popupCustom"})
-                    .setContent(container)
-                    .setLatLng(e.latlng)
-                    .openOn(map);
-                })
-
-            this._markers.addLayer(marker);
-            }
-            
-            // console.log(queryZone._path);
-        // data.elements.forEach(element => { markers.push(element); });
-        // console.log(data);
-    },
-    onError: function(xhr){
-        console.log("error");
-    },
-    afterRequest: function()  {
-        if (markerBracketOpen == null){
-            var cirlce = queryZone;
-            map.removeLayer(queryZone);
-            queryZone = L.circle(cirlce.getLatLng(), {radius : cirlce.getRadius(), color:"blue"}).addTo(map);
-        } else {
-            var poly = queryZone.getLatLngs();
-            map.removeLayer(queryZone);
-            queryZone = L.polygon(poly, {color:"blue"}).addTo(map);        
-        }
-        
-    } // we want to keep the circle
-    });
-    map.addLayer(opl);
+    oplQuery(queryString);
 }
 
 function createButton(label, container) {
@@ -1161,12 +1307,12 @@ map.on("zoomanim", function(e){
     // }
     // outline.setStyle({weight:48});
 
-    // if (circleZoneOfInterest != null){
-    //     zoomMult = 2560000/(Math.pow(2,zoom+1));
-    //     circleZoneOfInterest.setRadius(zoomMult);
-    //     // console.log("zoom level: " + zoom + ", circle radius: " + circleZoneOfInterest.getRadius());
+    if (circleZoneOfInterest != null){
+        zoomMult = 2560000/(Math.pow(2,zoom+1));
+        circleZoneOfInterest.setRadius(zoomMult);
+        // console.log("zoom level: " + zoom + ", circle radius: " + circleZoneOfInterest.getRadius());
 
-    // }
+    }
     if (circleZoneOfInterest != null){
         var zoomMult = 2560000/(Math.pow(2,zoom));
         circleZoneOfInterest.setRadius(zoomMult);
@@ -1298,14 +1444,7 @@ onpointerup = (event) => {
                     map.removeLayer(queryZone);
                     queryZone = null;
                 }
-                
-                
-            
-            
-
             }
-                
-        
         } 
     }
     isPointerDown = false;
@@ -1321,8 +1460,8 @@ onpointerup = (event) => {
     } else {
         itinerary.setStyle({weight : 8});
     }
-    closeMenu();
-    outline.setStyle({weight:48});
+    // closeMenu();
+    // outline.setStyle({weight:48});
     // stroke.setStyle({weight:58});
     if (circleZoneOfInterest != null){
         var zoomMult = 2560000/(Math.pow(2,zoom));

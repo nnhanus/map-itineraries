@@ -51,6 +51,9 @@ body{
     /* filter: drop-shadow(-5px 0px  red);
 } */
 
+.grid-container{
+    display: grid;
+}
 
 .selected{
     background-color: #78c0ff;
