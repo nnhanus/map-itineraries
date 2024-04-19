@@ -57,8 +57,8 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         fuelLayer.onclick = function(e){
-            // loadFuelDistribution();
-            isochroneMinutes();
+            loadFuelDistribution();
+            // isochroneMinutes();
         }
         restaurantLayer.onclick = function(e){
             loadRestaurantDistribution();
