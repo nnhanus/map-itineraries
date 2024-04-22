@@ -35,7 +35,7 @@ var markerBracketClose = null;
 var polylineBracket;
 
 var isMenuOn = false;
-var queryZone = null;
+var queryZone = [];
 var outlinePathHTML;
 
 var weatherLayerGroup = null;
@@ -58,7 +58,6 @@ L.Control.Layers = L.Control.extend({
         var fuelLayer = document.getElementById("gasstationLayer");
         fuelLayer.onclick = function(e){
             loadFuelDistribution();
-            // isochroneMinutes();
         }
         restaurantLayer.onclick = function(e){
             loadRestaurantDistribution();
@@ -69,7 +68,6 @@ L.Control.Layers = L.Control.extend({
         button.onclick =  function(e){
             var menu = document.getElementById("listLayers");
             visibilityToggle(menu);
-            // menu.style.visibility = "visible";
         };
         return container;
         
@@ -398,19 +396,8 @@ function createGradientFuel(){
 }
 
 function isochroneMinutes(type, value){
-    // try{
-    //     let response = await Isochrones.calculate({
-    //         locations: [[circleZoneOfInterest.getLatLng().lat, circleZoneOfInterest.getLatLng().lng]],
-    //         profile: 'driving-car',
-    //         range: [600],
-    //         range_type: 'time'
-    //     })
-    //     console.log(response);
-    // } catch (err){
-    //     console.log("An error occurred: " + err.status);
-    //     console.log(err);
-    // }
 
+    console.log(getNeededPoints(polylineBracket.getLatLngs(), Math.floor(((value*1000*110)/36)/2)));
     let request = new XMLHttpRequest();
 
     request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
@@ -419,81 +406,150 @@ function isochroneMinutes(type, value){
 
     request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
     request.setRequestHeader('Content-Type', 'application/json');
-    request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');
+    request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
 
     request.onreadystatechange = function () {
     if (this.readyState === 4) {
         console.log('Status:', this.status);
         console.log('Headers:', this.getAllResponseHeaders());
         console.log('Body:', this.response);
-        console.log('Body:', this.response.features[0].geometry.coordinates[0]);
         isochroneToPolygon(this.response.features, type);
     }
     };
 
-    if (markerBracketClose != null){
-        // const body = '{"locations":[[8.681495,49.41461],[8.686507,49.41943]],"range":[300,200]}';
-        const body = '{"locations":[[' + markerBracketOpen.getLatLng().lng + ',' + markerBracketOpen.getLatLng().lat + '],[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat +
-                    '],[' + markerBracketClose.getLatLng().lng + ',' + markerBracketClose.getLatLng().lat+ ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
-                    console.log(body);
+    // if (markerBracketClose != null){ //if the brackets exists then we do the query around them
+        // const body = '{"locations":[[' + markerBracketOpen.getLatLng().lng + ',' + markerBracketOpen.getLatLng().lat + '],[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat +
+        //             '],[' + markerBracketClose.getLatLng().lng + ',' + markerBracketClose.getLatLng().lat+ ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+        //             console.log(body);
+        const body = makeIsoQuery(getNeededPoints(polylineBracket.getLatLngs(), Math.floor(((value*1000*110)/36)/2)), value);
+        console.log(body);
         request.send(body);
-    } else {
-        const body = '{"locations":[[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
-                    console.log(body);
-        request.send(body);
-
-    }
-
-
-    
+    // } else { //else it is just around the circle 
+    //     const body = '{"locations":[[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+    //                 console.log(body);
+    //     request.send(body);
+    // }    
 } 
 
+function makeIsoQuery(points, value){
+    var queryString = '{"locations":[[';
+    for (var i = 0; i < points.length-1; i++){
+        queryString+= points[i].lng + ',' + points[i].lat + '],[';
+    }
+    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+    return queryString;
+}
+
+function latLngToPoint(line){
+    var res = [];
+    line.forEach(element => {
+        res.push(map.latLngToContainerPoint(element));
+    })
+    return res;
+}
+
+function pointToLatLng(line){
+    var res = [];
+    line.forEach(element => {
+        res.push(map.containerPointToLatLng(element));
+    })
+    return res;
+}
 
 function isochroneToPolygon(body, type){
     console.log(body);
-    // var coords = body[0].geometry.coordinates[0];
+    var polygons = [];
     body.forEach(element => {
         var coords = element.geometry.coordinates[0];
-    
         var latLngs = [];
         coords.forEach(element =>{
             latLngs.push(L.latLng(element[1], element[0]));
         });
         console.log(latLngs);
 
-        var polygon = [latLngs[0]];
-        for (var i = 1; i < latLngs.length; i++){
-            if (latLngs[i].distanceTo(polygon[polygon.length-1]) > 1000){
-                polygon.push(latLngs[i]);
-            }
-        } 
-        console.log(polygon);
+        // var line = latLngToPoint(latLngs);
+        // var polygonXY = L.LineUtil.simplify(line, 3);
+        
+        // var polygon = pointToLatLng(polygonXY);
+        // console.log(polygon);
+        
+        var qZone = L.polygon(latLngs, {color:'green'/*, className:"pulse"*/});
+        polygons.push(qZone.toGeoJSON());
+    });
 
-        if (polygon.length < 350){
-            L.polygon(latLngs, {color:'red'/*, className:"pulse"*/}).addTo(map);
-            queryZone = L.polygon(polygon, {color:'blue'/*, className:"pulse"*/}).addTo(map);
-            var queryString = arrayToQuery(polygon, type);
-            oplQuery(queryString);
-        } else {
-            // window.alert("too long, query will fail");
-            
-            var polygonReduced = [polygon[0]];
-            for (var i = 1; i < polygon.length; i++){
-                if (polygon[i].distanceTo(polygonReduced[polygonReduced.length-1]) > 2000){
-                    polygonReduced.push(polygon[i]);
-                }
-                
-            } 
-            L.polygon(latLngs, {color:'red'/*, className:"pulse"*/}).addTo(map);
-            L.polygon(polygon, {color:'green'/*, className:"pulse"*/}).addTo(map);
-            queryZone = L.polygon(polygonReduced, {color:'blue'/*, className:"pulse"*/}).addTo(map);
-            var queryString = arrayToQuery(polygonReduced, type);
-            oplQuery(queryString);
-        }
-    })
+    var union = polygons[0];
+    for (var i =  1; i < polygons.length; i++){
+        var unionTmp = turf.union(union, polygons[i]);
+        union = unionTmp;
+    }
+    // L.polygon(polygonToLatLng(union.geometry.coordinates[0]), {color: 'red'}).addTo(map);
+    var circleClose = L.circle(markerBracketClose.getLatLng(), {radius: 200000}).addTo(map);
+    var boundsClose = circleClose.getBounds();
+    map.removeLayer(circleClose);
+    var westClose = boundsClose.getWest();
+    var boundsRectClose = L.latLngBounds(L.latLng(markerBracketClose.getLatLng().lat, westClose), boundsClose.getSouthEast());
+    var rectangleClose = L.rectangle(boundsRectClose).addTo(map);
+
+    var rectCloseJSON = rectangleClose.toGeoJSON();
+    var diffClose = turf.difference(union, rectCloseJSON);
+
+    var circleOpen = L.circle(markerBracketOpen.getLatLng(), {radius: 200000}).addTo(map);
+    var boundsOpen = circleOpen.getBounds();
+    map.removeLayer(circleOpen);
+    var eastOpen = boundsOpen.getEast();
+    var boundsRectOpen = L.latLngBounds(boundsOpen.getNorthWest(), L.latLng(markerBracketOpen.getLatLng().lat, eastOpen));
+    var rectangleOpen = L.rectangle(boundsRectOpen).addTo(map);
+
+    var rectOpenJSON = rectangleOpen.toGeoJSON();
+    var diff = turf.difference(diffClose, rectOpenJSON);
+
+    map.removeLayer(rectangleClose);
+    map.removeLayer(rectangleOpen);
+   
+    var polyLatLngs = polygonToLatLng(diff.geometry.coordinates[0]);
+    console.log("polygon length before simplify: " + polyLatLngs.length);
+
+    var line = latLngToPoint(polyLatLngs);
+    var polygonXY = L.LineUtil.simplify(line, 3);
+
+    if (polygonXY.length > 150){
+        var polygonXY = L.LineUtil.simplify(line, 5);
+    }
+    
+    var polygon = pointToLatLng(polygonXY);
+    console.log("polygon length after simplify: " + polygon.length);
+
+    // L.polygon(polygon, {color: 'red'}).addTo(map);
+    L.polygon(polygon, {color: 'blue'}).addTo(map);
+
+    if (polygon.length > 3){
+        var queryString = arrayToQuery(polygon, type);
+        oplQuery(queryString);    
+    }
+
+    // console.log(polyLatLngs);
+}
+
+function latLngToPolygon(line){
+    var polygon = [];
+    line.forEach(element => {
+        polygon.push([element.x, element.y]);
+    });
+    return polygon;
+}
+
+function polygonToLatLng(line){
+    console.log(line);
+    var polygon = [];
+    line.forEach(element => {
+        polygon.push(L.latLng(element[1], element[0]));
+    });
+    console.log(polygon);
+    return polygon;
 }
 
 function oplQuery(queryString){
+    console.log("oplQuery");
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
@@ -559,6 +615,30 @@ function oplQuery(queryString){
         },
         afterRequest: function()  {
             console.log("afterRequest");
+            if (markerBracketClose==null && isInKM){
+                var newZones = [];
+                queryZone.forEach(element => {
+                    var zone = element.getLatLng();
+                    var radius = element.getRadius();
+                    map.removeLayer(element);
+                    var nZone = L.circle(zone, {radius: radius, color: 'blue'}).addTo(map);
+                    newZones.push(nZone);
+                });
+                queryZone.length = 0;
+                queryZone = newZones;
+                
+            } else {
+                var newZones = [];
+                queryZone.forEach(element => {
+                    var zones = element.getLatLngs();
+                    map.removeLayer(element);
+                    var nZone = L.polygon(zones, {color: 'blue'}).addTo(map);
+                    newZones.push(nZone); 
+                });
+                queryZone.length = 0;
+                queryZone = newZones;
+                
+            }            
             
         } // we want to keep the circle
         });
@@ -567,7 +647,21 @@ function oplQuery(queryString){
 
 }
 
-
+function getNeededPoints(itinerary, distValue){
+    console.log(distValue);
+    var polygon = [itinerary[0]];
+    var prevPoint = itinerary[0];
+    for (var i = 1; i < itinerary.length - 1 ; i++){
+        dist = itinerary[i].distanceTo(prevPoint);
+        if (dist > distValue){
+            // console.log(itinerary[i]);
+            polygon.push(itinerary[i]);
+            prevPoint = itinerary[i];
+        }
+    }
+    polygon.push(itinerary[itinerary.length-1]);
+    return polygon;
+}
 // Body: {"type":"FeatureCollection","bbox":[1.470376,46.41925,1.481074,46.438904],"features":[{"type":"Feature","properties":{"group_index":0,"value":1000.0,"center":[1.4610298885531272,46.40757002482798]},"geometry":{"coordinates":[[[1.470699,46.41925],[1.470942,46.419746],[1.471185,46.420242],[1.471339,46.420624],[1.471487,46.420993],[1.471926,46.422265],[1.474727,46.427569],[1.475513,46.428658],[1.47585,46.429179],[1.476182,46.429692],[1.476504,46.430258],[1.476821,46.430815],[1.477885,46.432798],[1.478948,46.434777],[1.480011,46.436755],[1.481074,46.438734],[1.480757,46.438904],[1.479694,46.436926],[1.478631,46.434947],[1.477568,46.432968],[1.476508,46.430993],[1.474435,46.42778],[1.473643,46.426682],[1.473307,46.426156],[1.472966,46.42562],[1.472758,46.425244],[1.472543,46.424853],[1.472285,46.424256],[1.472021,46.423646],[1.470376,46.419408],[1.470699,46.41925]]],"type":"Polygon"}}],"metadata":{"attribution":"openrouteservice.org | OpenStreetMap contributors","service":"isochrones","timestamp":1713526360253,"query":{"profile":"driving-car","locations":[[1.4610299999999834,46.40757000000002]],"range":[1000.0],"range_type":"distance"},"engine":{"version":"8.0.0","build_date":"2024-03-21T13:55:54Z","graph_date":"2024-04-07T16:50:19Z"}}}
 function itineraryPass(itinerary, distValue){
     
@@ -640,7 +734,8 @@ function itineraryPass(itinerary, distValue){
     polygon.splice(0, 0, pointDown);
     polygon.splice(polygon.length, 0, pointUp);
 
-    queryZone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
+    var zone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
+    queryZone.push(zone);
 
     return polygon;
 
@@ -779,8 +874,6 @@ var bracket = L.icon({
     shadowAnchor: [4, 62],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
-
-
 
 function loadWeather(){
     var weatherSunny = L.icon({
@@ -1014,12 +1107,12 @@ function dwellOnCircle(event){
     
     var pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
     var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-    var markerAbove = L.marker(latlngAbove, {icon: bracket}).addTo(map);
+    var markerAbove = L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
     // L.marker(latlngAbove).addTo(map);
 
     var pointBelow = turf.along(itineraryJSON, distBelow/1000).geometry.coordinates;
     var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
-    var markerBelow = L.marker(latlngBelow, {icon: bracket}).addTo(map);
+    var markerBelow = L.marker(latlngBelow, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
     // L.marker(latlngBelow).addTo(map);
 
     if (markerBracketClose != null && markerBracketOpen != null){
@@ -1084,7 +1177,7 @@ function dwellOnCircle(event){
                     for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
                         distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
                     }
-                    console.log(distCircleBracket);
+                    // console.log(distCircleBracket);
                     bracketOpenText.innerHTML="distance "+ (distCircleBracket/1000).toFixed(2) +" km";
                 })
 
@@ -1195,13 +1288,6 @@ function toggleMinKM(isKiloMeter){
     // updateSlider();
 }
 
-function updateSlider(){
-    if (isInKM){
-        
-    } else {
-        
-    }
-}
 
 function clickGoButton(type){
     var sliderDiv = document.getElementById("slider");
@@ -1256,7 +1342,8 @@ function makeQuery(type, distValue){
     
     if (markerBracketOpen == null){
         queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
-        queryZone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
+        var zone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
+        queryZone.push(zone);
 
     } else {        
         var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
@@ -1365,14 +1452,14 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    // console.log(event);
     // openMenu();
     // document.getElementById("menu").style.visibility = "hidden";
     // Get the pointer coords
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    if(!isMenuOn){
+    if(!isMenuOn && circleMarker == null){
+        console.log("!isMenuOn : " + !isMenuOn);
         //check if the pointer went up on the circle ùmarker or the brackets
         var isNotOnMarker = true;
         if (circleMarker != null){
@@ -1440,9 +1527,12 @@ onpointerup = (event) => {
                 circleClosest.bringToFront();
                 circleZoneOfInterest.on("contextmenu", dwellOnCircle);
                 circleZoneOfInterest.on("click", openMenu);
-                if (queryZone != null){
-                    map.removeLayer(queryZone);
-                    queryZone = null;
+                if (queryZone.length != 0){
+                    queryZone.forEach(element => {
+                        map.removeLayer(element);
+                    })
+                    
+                    queryZone.length = 0;
                 }
             }
         } 

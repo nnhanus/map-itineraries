@@ -36,17 +36,12 @@
     <script src="files/leaflet.polylineoffset.js"></script>
     <script src="files/jsts.min.js"></script>
     <script type="module" src="files/ors-js-client.js"></script>
+    <script src="files/leaflet.rotatedMarker.js"></script>
+    <script src="files/polygon-clipping.umd.min.js"></script>
 
 </head>
 
 <body>
-    <!-- <div id="depAndArr" style="width: 360px; height: 75px; background-color: aliceblue;">
-        <div id="departure">
-            <img src="icons\departure.svg"> 
-        </div>
-        <div id="arrival">
-            <img src="icons\arrival.svg"></div>
-    </div> -->
    <div id = "map" style = "width:360px; height:600px; touch-action:none"></div>
     
    <script type="text/javascript" src="map.js"></script>
@@ -73,28 +68,12 @@
     </div>
     <div id="layers" width=" 80">
         <div id="layerButton" style="display: flex; justify-content: flex-end"><input type="image" id="layersButton" src="icons/layersBG.svg" width="35", height="35"></div>
-        <!-- <ul id="listLayers" style="visibility: collapse;" >
-            <li><input type="image" id="restaurantLayer" src="icons/restaurant.svg" width="46" height="46" /></li>
-            <li><input type="image" id = "gasstationLayer" src="icons/gasstation.svg" width="46" height="46"/></li>
-            <li><input type="image" id = "weatherLayer" src="icons/weather.svg" width="46" height="46"/></li>
-            <li>hello</li>
-            <li>bonjour</li> -->
-        <!-- </ul> -->
         <div className="grid-container" id="listLayers" style="visibility: collapse; width: 100px;" >
             <input type="image" id="restaurantLayer" src="icons/restaurant.svg" width="46" height="46" />
             <input type="image" id = "gasstationLayer" src="icons/gasstation.svg" width="46" height="46"/>
             <input type="image" id = "weatherLayer" src="icons/weather.svg" width="46" height="46"/>
         </div>
-        
-        
-         
-    </div>
-    <!-- <div class="route"> </div> -->
-    <!-- <div id="menuLayers" class="menuLayers" style = "visibility: hidden; z-index: 1000;">
-              
-    </div> -->
-   
-    
+    </div>    
 </body>
 
 </html>
