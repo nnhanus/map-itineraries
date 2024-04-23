@@ -1225,8 +1225,13 @@ function openMenu(event){
     supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
     menuDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+    var top = circlePos.y - 70;
+    // console.log()
+    if (top < 5){
+        top = circlePos.y + 50;
+    }
     menuDiv.style.left=circlePos.x - 50 + 'px';
-    menuDiv.style.top=circlePos.y - 70 +  'px';
+    menuDiv.style.top=top +  'px';
     isMenuOn = true;
     // if (circleCreated){
         // window.alert("clicked");
@@ -1242,8 +1247,7 @@ function closeMenu(){
     if (requestMade){
         map.removeLayer(circleZoneOfInterest);
         map.removeLayer(markerBracketClose);
-        map.removeLayer(markerBracketOpen);
-        
+        map.removeLayer(markerBracketOpen);  
     }
     
 }
@@ -1253,8 +1257,12 @@ function openSlider(type){
     var sliderDiv = document.getElementById("slider");
     sliderDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+    var top = circlePos.y - 150;
+    if (top < 5){
+        top+=200;
+    }
     sliderDiv.style.left=circlePos.x - 65 + 'px';
-    sliderDiv.style.top=circlePos.y - 150 +  'px';
+    sliderDiv.style.top=top +  'px';
     var kmButton = document.getElementById("km");
     var minButton = document.getElementById("min");
     kmButton.onclick = function(e){toggleMinKM(true)};
