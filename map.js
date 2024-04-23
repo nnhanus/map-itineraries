@@ -45,6 +45,7 @@ var isRestaurantDisplayed = false;
 var isInKM = true;
 var orService;
 
+var requestMade = false;
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -152,60 +153,7 @@ routing.on("routesfound", function (e){
 
     createGradientRestaurant();
     createGradientFuel();
-    // outlinePathHTML.setAttribute("stroke", "url(#gradientStroke)");
-
-    // outlinePathHTML.setAttribute("stroke", "red");
-    // createGradient();
-    // strokeHTML.setAttribute("stroke", "url(#gradienStroke)");
-
-    /**************************************
-     * 2 ways to add something every x km *
-     *************************************/
-    // var dist = 0;
-    // for (var i = 0; i < allPos.length - 1; i++){
-    //     dist += allPos[i].distanceTo(allPos[i+1]);
-    //     if (dist > 100000){
-    //         var marker = L.marker(allPos[i+1]).addTo(map); 
-    //         marker.bindPopup("dist: " + dist/1000 + "km");
-
-    //         dist = 0;
-    //     }
-    // }
-
-    // var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
-    // isPointOnLine(closestAbove, allPos, 0.5);
-    // var pointsAbove = new Array();
-    // points.forEach(element => {pointsAbove.push(element)});
-    // var closestBelow = L.GeometryUtil.closest(map, allPos, latlngBelow);
-    // isPointOnLine(closestBelow, allPos, 0.5);
     
-    // var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    // map.removeLayer(polylineBracket);
-    // polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 60, opacity: 0.5}).addTo(map);
-
-    // var dist = distance/1000;
-    // var intervalMarker = 100;
-    // var previousClosest = new Array();
-    // var weight = 2;
-    // // // var previousPoint = allPos[0];
-    // while(dist >= intervalMarker){
-    //     var pointDist = turf.along(itineraryJSON, intervalMarker).geometry.coordinates;
-    //     isPointOnLine(L.latLng(pointDist[1], pointDist[0]), allPos, 0.5);
-    //     var pointsToKeep = points.filter(n => !previousClosest.includes(n));
-    //     L.polyline(pointsToKeep, {color: 'red', weight: weight, opacity: 0.5}).addTo(map);
-    //     console.log(weight);
-    //     weight++;
-    //     pointsToKeep.forEach(element => {previousClosest.push(element)});
-    //     // var marker = L.marker(L.latLng(pointDist[1], pointDist[0])).addTo(map);
-    //     // marker.bindPopup("dist: " + intervalMarker + "km");
-
-    //     intervalMarker+=100;
-    // }
-    // isPointOnLine(allPos[allPos.length-1], allPos, 0.5);
-    // var pointsToKeep = points.filter(n => !previousClosest.includes(n));
-    // L.polyline(pointsToKeep, {color: 'red', weight: weight, opacity: 0.5}).addTo(map);
-    
-   
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 
@@ -395,48 +343,56 @@ function createGradientFuel(){
     defs.appendChild(gradient);
 }
 
-function isochroneMinutes(type, value){
+function isochroneMinutes(type, value, units){
+    var points = getNeededPoints(polylineBracket.getLatLngs(), value, units);
+    console.log(points);
+    if (points.length < 6){
+        var resIso = [];
+        for (var i = 0; i < points.length; i++){
+            let request = new XMLHttpRequest();
 
-    console.log(getNeededPoints(polylineBracket.getLatLngs(), Math.floor(((value*1000*110)/36)/2)));
-    let request = new XMLHttpRequest();
+            request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
 
-    request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
+            request.responseType = "json";
 
-    request.responseType = "json";
+            request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+            request.setRequestHeader('Content-Type', 'application/json');
+            request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
 
-    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
-    request.setRequestHeader('Content-Type', 'application/json');
-    request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
+            request.onreadystatechange = function () {
+                if (this.readyState === 4) {
+                    console.log('Status:', this.status);
+                    console.log('Headers:', this.getAllResponseHeaders());
+                    console.log('Body:', this.response);
+                    resIso.push(this.response.features);
+                    // console.log("i : " + i + ", length : " + points.length);
+                    // console.log(resIso);
+                    isochroneToPolygon(resIso, type, points.length); 
+                }
+            };
 
-    request.onreadystatechange = function () {
-    if (this.readyState === 4) {
-        console.log('Status:', this.status);
-        console.log('Headers:', this.getAllResponseHeaders());
-        console.log('Body:', this.response);
-        isochroneToPolygon(this.response.features, type);
+            const body = makeIsoQuery(points[i], value, units);
+            console.log(body);
+            request.send(body);
+        }
+        console.log(resIso); 
+    } else {
+        window.alert("Too many points do you really need 25 points???");
     }
-    };
-
-    // if (markerBracketClose != null){ //if the brackets exists then we do the query around them
-        // const body = '{"locations":[[' + markerBracketOpen.getLatLng().lng + ',' + markerBracketOpen.getLatLng().lat + '],[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat +
-        //             '],[' + markerBracketClose.getLatLng().lng + ',' + markerBracketClose.getLatLng().lat+ ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
-        //             console.log(body);
-        const body = makeIsoQuery(getNeededPoints(polylineBracket.getLatLngs(), Math.floor(((value*1000*110)/36)/2)), value);
-        console.log(body);
-        request.send(body);
-    // } else { //else it is just around the circle 
-    //     const body = '{"locations":[[' + circleZoneOfInterest.getLatLng().lng + ',' + circleZoneOfInterest.getLatLng().lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
-    //                 console.log(body);
-    //     request.send(body);
-    // }    
 } 
 
-function makeIsoQuery(points, value){
+function makeIsoQuery(points, value, units){
     var queryString = '{"locations":[[';
     for (var i = 0; i < points.length-1; i++){
         queryString+= points[i].lng + ',' + points[i].lat + '],[';
     }
-    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":"driving-car","range":[' + value*60 + '],"range_type":"time"}';
+    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":"driving-car","range":[';
+    if (units == "distance"){
+        queryString+= value*1000;
+    } else {
+        queryString+= value*60;
+    }
+    queryString+= '],"range_type":"' + units + '"}';
     return queryString;
 }
 
@@ -456,25 +412,27 @@ function pointToLatLng(line){
     return res;
 }
 
-function isochroneToPolygon(body, type){
-    console.log(body);
+function isochroneToPolygon(body, type, length){
+    // console.log("body length: " + body.length + ", points.length: " + length);
+    if (body.length == length){
+        console.log(body);
+        console.log("long enough");
+    
+    
     var polygons = [];
-    body.forEach(element => {
-        var coords = element.geometry.coordinates[0];
-        var latLngs = [];
-        coords.forEach(element =>{
-            latLngs.push(L.latLng(element[1], element[0]));
+    body.forEach(layerOne => {
+        layerOne.forEach(element => {
+            var coords = element.geometry.coordinates[0];
+            var latLngs = [];
+            coords.forEach(element =>{
+                latLngs.push(L.latLng(element[1], element[0]));
+            });
+            console.log(latLngs);
+            
+            var qZone = L.polygon(latLngs, {color:'green'/*, className:"pulse"*/}).addTo(map);
+            polygons.push(qZone.toGeoJSON());
+            map.removeLayer(qZone);
         });
-        console.log(latLngs);
-
-        // var line = latLngToPoint(latLngs);
-        // var polygonXY = L.LineUtil.simplify(line, 3);
-        
-        // var polygon = pointToLatLng(polygonXY);
-        // console.log(polygon);
-        
-        var qZone = L.polygon(latLngs, {color:'green'/*, className:"pulse"*/});
-        polygons.push(qZone.toGeoJSON());
     });
 
     var union = polygons[0];
@@ -482,7 +440,7 @@ function isochroneToPolygon(body, type){
         var unionTmp = turf.union(union, polygons[i]);
         union = unionTmp;
     }
-    // L.polygon(polygonToLatLng(union.geometry.coordinates[0]), {color: 'red'}).addTo(map);
+    var polyUnion = L.polygon(polygonToLatLng(union.geometry.coordinates[0]), {color: 'red'}).addTo(map);
     var circleClose = L.circle(markerBracketClose.getLatLng(), {radius: 200000}).addTo(map);
     var boundsClose = circleClose.getBounds();
     map.removeLayer(circleClose);
@@ -505,29 +463,54 @@ function isochroneToPolygon(body, type){
 
     map.removeLayer(rectangleClose);
     map.removeLayer(rectangleOpen);
-   
+    map.removeLayer(polyUnion);
+    
     var polyLatLngs = polygonToLatLng(diff.geometry.coordinates[0]);
     console.log("polygon length before simplify: " + polyLatLngs.length);
 
     var line = latLngToPoint(polyLatLngs);
-    var polygonXY = L.LineUtil.simplify(line, 3);
+    var polygonXY = L.LineUtil.simplify(line, 1);
+    console.log("polygon length after simplify 1: " + polygonXY.length);
 
-    if (polygonXY.length > 150){
+    if (polygonXY.length > 200){
+        var polygonXY = L.LineUtil.simplify(line, 2);
+        console.log("polygon length after simplify 2: " + polygonXY.length);
+    }
+
+    if (polygonXY.length > 200){
+        var polygonXY = L.LineUtil.simplify(line, 3);
+        console.log("polygon length after simplify 3: " + polygonXY.length);
+    }
+
+    if (polygonXY.length > 200){
+        var polygonXY = L.LineUtil.simplify(line, 4);
+        console.log("polygon length after simplify 4: " + polygonXY.length);
+    }
+
+    if (polygonXY.length > 200){
         var polygonXY = L.LineUtil.simplify(line, 5);
+        console.log("polygon length after simplify 5: " + polygonXY.length);
     }
     
     var polygon = pointToLatLng(polygonXY);
     console.log("polygon length after simplify: " + polygon.length);
 
-    // L.polygon(polygon, {color: 'red'}).addTo(map);
-    L.polygon(polygon, {color: 'blue'}).addTo(map);
+    // L.polygon(polyLatLngs, {color: 'red'}).addTo(map);
+    var realZone = L.polygon(polygon, {color: 'blue', className:"pulse"}).addTo(map);
+    queryZone.push(realZone);
 
     if (polygon.length > 3){
+        requestMade = true;
         var queryString = arrayToQuery(polygon, type);
         oplQuery(queryString);    
+    } else {
+        window.alert("Not Enough Points");
     }
 
     // console.log(polyLatLngs);
+    } else {
+        console.log("not long enough");
+    }
 }
 
 function latLngToPolygon(line){
@@ -536,6 +519,17 @@ function latLngToPolygon(line){
         polygon.push([element.x, element.y]);
     });
     return polygon;
+}
+
+function disableCircle(){
+    circleZoneOfInterest.setStyle({color: "#6D6D6D", fillColor: "#A9A9A9"});
+    var newMarkerOpen = L.marker(markerBracketOpen.getLatLng(), {icon: bracketGreyed, rotationOrigin: 'center center'}).addTo(map);
+    var newMarkerClose = L.marker(markerBracketClose.getLatLng(), {icon: bracketGreyed, rotationOrigin: 'center center'}).addTo(map);
+    map.removeLayer(markerBracketOpen);
+    map.removeLayer(markerBracketClose);
+    markerBracketOpen = newMarkerOpen;
+    markerBracketClose = newMarkerClose;
+    // L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
 }
 
 function polygonToLatLng(line){
@@ -615,31 +609,15 @@ function oplQuery(queryString){
         },
         afterRequest: function()  {
             console.log("afterRequest");
-            if (markerBracketClose==null && isInKM){
-                var newZones = [];
-                queryZone.forEach(element => {
-                    var zone = element.getLatLng();
-                    var radius = element.getRadius();
-                    map.removeLayer(element);
-                    var nZone = L.circle(zone, {radius: radius, color: 'blue'}).addTo(map);
-                    newZones.push(nZone);
-                });
-                queryZone.length = 0;
-                queryZone = newZones;
-                
-            } else {
-                var newZones = [];
-                queryZone.forEach(element => {
-                    var zones = element.getLatLngs();
-                    map.removeLayer(element);
-                    var nZone = L.polygon(zones, {color: 'blue'}).addTo(map);
-                    newZones.push(nZone); 
-                });
-                queryZone.length = 0;
-                queryZone = newZones;
-                
-            }            
-            
+            var newZones = [];
+            queryZone.forEach(element => {
+                var zones = element.getLatLngs();
+                map.removeLayer(element);
+                var nZone = L.polygon(zones, {color: 'blue'}).addTo(map);
+                newZones.push(nZone); 
+            });
+            queryZone.length = 0;
+            queryZone = newZones;
         } // we want to keep the circle
         });
         map.addLayer(opl);
@@ -647,20 +625,37 @@ function oplQuery(queryString){
 
 }
 
-function getNeededPoints(itinerary, distValue){
+function getNeededPoints(itinerary, value, units){
+    var distValue;
+    if (units == "distance"){
+        distValue = value*1000;
+    } else {
+        distValue = Math.floor(((value*1000*110)/36)/2);
+    }
     console.log(distValue);
+    var polygons = [];
     var polygon = [itinerary[0]];
     var prevPoint = itinerary[0];
     for (var i = 1; i < itinerary.length - 1 ; i++){
         dist = itinerary[i].distanceTo(prevPoint);
         if (dist > distValue){
-            // console.log(itinerary[i]);
             polygon.push(itinerary[i]);
             prevPoint = itinerary[i];
+            if (polygon.length > 4){
+                var poly = [];
+                polygon.forEach(element => {
+                    poly.push(element);
+                });
+                polygon.length = 0;
+                polygons.push(poly);
+            }
         }
     }
     polygon.push(itinerary[itinerary.length-1]);
-    return polygon;
+    polygons.push(polygon);
+    
+    console.log(poly);
+    return polygons;
 }
 // Body: {"type":"FeatureCollection","bbox":[1.470376,46.41925,1.481074,46.438904],"features":[{"type":"Feature","properties":{"group_index":0,"value":1000.0,"center":[1.4610298885531272,46.40757002482798]},"geometry":{"coordinates":[[[1.470699,46.41925],[1.470942,46.419746],[1.471185,46.420242],[1.471339,46.420624],[1.471487,46.420993],[1.471926,46.422265],[1.474727,46.427569],[1.475513,46.428658],[1.47585,46.429179],[1.476182,46.429692],[1.476504,46.430258],[1.476821,46.430815],[1.477885,46.432798],[1.478948,46.434777],[1.480011,46.436755],[1.481074,46.438734],[1.480757,46.438904],[1.479694,46.436926],[1.478631,46.434947],[1.477568,46.432968],[1.476508,46.430993],[1.474435,46.42778],[1.473643,46.426682],[1.473307,46.426156],[1.472966,46.42562],[1.472758,46.425244],[1.472543,46.424853],[1.472285,46.424256],[1.472021,46.423646],[1.470376,46.419408],[1.470699,46.41925]]],"type":"Polygon"}}],"metadata":{"attribution":"openrouteservice.org | OpenStreetMap contributors","service":"isochrones","timestamp":1713526360253,"query":{"profile":"driving-car","locations":[[1.4610299999999834,46.40757000000002]],"range":[1000.0],"range_type":"distance"},"engine":{"version":"8.0.0","build_date":"2024-03-21T13:55:54Z","graph_date":"2024-04-07T16:50:19Z"}}}
 function itineraryPass(itinerary, distValue){
@@ -672,10 +667,7 @@ function itineraryPass(itinerary, distValue){
     for (var i = 0; i < itinerary.length - 1; i++){
         dist += itinerary[i].distanceTo(itinerary[i+1]);
         if (dist > distValue){
-            // var marker = L.marker(itinerary[i+1]).addTo(map); 
-            // marker.bindPopup("dist: " + dist/1000 + "km");
-            // console.log(isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[i+1])));
-            // var circleDist;
+            
             if (forstPoint == null){
                 forstPoint = itinerary[i+1];
             }
@@ -866,7 +858,7 @@ var greenIcon = new L.Icon({
 
 var bracket = L.icon({
     iconUrl: 'icons/brackets.svg',
-    shadowUrl: 'icons/shadow.png',
+    // shadowUrl: 'icons/shadow.png',
 
     iconSize:     [100, 45], // size of the icon
     shadowSize:   [50, 64], // size of the shadow
@@ -874,6 +866,17 @@ var bracket = L.icon({
     shadowAnchor: [4, 62],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
+var bracketGreyed = L.icon({
+    iconUrl: 'icons/bracket_greyed.svg',
+    // shadowUrl: 'icons/shadow.png',
+
+    iconSize:     [100, 45], // size of the icon
+    shadowSize:   [50, 64], // size of the shadow
+    iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [4, 62],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+});
+
 
 function loadWeather(){
     var weatherSunny = L.icon({
@@ -1088,7 +1091,7 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
 function dwellOnCircle(event){
     //greys out rest
     //make bracket appear
-    var closest = L.GeometryUtil.closest(map, allPos, event.latlng); //get the closest point on the line
+    var closest = L.GeometryUtil.closest(map, allPos, event); //get the closest point on the line
     isPointOnLine(closest, allPos, 5); // add all the points up to this point
         
     points.push(closest); //add this point
@@ -1097,7 +1100,7 @@ function dwellOnCircle(event){
         dist += points[i].distanceTo(points[i+1]);
     }
     var percent = dist*100/distance; //get it in %
-    var timeDiff = 1800;
+    var timeDiff = 300;
     var timeDiffInPercent = timeDiff*100/time; //get the time diff between the brackets in % 
     var percentAbove = percent - timeDiffInPercent; 
     var distAbove = (percentAbove*distance)/100;
@@ -1130,14 +1133,8 @@ function dwellOnCircle(event){
 
     markerBracketClose
                 .on("dragend", function(e){
-                    isMovingBrackets = true;
-                    markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
-                    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-                })
-                .on("dragstart", function(e){
-                    isMovingBrackets = true;
-                })
-                .on("drag", function(e){
+                    
+
                     var closestAbove = L.GeometryUtil.closest(map, allPos, circleMarker.getLatLng());
                     isPointOnLine(closestAbove, allPos, 0.5);
                     var pointsAbove = new Array();
@@ -1152,19 +1149,20 @@ function dwellOnCircle(event){
                     }
                     bracketCloseText.innerHTML="distance "+ (distCircleBracket/1000).toFixed(2) +" km";
                 })
-
-    
-    markerBracketOpen
-                .on("dragend", function(e){
-                    isMovingBrackets = true;
-                    markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
-                    lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
-                })
                 .on("dragstart", function(e){
                     isMovingBrackets = true;
                 })
                 .on("drag", function(e){
-                    
+                    isMovingBrackets = true;
+                    markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
+                    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+                })
+
+    
+    markerBracketOpen
+                .on("dragend", function(e){
+                   
+
                     var closestAbove = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
                     isPointOnLine(closestAbove, allPos, 0.5);
                     var pointsAbove = new Array();
@@ -1179,6 +1177,15 @@ function dwellOnCircle(event){
                     }
                     // console.log(distCircleBracket);
                     bracketOpenText.innerHTML="distance "+ (distCircleBracket/1000).toFixed(2) +" km";
+                })
+                .on("dragstart", function(e){
+                    isMovingBrackets = true;
+                })
+                .on("drag", function(e){
+                    isMovingBrackets = true;
+                    markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
+                    lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
+                   
                 })
 
     // bracketOpenText.style.visibility='visible';
@@ -1201,24 +1208,9 @@ function dwellOnCircle(event){
     points.forEach(element => {pointsAbove.push(element)});
     isPointOnLine(latlngBelow, allPos, 0.5);
     
-    // console.log(points);
-    // console.log(pointsAbove);
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
     circleZoneOfInterest.bringToFront();
-
-    //By distance instead of time
-    // var pointAbove = turf.along(itineraryJSON, (dist/1000)-10).geometry.coordinates;
-    // var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-    // L.marker(latlngAbove, {icon: openBracket}).addTo(map);
-    // // L.marker(latlngAbove).addTo(map);
-
-    // var pointBelow = turf.along(itineraryJSON, (dist/1000)+10).geometry.coordinates;
-    // var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
-    // L.marker(latlngBelow, {icon: closeBracket}).addTo(map);
-    // // L.marker(latlngBelow).addTo(map);
-    // console.log("deltaY = " + (markerBracketClose.getLatLng().lng - markerBracketOpen.getLatLng().lng) + " deltaX = " + (markerBracketClose.getLatLng().lat - markerBracketOpen.getLatLng().lat));
-
 }
 
 //Handles Interactions with the query menu
@@ -1247,6 +1239,13 @@ var circleCreated = false;
 function closeMenu(){
     var menuDiv = document.getElementById("menu");
     menuDiv.style.visibility="hidden";
+    if (requestMade){
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(markerBracketOpen);
+        
+    }
+    
 }
 
 //Handles Interactions with the query slider
@@ -1291,11 +1290,13 @@ function toggleMinKM(isKiloMeter){
 
 function clickGoButton(type){
     var sliderDiv = document.getElementById("slider");
+    disableCircle();
     sliderDiv.style.visibility = "hidden";
     if (isInKM){
-        makeQuery(type, getSliderValue());
+        // makeQuery(type, getSliderValue());
+        isochroneMinutes(type, getSliderValue(), "distance");
     } else {
-        isochroneMinutes(type, getSliderValue());
+        isochroneMinutes(type, getSliderValue(), "time");
     }
 
 }
@@ -1319,7 +1320,7 @@ function moveMarkers(latlng){
             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, L.latLng(markerBracketOpen.getLatLng().lat-diff.lat, markerBracketOpen.getLatLng().lng-diff.lng)));
             bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
             bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
-            // lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+            lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
         //     markerBracketOpen.setLatLng(markerBracketOpen.getLatLng()+diff);
         }
         isPointOnLine(closest, allPos, 5)
@@ -1525,7 +1526,8 @@ onpointerup = (event) => {
                 
                 circleZoneOfInterest = circle;    
                 circleClosest.bringToFront();
-                circleZoneOfInterest.on("contextmenu", dwellOnCircle);
+                dwellOnCircle(latlng);
+                // circleZoneOfInterest.on("contextmenu", dwellOnCircle);
                 circleZoneOfInterest.on("click", openMenu);
                 if (queryZone.length != 0){
                     queryZone.forEach(element => {
@@ -1534,6 +1536,9 @@ onpointerup = (event) => {
                     
                     queryZone.length = 0;
                 }
+                outline.setStyle({color:"#000167"});
+                itinerary.setStyle({color:"#6D6D6D"});
+                stroke.setStyle({color:"#6D6D6D"});
             }
         } 
     }
@@ -1550,7 +1555,7 @@ onpointerup = (event) => {
     } else {
         itinerary.setStyle({weight : 8});
     }
-    // closeMenu();
+    closeMenu();
     // outline.setStyle({weight:48});
     // stroke.setStyle({weight:58});
     if (circleZoneOfInterest != null){
