@@ -39,6 +39,7 @@ var queryZone = [];
 var outlinePathHTML;
 
 var weatherLayerGroup = null;
+var weatherLayerGroupLines = null;
 var isWeatherDisplayed = false;
 var isFuelDisplayed = false;
 var isRestaurantDisplayed = false;
@@ -967,22 +968,45 @@ function loadWeather(){
         // var marker6 = L.marker(allPos[Math.floor(length*(6/8))], {icon: weatherSunny});
         // var marker7 = L.marker(allPos[Math.floor(length*(7/8))], {icon: weatherWindy});
 
-        var marker1 = L.marker(allPos[Math.floor(length*(1/8))], {icon: weatherRainy});
-        var marker2 = L.marker(allPos[Math.floor(length*(2/8))], {icon: weatherCloudSun});
-        var marker3 = L.marker(allPos[Math.floor(length*(3/8))], {icon: weatherCloudy});
-        var marker4 = L.marker(allPos[Math.floor(length*(4/8))], {icon: weatherCloudSun});
-        var marker6 = L.marker(allPos[Math.floor(length*(6/8))], {icon: weatherSunny});
+        var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
+        var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(2/8))], 2), {icon: weatherCloudSun});
+        var marker3 = L.marker(getWeatherPos(allPos[Math.floor(length*(3/8))], 3), {icon: weatherCloudy});
+        var marker4 = L.marker(getWeatherPos(allPos[Math.floor(length*(6/8))], 6), {icon: weatherCloudSun});
+        var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 7), {icon: weatherSunny});
 
-        weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker6]).addTo(map);
+        var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
+        var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(2/8))]], {color:"black", weigth:1}).addTo(map);
+        var line3 = L.polyline([marker3.getLatLng(), allPos[Math.floor(length*(3/8))]], {color:"black", weigth:1}).addTo(map);
+        var line4 = L.polyline([marker4.getLatLng(), allPos[Math.floor(length*(6/8))]], {color:"black", weigth:1}).addTo(map);
+        var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
+
+        weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker6 ]).addTo(map);
+        weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line4, line6]).addTo(map);
         isWeatherDisplayed = true;
     } else if (!isWeatherDisplayed){
         weatherLayerGroup.addTo(map);
+        weatherLayerGroupLines.addTo(map);
         isWeatherDisplayed = true;
     } else {
         weatherLayerGroup.removeFrom(map);
+        weatherLayerGroupLines.removeFrom(map);
         isWeatherDisplayed = false;
     }
 
+}
+
+function getWeatherPos(pos, index){
+    var posXY = map.latLngToContainerPoint(pos);
+    var length = allPos.length;
+    var newPosXY;
+    if (isVertical(map.latLngToContainerPoint(allPos[Math.floor(length*((index-1)/8))]), map.latLngToContainerPoint(allPos[Math.floor(length*(index/8))]))){
+        newPosXY = L.point(posXY.x-60, posXY.y);
+    } else {
+        newPosXY = L.point(posXY.x, posXY.y+60);
+    }
+    var newPosLatLng =  map.containerPointToLatLng(newPosXY);
+    // var line = L.polyline([pos, newPosLatLng], {color:"black", weigth:2});
+    return newPosLatLng;
 }
 
 function loadRestaurantDistribution(){
@@ -1295,7 +1319,6 @@ function toggleMinKM(isKiloMeter){
     // updateSlider();
 }
 
-
 function clickGoButton(type){
     var sliderDiv = document.getElementById("slider");
     disableCircle();
@@ -1380,6 +1403,37 @@ function arrayToQuery(itinerary, type){
     
 }
 
+function updatePositions(){
+    var layers = weatherLayerGroup.getLayers();
+    var lines = weatherLayerGroupLines.getLayers();
+    var prevPoint = map.latLngToContainerPoint(allPos[0]);
+    for (var i = 0; i < layers.length; i++){
+        var latLng = layers[i].getLatLng();
+        var curLine = lines[i].getLatLngs();
+        var closest;
+        if (curLine[0] == latLng){
+            closest = curLine[1];
+        } else {
+            closest = curLine[0];
+        }
+       
+        var closestXY = map.latLngToContainerPoint(closest);
+       
+        var newXY;
+        if (isVertical(prevPoint, closestXY)){
+            newXY = L.point((closestXY.x-60), closestXY.y);
+        } else {
+            newXY = L.point(closestXY.x, (closestXY.y+60));
+        }
+        var newLatLng = map.containerPointToLatLng(newXY);
+        layers[i].setLatLng(newLatLng);
+        prevPoint = closestXY;
+        lines[i].setLatLngs([newLatLng, closest]);
+    }
+
+
+}
+
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
         bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
@@ -1457,6 +1511,17 @@ onpointermove = (event) => {
             moveMarkers(latlng); //move the threemarkers together
         }
         
+    }
+    if (isMenuOn){
+        var menuDiv = document.getElementById("menu");
+        var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+        var top = circlePos.y - 70;
+        // console.log()
+        if (top < 5){
+            top = circlePos.y + 50;
+        }
+        menuDiv.style.left=circlePos.x - 50 + 'px';
+        menuDiv.style.top=top +  'px';
     }
 };
 
@@ -1563,7 +1628,7 @@ onpointerup = (event) => {
     } else {
         itinerary.setStyle({weight : 8});
     }
-    closeMenu();
+    // closeMenu();
     // outline.setStyle({weight:48});
     // stroke.setStyle({weight:58});
     if (circleZoneOfInterest != null){
@@ -1571,6 +1636,21 @@ onpointerup = (event) => {
         circleZoneOfInterest.setRadius(zoomMult);
 
     }
+    if(isWeatherDisplayed){
+        updatePositions();
+    }
+    if (isMenuOn){
+        var menuDiv = document.getElementById("menu");
+        var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+        var top = circlePos.y - 70;
+        // console.log()
+        if (top < 5){
+            top = circlePos.y + 50;
+        }
+        menuDiv.style.left=circlePos.x - 50 + 'px';
+        menuDiv.style.top=top +  'px';
+    }
+
 }
 
 
