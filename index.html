@@ -2,7 +2,7 @@
 <html lang="en">
 
 
-<head>	<!-- This opens your header. Your header is where different libraries and plugins are loaded -->
+<!-- <head>	This opens your header. Your header is where different libraries and plugins are loaded -->
   
 
 <head>
@@ -65,13 +65,16 @@
         </div>
     </div>
     <div id="layers" width=" 80">
-        <div id="layerButton" style="display: flex; justify-content: flex-end"><input type="image" id="layersButton" src="icons/layersBG.svg" width="35", height="35"></div>
+        <div id="layerButton" style="display: flex; justify-content: flex-end"><input type="image" id="layersButton" src="icons/layersBG.svg" width="35" height="35"></div>
         <div className="grid-container" id="listLayers" style="visibility: collapse; width: 100px;" >
             <input type="image" id="restaurantLayer" src="icons/restaurant.svg" width="46" height="46" />
             <input type="image" id = "gasstationLayer" src="icons/gasstation.svg" width="46" height="46"/>
             <input type="image" id = "weatherLayer" src="icons/weather.svg" width="46" height="46"/>
         </div>
-    </div>    
+    </div> 
+    <div id="clearDiv" style="top: 20px; left: 280px; z-index:1000; visibility: hidden;display: flex; justify-content: flex-end" >
+        <img src="icons/delete.png" width="35" height="30">
+    </div>   
 </body>
 
 </html>
