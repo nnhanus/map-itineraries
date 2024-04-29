@@ -643,8 +643,10 @@ function oplQuery(queryString){
             queryZone.length = 0;
             queryZone = newZones;
             state = "queryResults";
+            
+            polylineBracket.setStyle({opacity:0});
             makeClearButton();
-            map.removeLayer(polylineBracket);
+            // map.removeLayer(polylineBracket);
 
         } // we want to keep the circle
         });
@@ -674,7 +676,7 @@ function clearQueryResults(){
     markerBracketClose.setIcon(bracket);
     markerBracketOpen.dragging.enable();
     markerBracketClose.dragging.enable();
-    map.removeLayer(polylineBracket);
+    // map.removeLayer(polylineBracket);
     queryZone.forEach(element => {
         map.removeLayer(element);
     });
@@ -685,6 +687,7 @@ function clearQueryResults(){
     outline.setStyle({color:"blue"});
     itinerary.setStyle({color:"blue"});
     stroke.setStyle({color:"blue"});
+    polylineBracket.setStyle({opacity:0.5});
     bracketCloseText.style.visibility = 'hidden';
     bracketOpenText.style.visibility = 'hidden';
     circleMarkerText.style.visibility = 'hidden';
@@ -1461,6 +1464,10 @@ function closeMenu(){
 function openSlider(type){  
     state = "slider";
     var sliderDiv = document.getElementById("slider");
+    var value = document.getElementById("value");
+    sliderDiv.addEventListener("input", (event) => {
+        value.textContent = event.target.value;
+      });
     sliderDiv.onpointerdown = function(e){clickOnSlider = true};
     sliderDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
@@ -1488,16 +1495,16 @@ function toggleMinKM(isKiloMeter){
         isInKM = true;
         kmButton.setAttribute("class", "selected");
         minButton.setAttribute("class", "unselected");
-        document.getElementById("value2").setAttribute("label","15");
-        document.getElementById("value3").setAttribute("label","30");
-        document.getElementById("value4").setAttribute("label","45");
+        // document.getElementById("value2").setAttribute("label","15");
+        // document.getElementById("value3").setAttribute("label","30");
+        // document.getElementById("value4").setAttribute("label","45");
     } else {
         isInKM = false;
         minButton.setAttribute("class", "selected");
         kmButton.setAttribute("class", "unselected");
-        document.getElementById("value2").setAttribute("label","10");
-        document.getElementById("value3").setAttribute("label","20");
-        document.getElementById("value4").setAttribute("label","30");
+        // document.getElementById("value2").setAttribute("label","10");
+        // document.getElementById("value3").setAttribute("label","20");
+        // document.getElementById("value4").setAttribute("label","30");
     }
     // updateSlider();
 }
