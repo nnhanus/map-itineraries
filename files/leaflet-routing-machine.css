@@ -215,6 +215,8 @@
     font-size: 24px;
     color: #ccc;
     font-weight: bold;
+    border-width: 5px;
+    border-color: blue;
 }
 
 .leaflet-routing-collapse-btn:after {
@@ -226,9 +228,11 @@
     left: 4px;
     top: 4px;
     display: block;
-    width: 26px;
-    height: 23px;
-    background-image: url('routing-icon.png');
+    width: 27px;
+    height: 25px;
+    
+    border-width: 5px;
+    border-color: blue;
 }
 
 .leaflet-routing-container-hide .leaflet-routing-collapse-btn:after {
@@ -237,6 +241,14 @@
 
 .leaflet-top .leaflet-routing-container.leaflet-routing-container-hide {
     margin-top: 10px !important;
+    border: solid blue 2px;
+    background-image: url('../icons/route.png');
+    background-origin: content-box;
+    padding: 2px 2px 2px 2px;
+    /* background-clip: content-box; */
+    background-repeat: no-repeat;
+    width: 35px;
+    height: 35px;
 }
 .leaflet-right .leaflet-routing-container.leaflet-routing-container-hide {
     margin-right: 10px !important;

@@ -7,35 +7,45 @@ body{
     background-color: white;
     /* height: 30px;
     width: 35px; */
-    border: solid blue;
+    border: solid blue 2px;
+    border-radius: 4px;
+}
+
+#layersButton{
+    /* position:absolute; */
+    background-color: white;
+    /* height: 30px;
+    width: 35px; */
+    border: solid blue 2px;
+    border-radius: 4px;
+    padding: 5px 5px 5px 5px ;
 }
 
 #cursorText{
     position:absolute;
-    background-color: aliceblue;
-    width: 90px;
-    padding: 1%;
+    background-color: #2b8eff9d;
+    padding: 1px;
+    /* background-color: aliceblue; */
+    /* width: 90px; */
+    /* padding: 1%; */
 }
 
 #bracketText{
     position:absolute;
-    background-color: aliceblue;
-    width: 90px;
-    padding: 1%;
+    background-color: #2b8eff9d;
+    padding: 1px;
 }
 
 #bracketCloseText{
     position:absolute;
-    background-color: aliceblue;
-    width: 90px;
-    padding: 1%;
+    background-color: #2b8eff9d;
+    padding: 1px;
 }
 
 #circleText{
     position:absolute;
-    background-color: aliceblue;
-    width: 90px;
-    padding: 1%;
+    background-color: #2b8eff9d;
+    padding: 1px 3px; 
 }
 
 #menu{
@@ -53,10 +63,6 @@ body{
     stroke: url(#gradientStroke);
     stroke-opacity: 0.7;
 }
-/* .route{
-    filter: drop-shadow(4px 16px 10px black); */
-    /* filter: drop-shadow(-5px 0px  red);
-} */
 
 .grid-container{
     display: grid;
@@ -113,7 +119,7 @@ datalist {
   
   @keyframes pulse-animation {
     0% {
-        stroke: blue;
+        stroke: #1b1bffd6;
         fill-opacity: 0.25;
 		transform: scale(1);
 		/* box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); */
@@ -128,7 +134,7 @@ datalist {
 	}
 
 	100% {
-        stroke: blue;
+        stroke: rgba(27, 27, 255, 0.838);
         
         fill-opacity: 0.25;
 		transform: scale(1);
