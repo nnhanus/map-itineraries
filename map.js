@@ -50,6 +50,8 @@ var prevZoom;
 var width = 360;
 var height = 600; 
 
+var ppi = 269;
+
 var requestMade = false;
 var state = "itinerary";
 var prevState = "itinerary";
@@ -839,7 +841,7 @@ function toPixels(latlng){
 function getDistanceInCM(latlng, point, route){
     var closest = L.GeometryUtil.closest(map, route, latlng);
     var closestPixel = toPixels(closest);
-    return ((point.distanceTo(closestPixel)*2.54/(269/window.devicePixelRatio))); //269 = ppi from phone
+    return ((point.distanceTo(closestPixel)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
 }
 
 //Updates text from drag on itinerary
@@ -1235,6 +1237,7 @@ function dwellOnCircle(event){
                     state = prevState;
                 })
                 .on("dragstart", function(e){
+                    previousMarkerPos = markerBracketClose.getLatLng();
                     state = "closeMove";
                     if (state == "pointPlaced" || state == "closeMove"){
                         isMovingBrackets = true;
@@ -1264,6 +1267,7 @@ function dwellOnCircle(event){
                     }
                 })
                 .on("dragstart", function(e){
+                    previousMarkerPos = markerBracketOpen.getLatLng();
                     state = "openMove";
                     if (state == "pointPlaced" || state == "openMove"){
                         console.log("drag open");
@@ -1306,6 +1310,9 @@ function dwellOnCircle(event){
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
     circleZoneOfInterest.bringToFront();
+
+    previousMarkerPos = markerBracketOpen.getLatLng();
+    previousMarkerPos = markerBracketClose.getLatLng();
 
     // var vectOpen = coeffDirecteur(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(pointsToKeep[Math.floor(pointsToKeep.length/30)]));
     // markerBracketOpen.setRotationAngle(radians_to_degrees(Math.tan(vectOpen))+90);
@@ -1370,14 +1377,41 @@ function updateBracketOpenText(){
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
+var previousMarkerPos;
+
 function updateMarkersRotation(marker, pos){
-    // console.log("update");
-    var vect = coeffDirecteur(map.latLngToContainerPoint(marker.getLatLng()), map.latLngToContainerPoint(pos));
-    // marker.setRotationAngle(radians_to_degrees(Math.tan(vect))-90);
-    var angle = getAngle(vect);
-    // console.log(angle);
-    marker.setRotationAngle(angle);
-    // L.polyline([marker.getLatLng(), pos], {color:'red', weight:3}).addTo(map);
+    // var points = latLngToPoint(allPos);
+    // var simplified = L.LineUtil.simplify(points, 2);
+    // var latlgns = pointToLatLng(simplified);
+    // var closestDist = L.GeometryUtil.closest(map, latlgns, marker.getLatLng(), true);
+    // var closest = L.latLng(closestDist.lat, closestDist.lng);
+    // var index = -1;
+    // for (var i = 0; i < latlgns.length; i++){
+    //     if (latlgns[i].equals(closest)){
+    //         index = i;
+    //     }
+    // }
+    // if (index < latlgns.length -1 && index > -1){
+    //     var nextPos = latlgns[index+1];
+        var dist = getDistMarkers(marker.getLatLng());
+        if (dist > 0.2){
+            console.log("update");
+            var vect = coeffDirecteur(map.latLngToContainerPoint(marker.getLatLng()), map.latLngToContainerPoint(pos));
+            // marker.setRotationAngle(radians_to_degrees(Math.tan(vect))-90);
+            var angle = getAngle(vect);
+            // console.log(angle);
+            marker.setRotationAngle(angle);
+            // L.polyline([marker.getLatLng(), pos], {color:'red', weight:3}).addTo(map);
+            previousMarkerPos = marker.getLatLng();
+        // }
+    }
+    
+}
+
+function getDistMarkers(pos){
+    var posPixel = toPixels(pos);
+    var lastPixels = toPixels(previousMarkerPos);
+    return ((posPixel.distanceTo(lastPixels)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
 }
 
 function radians_to_degrees(radians)
@@ -1520,11 +1554,12 @@ function toggleMinKM(isKiloMeter){
 function setSliderMinMax(isKiloMeter, slider){
     var value = getDistPolyLine(polylineBracket.getLatLngs());
     if (isKiloMeter){
-        // var min = "" + Math.round(value/5);
-        slider.setAttribute("min", Math.round(value/5));
+        var min = Math.round(value/5);
         if (value > 50){
             value = 50;
+            min = 20;
         }
+        slider.setAttribute("min", min);
         slider.setAttribute("max", value);
         console.log(value/10);
         console.log(value/3);
