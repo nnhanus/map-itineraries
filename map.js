@@ -1465,10 +1465,15 @@ function openSlider(type){
     state = "slider";
     var sliderDiv = document.getElementById("slider");
     var value = document.getElementById("value");
+    var range = document.getElementById("range");            
+    setSliderMinMax(true, range);
+    // getDistPolyLine(polylineBracket.getLatLngs());
     sliderDiv.addEventListener("input", (event) => {
         value.textContent = event.target.value;
       });
     sliderDiv.onpointerdown = function(e){clickOnSlider = true};
+    range.onpointerup = function(e){clickOnSlider = false};
+    // sliderDiv.onpointerup = function(e){clickOnSlider = false};
     sliderDiv.style.visibility = "visible";
     var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
     var top = circlePos.y - 150;
@@ -1491,6 +1496,9 @@ function openSlider(type){
 function toggleMinKM(isKiloMeter){
     var kmButton = document.getElementById("km");
     var minButton = document.getElementById("min");
+    var range = document.getElementById("range");
+    clickOnSlider = false;
+    setSliderMinMax(isKiloMeter, range);
     if (isKiloMeter){
         isInKM = true;
         kmButton.setAttribute("class", "selected");
@@ -1508,6 +1516,44 @@ function toggleMinKM(isKiloMeter){
     }
     // updateSlider();
 }
+
+function setSliderMinMax(isKiloMeter, slider){
+    var value = getDistPolyLine(polylineBracket.getLatLngs());
+    if (isKiloMeter){
+        // var min = "" + Math.round(value/5);
+        slider.setAttribute("min", Math.round(value/5));
+        if (value > 50){
+            value = 50;
+        }
+        slider.setAttribute("max", value);
+        console.log(value/10);
+        console.log(value/3);
+    } else {
+        var percent = (100*value)/(distance/1000);
+        var percTime = (percent*time )/100;
+        var inMinutes = Math.round(percTime/60);
+        console.log(time);
+        console.log(percent);
+        console.log(percTime);
+        slider.setAttribute("min", Math.round(inMinutes/5));
+        slider.setAttribute("max", Math.round(inMinutes));
+        console.log(Math.round(inMinutes/5));
+        console.log(Math.round(inMinutes));
+
+    }
+}
+
+
+function getDistPolyLine(route){
+    var dist = 0;
+    for (var i = 0; i < route.length - 1; i++){
+        dist += route[i].distanceTo(route[i+1]);
+    }
+    console.log(Math.round(dist/1000));
+    return Math.round(dist/1000);
+
+}
+
 
 function clickGoButton(type){
     state = "loadingQuery";

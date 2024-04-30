@@ -66,6 +66,14 @@ body{
 
 .grid-container{
     display: grid;
+    justify-content: end;
+    /* padding-left: 0px;
+    padding-right: 0px;
+    padding-top: 2px; */
+}
+
+#listLayers{
+    padding: 2px;
 }
 
 .selected{
