@@ -28,7 +28,7 @@ var points = new Array();
 var markers = new Array(); //all the circles along the road.
 var itineraryJSON;
 
-var circleZoneOfInterest;
+var circleZoneOfInterest = null;
 var markerBracketOpen = null;
 var markerBracketClose = null;
 var polylineBracket;
@@ -43,6 +43,7 @@ var isWeatherDisplayed = false;
 var isFuelDisplayed = false;
 var isRestaurantDisplayed = false;
 var isInKM = true;
+
 var orService;
 
 var prevZoom;
@@ -138,6 +139,7 @@ var routing = L.Routing.control({
 
 //Replace with itinerary and get the points, the time, and the distance
 routing.on("routesfound", function (e){
+    console.log("reroute");
     L.control.layers({}).addTo(map);
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     
@@ -146,6 +148,7 @@ routing.on("routesfound", function (e){
     if (itinerary != null){
         map.removeLayer(itinerary);
         map.removeLayer(outline);
+        map.removeLayer(stroke);
     }
 
     // console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
@@ -196,6 +199,8 @@ routing.on("routesfound", function (e){
         }
     });
 
+
+    
     createFilterShadow();
     createFilterStroke();
     
@@ -208,9 +213,17 @@ routing.on("routesfound", function (e){
     
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+    if (circleZoneOfInterest != null){
+        var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
+        circleZoneOfInterest.setLatLng(newLatLng);
+        dwellOnCircle();
+    } else {
+        const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
+        orService = new Openrouteservice.Directions({api_key : apiKey});
+    }
 
-    var apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
-    orService = new Openrouteservice.Directions({api_key : apiKey});
+    
+
 })
 
 function createFilterShadow(){
@@ -274,6 +287,10 @@ function createFilterShadow(){
 
 function createFilterStroke(){
     //Everything under white will appear, everything thing under black will not
+    const oldMask = document.getElementById("strokeMask");
+    if(oldMask != null){
+        oldMask.remove();
+    }
     var mask = document.createElementNS("http://www.w3.org/2000/svg",'mask');
     mask.id = "strokeMask";
     mask.setAttribute("maskUnits", "userSpaceOnUse");
