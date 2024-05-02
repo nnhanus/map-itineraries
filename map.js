@@ -1766,6 +1766,7 @@ function updatePositions(){
 
 }
 
+var startTime;
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
         bracketOpenText.style.left=toPixels(markerBracketOpen.getLatLng()).x+20+'px';
@@ -1804,11 +1805,16 @@ map.on("zoomanim", function(e){
 })
 
 onpointerdown = (event) => {
+    startTime = Date.now();
     isPointerDown = true;
     prevZoom = map.getZoom();
     if (state == "menu"){
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
+    }
+    // console.log(event.target);
+    if (event.target == circleZoneOfInterest._path){
+        map.dragging.disable();
     }
     //get the points
     //check if it is close to the markers
@@ -1820,43 +1826,46 @@ onpointerdown = (event) => {
 };
 
 onpointermove = (event) => {
-    if(isPointerDown){
-        updatePosTexts(bracketCloseText, markerBracketClose);
-        updatePosTexts(bracketOpenText, markerBracketOpen);
-        updatePosTexts(circleMarkerText, circleZoneOfInterest);
-        isMovingMap = true;
-        moveCursor(event); //text follow mouse
-        var point = L.point(event.clientX, event.clientY); //point in pixel
-        var latlng = map.containerPointToLatLng(point); //point in latlng
-        distancePixelPoints(latlng, point);
-        if (state == "pointPlaced" || state == "circleMove"){
-            if(latlng.distanceTo(circleZoneOfInterest.getLatLng()) < circleZoneOfInterest.getRadius()){
-                isMovingMarker = true;
-                state = "circleMove";
+    const millis = Date.now() - startTime;
+    if ((millis / 1000) > 0.5){
+        if(isPointerDown){
+            updatePosTexts(bracketCloseText, markerBracketClose);
+            updatePosTexts(bracketOpenText, markerBracketOpen);
+            updatePosTexts(circleMarkerText, circleZoneOfInterest);
+            isMovingMap = true;
+            moveCursor(event); //text follow mouse
+            var point = L.point(event.clientX, event.clientY); //point in pixel
+            var latlng = map.containerPointToLatLng(point); //point in latlng
+            distancePixelPoints(latlng, point);
+            if (state == "pointPlaced" || state == "circleMove"){
+                if(latlng.distanceTo(circleZoneOfInterest.getLatLng()) < circleZoneOfInterest.getRadius()){
+                    isMovingMarker = true;
+                    state = "circleMove";
+                }
+                moveMarkers(latlng); //move the threemarkers together
             }
-            moveMarkers(latlng); //move the threemarkers together
         }
-    }
-    if (isMenuOn){
-        var menuDiv = document.getElementById("menu");
-        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
-        var top = circlePos.y - 70;
-        // console.log()
-        if (top < 5){
-            top = circlePos.y + 50;
-        }
-        menuDiv.style.left=circlePos.x - 50 + 'px';
-        menuDiv.style.top=top +  'px';
+        if (isMenuOn){
+            var menuDiv = document.getElementById("menu");
+            var circlePos = toPixels(circleZoneOfInterest.getLatLng());
+            var top = circlePos.y - 70;
+            // console.log()
+            if (top < 5){
+                top = circlePos.y + 50;
+            }
+            menuDiv.style.left=circlePos.x - 50 + 'px';
+            menuDiv.style.top=top +  'px';
 
-        var sliderDiv = document.getElementById("slider");
-        // // sliderDiv.style.visibility = "visible";
-        // // var circlePos = toPixels(circleMarker.getLatLng());
-        var topSlider = circlePos.y - 150;
-        if (topSlider < 5){
-            topSlider+=200;
+            var sliderDiv = document.getElementById("slider");
+            // // sliderDiv.style.visibility = "visible";
+            // // var circlePos = toPixels(circleMarker.getLatLng());
+            var topSlider = circlePos.y - 150;
+            if (topSlider < 5){
+                topSlider+=200;
+            }
+            sliderDiv.style.left=circlePos.x - 65 + 'px';
+            sliderDiv.style.top=topSlider +  'px';
         }
-        sliderDiv.style.left=circlePos.x - 65 + 'px';
-        sliderDiv.style.top=topSlider +  'px';
     }
 };
 
