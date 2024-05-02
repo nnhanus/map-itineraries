@@ -111,10 +111,10 @@ function visibilityToggle(element){
 var routing = L.Routing.control({
     
     waypoints: [
-        L.latLng(48.70973285709232, 2.1626934894717214),
+        L.latLng(48.70973285709232, 2.1626934894717214), //660
         // L.latLng(48.70577272850384, 2.185514438847031)
-        L.latLng(43.089068907903574, 2.6198013248458296)
-        // L.latLng(53.55562497332884, 7.9839136794782375)
+        L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
+        // L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
         // L.latLng(43.32361856747493, -0.3548212423438274)
     ],
     routeWhileDragging: false,
@@ -413,7 +413,7 @@ function makeIsoQuery(points, value, units){
 function latLngToPoint(line){
     var res = [];
     line.forEach(element => {
-        res.push(map.latLngToContainerPoint(element));
+        res.push(toPixels(element));
     })
     return res;
 }
@@ -745,7 +745,7 @@ function itineraryPass(itinerary, distValue){
                 forstPoint = itinerary[i+1];
             }
             // var circleColor;
-            var isVerticaal = isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[i+1]));
+            var isVerticaal = isVertical(toPixels(prevPoint), toPixels(itinerary[i+1]));
             // if (isVerticaal){
             //         circleColor = L.circle(itinerary[i+1], {radius : distValue, color: "red"}).addTo(map);
             //     } else {
@@ -777,7 +777,7 @@ function itineraryPass(itinerary, distValue){
     var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
     var circleBounds = circleDist.getBounds();
     map.removeLayer(circleDist);
-    if (isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[itinerary.length-1]))){
+    if (isVertical(toPixels(prevPoint), toPixels(itinerary[itinerary.length-1]))){
         pointDown = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getWest());
         pointUp = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getEast());
     } else {
@@ -789,7 +789,7 @@ function itineraryPass(itinerary, distValue){
     var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
     var circleBounds = circleDist.getBounds();
     map.removeLayer(circleDist);
-    if (isVertical(map.latLngToContainerPoint(itinerary[0]), map.latLngToContainerPoint(forstPoint))){
+    if (isVertical(toPixels(itinerary[0]), toPixels(forstPoint))){
         pointDown = L.latLng(itinerary[0].lat, circleBounds.getWest());
         pointUp = L.latLng(itinerary[0].lat, circleBounds.getEast());
     } else {
@@ -1068,10 +1068,10 @@ function loadWeather(){
 }
 
 function getWeatherPos(pos, index){
-    var posXY = map.latLngToContainerPoint(pos);
+    var posXY = toPixels(pos);
     var length = allPos.length;
     var newPosXY;
-    if (isVertical(map.latLngToContainerPoint(allPos[Math.floor(length*((index-1)/8))]), map.latLngToContainerPoint(allPos[Math.floor(length*(index/8))]))){
+    if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[Math.floor(length*(index/8))]))){
         newPosXY = L.point(posXY.x-60, posXY.y);
     } else {
         newPosXY = L.point(posXY.x, posXY.y+60);
@@ -1177,7 +1177,7 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     map.removeLayer(polylineBracket);
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
 
-    // console.log(isVertical(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(markerBracketClose.getLatLng())));
+    // console.log(isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng())));
 
     circleZoneOfInterest.bringToFront()
 }
@@ -1224,7 +1224,7 @@ function dwellOnCircle(event){
     markerBracketClose.dragging.enable();
     markerBracketOpen.dragging.enable();
 
-    // console.log(isVertical(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(markerBracketClose.getLatLng())));
+    // console.log(isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng())));
 
     markerBracketClose
                 .on("dragend", function(e){
@@ -1232,12 +1232,12 @@ function dwellOnCircle(event){
                     if (state == "pointPlaced" || state == "closeMove"){
                         updateBracketCloseText();
                         var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)]);
+                        updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)], false);
                     }
                     state = prevState;
                 })
                 .on("dragstart", function(e){
-                    previousMarkerPos = markerBracketClose.getLatLng();
+                    previousClosePos = markerBracketClose.getLatLng();
                     state = "closeMove";
                     if (state == "pointPlaced" || state == "closeMove"){
                         isMovingBrackets = true;
@@ -1251,7 +1251,7 @@ function dwellOnCircle(event){
                         updatePosTexts(bracketCloseText, markerBracketClose);
                         updateBracketCloseText();
                         var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)]);
+                        updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)], false);
                     }
 
                     
@@ -1263,11 +1263,11 @@ function dwellOnCircle(event){
                     if (state == "pointPlaced" || state == "openMove"){
                         updateBracketOpenText();
                         var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)]);
+                        updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)], true);
                     }
                 })
                 .on("dragstart", function(e){
-                    previousMarkerPos = markerBracketOpen.getLatLng();
+                    previousOpenPos = markerBracketOpen.getLatLng();
                     state = "openMove";
                     if (state == "pointPlaced" || state == "openMove"){
                         console.log("drag open");
@@ -1282,7 +1282,7 @@ function dwellOnCircle(event){
                         updatePosTexts(bracketOpenText, markerBracketOpen);
                         updateBracketOpenText();
                         var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)]);
+                        updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)], true);
                         
                     }
                    
@@ -1311,23 +1311,25 @@ function dwellOnCircle(event){
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
     circleZoneOfInterest.bringToFront();
 
-    previousMarkerPos = markerBracketOpen.getLatLng();
-    previousMarkerPos = markerBracketClose.getLatLng();
+    // previousOpenPos = latlngAbove;
+    // previousClosePos = latlngBelow;
+    previousOpenPos = circleZoneOfInterest.getLatLng();
+    previousClosePos = circleZoneOfInterest.getLatLng();
 
-    // var vectOpen = coeffDirecteur(map.latLngToContainerPoint(markerBracketOpen.getLatLng()), map.latLngToContainerPoint(pointsToKeep[Math.floor(pointsToKeep.length/30)]));
+    // var vectOpen = coeffDirecteur(toPixels(markerBracketOpen.getLatLng()), toPixels(pointsToKeep[Math.floor(pointsToKeep.length/30)]));
     // markerBracketOpen.setRotationAngle(radians_to_degrees(Math.tan(vectOpen))+90);
-    updateMarkersRotation(markerBracketOpen, pointsToKeep[Math.floor(pointsToKeep.length/30)]);
-    updateMarkersRotation(markerBracketClose, pointsToKeep[Math.floor(pointsToKeep.length*29/30)]);
+    updateMarkersRotation(markerBracketOpen, pointsToKeep[Math.floor(pointsToKeep.length/30)], true);
+    updateMarkersRotation(markerBracketClose, pointsToKeep[Math.floor(pointsToKeep.length*29/30)], false);
     
     // L.polyline([markerBracketClose.getLatLng(), pointsToKeep[Math.floor(pointsToKeep.length*29/30)]], {color:'red', weight:3}).addTo(map);
-    // var vectClose = coeffDirecteur(map.latLngToContainerPoint(pointsToKeep[Math.floor(pointsToKeep.length*29/30)]), map.latLngToContainerPoint(markerBracketClose.getLatLng()));
+    // var vectClose = coeffDirecteur(toPixels(pointsToKeep[Math.floor(pointsToKeep.length*29/30)]), toPixels(markerBracketClose.getLatLng()));
     // markerBracketClose.setRotationAngle(radians_to_degrees(Math.tan(vectClose))+90);
 
 }
 
 function updatePosTexts(text, element){
-    var left = map.latLngToContainerPoint(element.getLatLng()).x+60;
-    var top = map.latLngToContainerPoint(element.getLatLng()).y-5;
+    var left = toPixels(element.getLatLng()).x+60;
+    var top = toPixels(element.getLatLng()).y-5;
     var textSize=[text.offsetWidth,text.offsetHeight];
     if (left + textSize[0] > width){
         left = left - 160;
@@ -1377,9 +1379,10 @@ function updateBracketOpenText(){
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
-var previousMarkerPos;
+var previousOpenPos;
+var previousClosePos;
 
-function updateMarkersRotation(marker, pos){
+function updateMarkersRotation(marker, pos, isOpen){
     // var points = latLngToPoint(allPos);
     // var simplified = L.LineUtil.simplify(points, 2);
     // var latlgns = pointToLatLng(simplified);
@@ -1393,24 +1396,54 @@ function updateMarkersRotation(marker, pos){
     // }
     // if (index < latlgns.length -1 && index > -1){
     //     var nextPos = latlgns[index+1];
-        var dist = getDistMarkers(marker.getLatLng());
-        if (dist > 0.2){
+        var dist = getDistMarkers(marker.getLatLng(), isOpen);
+        if (dist > 0.3){
+            
             console.log("update");
-            var vect = coeffDirecteur(map.latLngToContainerPoint(marker.getLatLng()), map.latLngToContainerPoint(pos));
+            console.log(isOpen);
+            
+            // L.circle(marker.getLatLng(), {color:"green"}).addTo(map);
+            
+            var vect;
+            // var angle;
+            if (isOpen){
+                vect = coeffDirecteur(toPixels(marker.getLatLng()), toPixels(previousOpenPos));
+                // angle = getAngle(toPixels(marker.getLatLng()), toPixels(previousOpenPos));
+                // L.circle(previousOpenPos, {color:"green"}).addTo(map);
+                // L.polyline([marker.getLatLng(), previousOpenPos], {color:"red"}).addTo(map);
+            } else {
+                vect = coeffDirecteur(toPixels(previousClosePos), toPixels(marker.getLatLng()));
+                // angle = getAngle(toPixels(previousClosePos), toPixels(marker.getLatLng()));
+                // L.circle(previousClosePos, {color:"green"}).addTo(map);
+                // L.polyline([marker.getLatLng(), previousClosePos], {color:"red"}).addTo(map);
+            }
+            
             // marker.setRotationAngle(radians_to_degrees(Math.tan(vect))-90);
             var angle = getAngle(vect);
             // console.log(angle);
+            console.log(angle);
+            // console.log(angle);
             marker.setRotationAngle(angle);
             // L.polyline([marker.getLatLng(), pos], {color:'red', weight:3}).addTo(map);
-            previousMarkerPos = marker.getLatLng();
+            if (isOpen){
+                previousOpenPos = marker.getLatLng();
+            } else {
+                previousClosePos = marker.getLatLng();
+            }
+            
         // }
     }
     
 }
 
-function getDistMarkers(pos){
+function getDistMarkers(pos, isOpen){
     var posPixel = toPixels(pos);
-    var lastPixels = toPixels(previousMarkerPos);
+    var lastPixels;
+    if (isOpen){
+        lastPixels = toPixels(previousOpenPos); 
+    } else {
+        lastPixels = toPixels(previousClosePos); 
+    }
     return ((posPixel.distanceTo(lastPixels)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
 }
 
@@ -1430,14 +1463,69 @@ function degreesToRadians(degrees)
   return degrees * (pi/180);
 }
 
-function getAngle(vect){
-    return (radians_to_degrees(Math.tan(-(vect[0]/vect[1]))));
+function getAngle(coeff){
+    // if (coeff==0){
+    //     return 90;
+    // } else {
+        // var pi = Math.PI;
+        // var angle = Math.abs(-(vect[0]/vect[1]));
+        // if (angle < 0){
+        //     angle = (2*pi) + angle;
+        // }
+        // console.log(angle);
+        // var angledeg = radians_to_degrees(Math.tan(angle));
+        // var simpAngle = simpplifyAngle(angledeg);
+        // console.log(simpAngle);
+        // return simpAngle;
+        // var angle = Math.tan(Math.abs(-((-1)/coeff)));
+        // var angleDeg = radians_to_degrees(angle);
+        // console.log(angleDeg);
+        // return angleDeg;
+        var norm = Math.sqrt(coeff[0]*coeff[0] + coeff[1]*coeff[1]);
+        var dot = coeff[0]/norm;
+        var angle = Math.acos(dot);
+        console.log(angle);
+        return 360-radians_to_degrees(angle);
+    // }
+    // if(pointB.x-pointA.x == 0){
+    //     return 0;
+    // } else {
+    //     return radians_to_degrees(Math.abs(pointA.y - pointB.y)/Math.abs(pointB.x - pointA.x))+90;
+    // }
+    
+}
+
+function simpplifyAngle(angle){
+    console.log(angle);
+    if (angle > 0){
+        while(angle > 360){
+            angle -= 360;
+        }
+        if (angle > 180){
+            angle = 360-angle;
+        }
+        return angle;
+    } else {
+        while (angle < -360){
+            angle += 360;
+        }
+        angle = 360+angle;
+        // if (angle > 180){
+        //     angle = 360-angle;
+        // }
+        return angle;
+    }
+
 }
 function coeffDirecteur(pointA, pointB){
-    // console.log(pointA);
-    // console.log(pointB);
+    // if (pointB.x==pointA.x){
+    //     return 0;
+    // }
+    console.log(pointA);
+    console.log(pointB);
     // console.log([pointB.x - pointA.x, pointB.y - pointA.y]);
-    return [pointB.x - pointA.x, pointB.y - pointA.y];
+    var coeffDirecteur =  (pointB.y-pointA.y)/(pointB.x-pointA.x);
+    return [coeffDirecteur, -1];
     // if (pointB.x-pointA.x != 0){
     //     var a = (pointB.y-pointA.y)/(pointB.x-pointA.x);
     //     console.log(a);
@@ -1463,7 +1551,7 @@ function openMenu(event){
         gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
         supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
         menuDiv.style.visibility = "visible";
-        var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
         // console.log()
         if (top < 5){
@@ -1509,7 +1597,7 @@ function openSlider(type){
     range.onpointerup = function(e){clickOnSlider = false};
     // sliderDiv.onpointerup = function(e){clickOnSlider = false};
     sliderDiv.style.visibility = "visible";
-    var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
+    var circlePos = toPixels(circleZoneOfInterest.getLatLng());
     var top = circlePos.y - 150;
     if (top < 5){
         top+=200;
@@ -1622,12 +1710,12 @@ function moveMarkers(latlng){
         if (markerBracketClose != null){
             markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, L.latLng(markerBracketClose.getLatLng().lat-diff.lat, markerBracketClose.getLatLng().lng-diff.lng)));
             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, L.latLng(markerBracketOpen.getLatLng().lat-diff.lat, markerBracketOpen.getLatLng().lng-diff.lng)));
-            bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
-            bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+            bracketOpenText.style.left=toPixels(markerBracketOpen.getLatLng()).x+20+'px';
+            bracketOpenText.style.top=toPixels(markerBracketOpen.getLatLng()).y-50+'px';
             lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
             var latLngs = polylineBracket.getLatLngs();
-            updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)]);
-            updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)]);
+            updateMarkersRotation(markerBracketOpen, latLngs[Math.floor(latLngs.length/30)],true);
+            updateMarkersRotation(markerBracketClose, latLngs[Math.floor(latLngs.length*29/30)],false);
         //     markerBracketOpen.setLatLng(markerBracketOpen.getLatLng()+diff);
         }
         updatePosTexts(bracketCloseText, markerBracketClose);
@@ -1687,7 +1775,7 @@ function arrayToQuery(itinerary, type){
 function updatePositions(){
     var layers = weatherLayerGroup.getLayers();
     var lines = weatherLayerGroupLines.getLayers();
-    var prevPoint = map.latLngToContainerPoint(allPos[0]);
+    var prevPoint = toPixels(allPos[0]);
     for (var i = 0; i < layers.length; i++){
         var latLng = layers[i].getLatLng();
         var curLine = lines[i].getLatLngs();
@@ -1698,7 +1786,7 @@ function updatePositions(){
             closest = curLine[0];
         }
        
-        var closestXY = map.latLngToContainerPoint(closest);
+        var closestXY = toPixels(closest);
        
         var newXY;
         if (isVertical(prevPoint, closestXY)){
@@ -1717,16 +1805,16 @@ function updatePositions(){
 
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
-        bracketOpenText.style.left=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).x+20+'px';
-        bracketOpenText.style.top=map.latLngToContainerPoint(markerBracketOpen.getLatLng()).y-50+'px';
+        bracketOpenText.style.left=toPixels(markerBracketOpen.getLatLng()).x+20+'px';
+        bracketOpenText.style.top=toPixels(markerBracketOpen.getLatLng()).y-50+'px';
         // bracketOpenText.innerHTML="distance "+isMovingBrackets;
 
-        bracketCloseText.style.left=map.latLngToContainerPoint(markerBracketClose.getLatLng()).x+20+'px';
-        bracketCloseText.style.top=map.latLngToContainerPoint(markerBracketClose.getLatLng()).y-50+'px';
+        bracketCloseText.style.left=toPixels(markerBracketClose.getLatLng()).x+20+'px';
+        bracketCloseText.style.top=toPixels(markerBracketClose.getLatLng()).y-50+'px';
         // bracketCloseText.innerHTML="distance "+isMovingBrackets;
 
-        circleMarkerText.style.left=map.latLngToContainerPoint(circleZoneOfInterest.getLatLng()).x+20+'px';
-        circleMarkerText.style.top=map.latLngToContainerPoint(circleZoneOfInterest.getLatLng()).y-50+'px';
+        circleMarkerText.style.left=toPixels(circleZoneOfInterest.getLatLng()).x+20+'px';
+        circleMarkerText.style.top=toPixels(circleZoneOfInterest.getLatLng()).y-50+'px';
         // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
     var zoom = map.getZoom();
@@ -1789,7 +1877,7 @@ onpointermove = (event) => {
     }
     if (isMenuOn){
         var menuDiv = document.getElementById("menu");
-        var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
         // console.log()
         if (top < 5){
@@ -1800,7 +1888,7 @@ onpointermove = (event) => {
 
         var sliderDiv = document.getElementById("slider");
         // // sliderDiv.style.visibility = "visible";
-        // // var circlePos = map.latLngToContainerPoint(circleMarker.getLatLng());
+        // // var circlePos = toPixels(circleMarker.getLatLng());
         var topSlider = circlePos.y - 150;
         if (topSlider < 5){
             topSlider+=200;
@@ -1979,7 +2067,7 @@ onpointerup = (event) => {
     }
     if (isMenuOn){
         var menuDiv = document.getElementById("menu");
-        var circlePos = map.latLngToContainerPoint(circleZoneOfInterest.getLatLng());
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
         // console.log()
         if (top < 5){
