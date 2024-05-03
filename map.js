@@ -62,6 +62,11 @@ var isMovingMap = false;
 var previousOpenPos;
 var previousClosePos;
 
+var startTime;
+var clickOnCircle = false;
+var clickOnMenu = false;
+var clickOnSlider = false;
+
 L.Control.Layers = L.Control.extend({
     options:{
         position: 'topright'
@@ -120,7 +125,7 @@ var routing = L.Routing.control({
         // L.latLng(48.70577272850384, 2.185514438847031)
         // L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
         L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
-        // L.latLng(43.32361856747493, -0.3548212423438274)
+        // L.latLng(43.32361856747493, -0.3548212423438274) // Pau
     ],
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
@@ -142,7 +147,6 @@ routing.on("routesfound", function (e){
     console.log("reroute");
     L.control.layers({}).addTo(map);
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
-    
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
     if (itinerary != null){
@@ -665,6 +669,7 @@ function oplQuery(queryString){
                 markers.push(marker);
     
                 marker.on("contextmenu", function(e){
+                    console.log(e.latlng);
                     var container = L.DomUtil.create('div'),
                     startBtn = createButton('Add to route', container);
                     L.DomEvent.on(startBtn, 'click', function() {
@@ -732,18 +737,19 @@ function clearQueryResults(){
     markerBracketOpen.setIcon(bracket);
     markerBracketClose.setIcon(bracket);
     markerBracketOpen.dragging.enable();
-    markerBracketClose.dragging.enable();
+    markerBracketClose.dragging.enable(); 
+    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
     // map.removeLayer(polylineBracket);
     queryZone.forEach(element => {
         map.removeLayer(element);
     });
     var button = document.getElementById("clearDiv");
     button.style.visibility = 'hidden';
-    state = "itinerary";
-    prevState = "itinerary";
-    outline.setStyle({color:"blue"});
-    itinerary.setStyle({color:"blue"});
-    stroke.setStyle({color:"blue"});
+    state = "pointPlaced";
+    prevState = "pointPlaced";
+    // outline.setStyle({color:"blue"});
+    // itinerary.setStyle({color:"blue"});
+    // stroke.setStyle({color:"blue"});
     polylineBracket.setStyle({opacity:0.5});
     bracketCloseText.style.visibility = 'hidden';
     bracketOpenText.style.visibility = 'hidden';
@@ -863,10 +869,20 @@ function itineraryPass(itinerary, distValue){
 
 function isVertical(pointA, pointB){
     if ((pointB.y - pointA.y) == 0){
+        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
         return false;
+    } else if (pointB.x - pointA.x == 0){
+        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);    
+        return true;
     } else {
-        var coeff = (pointB.x - pointA.x)/(pointB.y - pointA.y);
-        return coeff > -3 && coeff < 1;
+        var coeff = Math.abs((pointB.y - pointA.y)/(pointB.x - pointA.x));
+        console.log(coeff);
+        if (coeff > 0.5){
+            // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
+        } else {
+            // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
+        }
+        return coeff > 0.5;
     }
 }
 
@@ -1289,7 +1305,7 @@ function dwellOnCircle(event){
                         var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketClose, false);
                     }
-                    state = prevState;
+                   
                 })
                 .on("dragstart", function(e){
                     previousClosePos = markerBracketClose.getLatLng();
@@ -1303,8 +1319,7 @@ function dwellOnCircle(event){
                         isMovingBrackets = true;
                         markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
                         lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-                        // updatePosTexts(bracketCloseText, markerBracketClose);
-                        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(previousClosePos)));
+                        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                         updateBracketCloseText();
                         var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketClose, false);
@@ -1321,6 +1336,7 @@ function dwellOnCircle(event){
                         var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketOpen, true);
                     }
+                    state = prevState;
                 })
                 .on("dragstart", function(e){
                     previousOpenPos = markerBracketOpen.getLatLng();
@@ -1335,8 +1351,7 @@ function dwellOnCircle(event){
                         isMovingBrackets = true;
                         markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
                         lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
-                        // updatePosTexts(bracketOpenText, markerBracketOpen);
-                        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(previousOpenPos)));
+                        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                         updateBracketOpenText();
                         var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketOpen, true);
@@ -1364,9 +1379,9 @@ function dwellOnCircle(event){
     circleMarkerText.innerHTML=(dist/1000).toFixed(0) + "km";
     // updatePosTexts(circleMarkerText, circleZoneOfInterest);
 
-    updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(previousClosePos)));
-    updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(previousOpenPos)));
-    updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+    updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+    updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+    updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
 
     isPointOnLine(latlngAbove, allPos, 0.5);
     var pointsAbove = new Array();
@@ -1382,6 +1397,7 @@ function dwellOnCircle(event){
 }
 
 function updatePosTexts(text, element, isVert){
+
     if (element != null){
         if (isVert){
             var left = toPixels(element.getLatLng()).x+60;
@@ -1448,25 +1464,9 @@ function updateBracketOpenText(){
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
-
 function updateMarkersRotation(marker, isOpen){
-    // var points = latLngToPoint(allPos);
-    // var simplified = L.LineUtil.simplify(points, 2);
-    // var latlgns = pointToLatLng(simplified);
-    // var closestDist = L.GeometryUtil.closest(map, latlgns, marker.getLatLng(), true);
-    // var closest = L.latLng(closestDist.lat, closestDist.lng);
-    // var index = -1;
-    // for (var i = 0; i < latlgns.length; i++){
-    //     if (latlgns[i].equals(closest)){
-    //         index = i;
-    //     }
-    // }
-    // if (index < latlgns.length -1 && index > -1){
-    //     var nextPos = latlgns[index+1];
     var dist = getDistMarkers(marker.getLatLng(), isOpen);
     if (dist > 0.3 || previousClosePos == circleZoneOfInterest.getLatLng() || previousOpenPos == circleZoneOfInterest.getLatLng()){   
-        // console.log("update");
-        // console.log(isOpen);
         var vect;
         if (isOpen){
             vect = normalVector(toPixels(marker.getLatLng()), toPixels(previousOpenPos));
@@ -1474,7 +1474,7 @@ function updateMarkersRotation(marker, isOpen){
             vect = normalVector(toPixels(previousClosePos), toPixels(marker.getLatLng()));
         }
         var angle = getAngle(vect);
-        // console.log(angle);
+        console.log(angle);
         marker.setRotationAngle(angle);
         if (isOpen){
             previousOpenPos = marker.getLatLng();
@@ -1521,9 +1521,6 @@ function normalVector(pointA, pointB){
     var coeffDirecteur =  (pointB.y-pointA.y)/(pointB.x-pointA.x);
     return [coeffDirecteur, -1];
 }
-
-var clickOnMenu = false;
-var clickOnSlider = false;
 
 //Handles Interactions with the query menu
 function openMenu(event){
@@ -1705,9 +1702,9 @@ function moveMarkers(latlng){
             updateMarkersRotation(markerBracketClose, false);
         //     markerBracketOpen.setLatLng(markerBracketOpen.getLatLng()+diff);
         }
-        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(previousClosePos)));
-        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(previousOpenPos)));
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()).getLatLng()), toPixels(markerBracketOpen.getLatLng()));
         isPointOnLine(closest, allPos, 5)
         
         points.push(closest);
@@ -1790,8 +1787,7 @@ function updatePositions(){
 
 }
 
-var startTime;
-var clickOnCircle = false;
+
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
         bracketOpenText.style.left=toPixels(markerBracketOpen.getLatLng()).x+20+'px';
@@ -1837,16 +1833,9 @@ onpointerdown = (event) => {
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
     }
-    // console.log(event.target);
     if (circleZoneOfInterest != null && event.target == circleZoneOfInterest._path){
         map.dragging.disable();
     }
-    //get the points
-    //check if it is close to the markers
-    //if close to a bracket, drag bracket
-    //if close to the dot, drag interval
-    // var point = L.point(event.clientX, event.clientY); //point in pixel
-    // var latlng = map.containerPointToLatLng(point); //point in latlng
 
 };
 
@@ -1855,9 +1844,9 @@ onpointermove = (event) => {
     // console.log(millis/1000);
     if ((millis / 1000) > 0.5){
         if(isPointerDown){
-            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(previousClosePos)));
-            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(previousOpenPos)));
-            updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+            updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
             isMovingMap = true;
             moveCursor(event); //text follow mouse
             var point = L.point(event.clientX, event.clientY); //point in pixel
@@ -1977,9 +1966,9 @@ onpointerup = (event) => {
         } 
     } 
     if (state != "itinerary"){
-        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(previousClosePos)));
-        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(previousOpenPos)));
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
     }
     if(state == "circleMove" || state == "openMove" || state == "closeMove"){
         state = prevState;
