@@ -174,9 +174,11 @@ routing.on("routesfound", function (e){
             map.removeLayer(markerBracketOpen);
             map.removeLayer(markerBracketClose);
             map.removeLayer(polylineBracket);
-            outline.setStyle({color:"blue"});
-            itinerary.setStyle({color:"blue"});
             stroke.setStyle({color:"blue"});
+            itinerary.setStyle({color:"blue"});
+            if (!isFuelDisplayed && !isRestaurantDisplayed){
+                outline.setStyle({color:"blue"});      
+            }
             bracketCloseText.style.visibility = "hidden";
             bracketOpenText.style.visibility = "hidden";
             circleMarkerText.style.visibility = "hidden";
@@ -194,7 +196,10 @@ routing.on("routesfound", function (e){
             map.removeLayer(markerBracketOpen);
             map.removeLayer(markerBracketClose);
             map.removeLayer(polylineBracket);
-            outline.setStyle({color:"blue"});
+            if (!isFuelDisplayed && !isRestaurantDisplayed){
+                outline.setStyle({color:"blue"});
+            }
+            
             itinerary.setStyle({color:"blue"});
             stroke.setStyle({color:"blue"});
             bracketCloseText.style.visibility = "hidden";
@@ -418,6 +423,7 @@ function createGradientFuel(){
 
 function isochroneMinutes(type, value, units){
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units);
+    L.DomUtil.addClass(circleZoneOfInterest._path, "pulse");
     // console.log(points);
     if (points.length < 6){
         var resIso = [];
@@ -440,6 +446,7 @@ function isochroneMinutes(type, value, units){
                     resIso.push(this.response.features);
                     // console.log("i : " + i + ", length : " + points.length);
                     // console.log(resIso);
+                    L.DomUtil.removeClass(circleZoneOfInterest._path, "pulse");
                     isochroneToPolygon(resIso, type, points.length); 
                 }
             };
@@ -582,7 +589,10 @@ function isochroneToPolygon(body, type, length){
             window.alert("Not Enough Points");
             state = "itinerary";
             prevState = "itinerary";
+            
+            if (!isFuelDisplayed && !isRestaurantDisplayed){
             outline.setStyle({color:"blue"});
+            }
             itinerary.setStyle({color:"blue"});
             stroke.setStyle({color:"blue"});
             bracketCloseText.style.visibility = 'hidden';
@@ -667,6 +677,10 @@ function oplQuery(queryString){
                 const popup = L.popup().setContent(popupContent);
                 marker.bindPopup(popup);
                 markers.push(marker);
+
+                marker.on("click", function(e){
+                    marker.setIcon(darkGreenIcon);
+                })
     
                 marker.on("contextmenu", function(e){
                     console.log(e.latlng);
@@ -694,6 +708,8 @@ function oplQuery(queryString){
             console.log("error");
         },
         afterRequest: function()  {
+            
+            
             console.log("afterRequest");
             var newZones = [];
             queryZone.forEach(element => {
@@ -876,7 +892,7 @@ function isVertical(pointA, pointB){
         return true;
     } else {
         var coeff = Math.abs((pointB.y - pointA.y)/(pointB.x - pointA.x));
-        console.log(coeff);
+        // console.log(coeff);
         if (coeff > 0.5){
             // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
         } else {
@@ -960,17 +976,17 @@ document.body.appendChild(ETAFloatingText);
 var ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
 
 var bracketOpenText=document.createElement('div');
-bracketOpenText.style.zIndex = 500;
+bracketOpenText.style.zIndex = 400;
 bracketOpenText.style.visibility='hidden';
 bracketOpenText.id="bracketText";
 
 var bracketCloseText=document.createElement('div');
-bracketCloseText.style.zIndex = 500;
+bracketCloseText.style.zIndex = 400;
 bracketCloseText.style.visibility='hidden';
 bracketCloseText.id="bracketCloseText";
 
 var circleMarkerText=document.createElement('div');
-circleMarkerText.style.zIndex = 500;
+circleMarkerText.style.zIndex = 400;
 circleMarkerText.style.visibility='hidden';
 circleMarkerText.id="circleText";
 
@@ -991,8 +1007,17 @@ function getResolution() {
 }
 
 //Green marker icon for POI
+// var greenIcon = new L.Icon({
+//     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+//     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+//     iconSize: [25, 41],
+//     iconAnchor: [12, 41],
+//     popupAnchor: [1, -34],
+//     shadowSize: [41, 41]
+//   });
+
 var greenIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    iconUrl: 'icons/marker_green.svg',
     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
     iconSize: [25, 41],
     iconAnchor: [12, 41],
@@ -1000,24 +1025,33 @@ var greenIcon = new L.Icon({
     shadowSize: [41, 41]
   });
 
+var darkGreenIcon = new L.Icon({
+iconUrl: 'icons/marker_dark_green.svg',
+shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+iconSize: [25, 41],
+iconAnchor: [12, 41],
+popupAnchor: [1, -34],
+shadowSize: [41, 41]
+});
+
 var bracket = L.icon({
-    iconUrl: 'icons/brackets.svg',
+    iconUrl: 'icons/circle-marker.svg',
     // shadowUrl: 'icons/shadow.png',
 
-    iconSize:     [100, 45], // size of the icon
-    shadowSize:   [50, 64], // size of the shadow
-    iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [4, 62],  // the same for the shadow
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [50, 25],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
 var bracketGreyed = L.icon({
-    iconUrl: 'icons/bracket_greyed.svg',
+    iconUrl: 'icons/circle-marker-greyed.svg',
     // shadowUrl: 'icons/shadow.png',
 
-    iconSize:     [100, 45], // size of the icon
-    shadowSize:   [50, 64], // size of the shadow
-    iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [4, 62],  // the same for the shadow
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [50, 25],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
 
@@ -1126,6 +1160,7 @@ function loadWeather(){
         weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker6 ]).addTo(map);
         weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line4, line6]).addTo(map);
         isWeatherDisplayed = true;
+        updatePositions();
     } else if (!isWeatherDisplayed){
         weatherLayerGroup.addTo(map);
         weatherLayerGroupLines.addTo(map);
@@ -1644,8 +1679,14 @@ function setSliderMinMax(isKiloMeter, slider){
         console.log(time);
         console.log(percent);
         console.log(percTime);
-        slider.setAttribute("min", Math.round(inMinutes/5));
-        slider.setAttribute("max", Math.round(inMinutes));
+        var min = Math.round(inMinutes/5);
+        var max = Math.round(inMinutes);
+        if (max < 60){
+            max = 60;
+            min = 40;
+        }
+        slider.setAttribute("min", min);
+        slider.setAttribute("max", max);
         console.log(Math.round(inMinutes/5));
         console.log(Math.round(inMinutes));
 
@@ -1704,7 +1745,7 @@ function moveMarkers(latlng){
         }
         updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
         updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()).getLatLng()), toPixels(markerBracketOpen.getLatLng()));
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
         isPointOnLine(closest, allPos, 5)
         
         points.push(closest);
@@ -1957,7 +1998,10 @@ onpointerup = (event) => {
                     
                     queryZone.length = 0;
                 }
+                
+            if (!isFuelDisplayed && !isRestaurantDisplayed){
                 outline.setStyle({color:"#000167"});
+            }
                 itinerary.setStyle({color:"#6D6D6D"});
                 stroke.setStyle({color:"#6D6D6D"});
                 state = "pointPlaced";
