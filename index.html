@@ -49,9 +49,9 @@
     <input type="image" id = "supermarket" src="icons/supermarket.svg" width="46" height="46"/>
     </div>
     <div id="slider" style=" visibility: hidden;z-index: 1000; width: 170px; ">
-        <div id="buttons" style="display: flex; justify-content: flex-end">
-            <input id="km" type="button" class="selected" value="km">
-            <input id="min" type="button" class="unselected" value="min">
+        <div  style="display: flex; justify-content: flex-end">
+            <output id="value" style="padding-right: 5px;"> </output>
+            <input type="button" id="go" class="unselected" value="Go">
         </div>
         <input type="range" id="range" min="0" max="45" value="15">
         <!-- <datalist id="values">
@@ -60,9 +60,10 @@
             <option id="value3" value="30" label="30"></option>
             <option id="value4" value="45" label="45"></option>
           </datalist> -->
-        <div  style="display: flex; justify-content: flex-end">
-            <output id="value" style="padding-right: 5px;"> </output>
-            <input type="button" id="go" class="unselected" value="Go">
+        
+        <div id="buttons" style="display: flex; justify-content: flex-end">
+            <input id="km" type="button" class="selected" value="km">
+            <input id="min" type="button" class="unselected" value="min">
         </div>
     </div>
     <div id="layers"  >
@@ -70,9 +71,10 @@
             <input type="image" id="layersButton" src="icons/layers.png" width="22" height="22">
         </div>
         <div className="grid-container" id="listLayers" style="visibility: collapse; width: 96px;" >
+            <input type="image" id = "weatherLayer" src="icons/weatherNoShadow.svg" width="46" height="47"/>
+            <input type="image" id = "elevationLayer" src="icons/elevation.svg" width="46" height="47"/>
             <input type="image" id="restaurantLayer" src="icons/restaurantNoShadow.svg" width="46" height="47" />
             <input type="image" id = "gasstationLayer" src="icons/gasstationNoShadow.svg" width="46" height="47"/>
-            <input type="image" id = "weatherLayer" src="icons/weatherNoShadow.svg" width="46" height="47"/>
         </div>
     </div> 
     <div id="clearDiv" style="visibility: hidden; top: 105px; left: 314px; z-index:1000" >
