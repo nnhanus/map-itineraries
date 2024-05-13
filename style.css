@@ -18,12 +18,32 @@ body{
     border: solid blue 2px;
     border-radius: 4px;
     padding: 5px 5px 5px 5px ;
+    box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
 }
 
+.selectedLayer{
+    background-color: #78c0ff;
+}
 .restaurant{
     padding: 2px 2px 2px 2px;
 }
 
+.leaflet-routing-collapse-btn{
+    box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
+}
+
+
+/* .leaflet-control-zoom-in{
+    border: solid blue 2px;
+    box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
+    border-radius: 4px;
+ }
+
+ .leaflet-control-zoom-out{
+    border: solid blue 2px;
+    border-radius: 4px;
+    box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
+}   */
 #cursorText{
     position:absolute;
     background-color: #2b8eff9d;

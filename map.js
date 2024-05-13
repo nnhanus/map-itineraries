@@ -26,7 +26,6 @@ var time; //secondes
 var points = new Array();
 
 var markers = new Array(); //all the circles along the road.
-// var previewIti = new Array();
 var itineraryJSON;
 
 var circleZoneOfInterest = null;
@@ -50,10 +49,10 @@ var orService;
 
 var prevZoom;
 
-var width = 350;
-var height = 650; 
+const width = 350;
+const height = 650; 
 
-var ppi = 269;
+const ppi = 269;
 
 var requestMade = false;
 var state = "itinerary";
@@ -68,6 +67,7 @@ var startTime;
 var clickOnCircle = false;
 var clickOnMenu = false;
 var clickOnSlider = false;
+var clickOnLayer = false;
 
 var openedMarker;
 var openedPopup;
@@ -86,8 +86,13 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         var elevationLayer = document.getElementById("elevationLayer");
+        // var redrawButton = document
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+        }
         fuelLayer.onclick = function(e){
             loadFuelDistribution();
+            clickOnLayer = true;
         }
         restaurantLayer.onclick = function(e){
             loadRestaurantDistribution();
@@ -173,10 +178,10 @@ routing.on("routesfound", function (e){
 
     // console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
 
-    stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline"}).addTo(map); // Draw the interaction zone
+    stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
     var strokeHTML = stroke._path;
     
-    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route"}).addTo(map); // Draw the interaction zone
+    outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
     // console.log(outlinePathHTML);
@@ -455,7 +460,6 @@ function createGradientFuel(){
     var defs = document.getElementById("defs");
     defs.appendChild(gradient);
 }
-
 
 function createGradientElevation(){
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
@@ -836,8 +840,6 @@ function oplQuery(queryString){
 
 
 }
-
-
 
 function makeClearButton(){
     var button = document.getElementById("clearDiv");
@@ -1273,10 +1275,12 @@ function loadWeather(){
         weatherLayerGroup.addTo(map);
         weatherLayerGroupLines.addTo(map);
         isWeatherDisplayed = true;
+        document.getElementById("weatherLayer").classList.add('selectedLayer');
     } else {
         weatherLayerGroup.removeFrom(map);
         weatherLayerGroupLines.removeFrom(map);
         isWeatherDisplayed = false;
+        document.getElementById("weatherLayer").classList.remove('selectedLayer');
     }
 
 }
@@ -1301,12 +1305,16 @@ function loadRestaurantDistribution(){
         outlineHTML.setAttribute("stroke", "blue");
         outlineHTML.setAttribute("stroke-opacity", "0.25");
         isRestaurantDisplayed = false;
+        document.getElementById("restaurantLayer").classList.remove('selectedLayer');
     } else {
         outlineHTML.setAttribute("stroke", "url(#gradientRestaurant)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isRestaurantDisplayed = true;
         isFuelDisplayed = false;
         isElevationDisplayed = false;
+        document.getElementById("restaurantLayer").classList.add('selectedLayer');
+        document.getElementById("elevationLayer").classList.remove('selectedLayer');
+        document.getElementById("gasstationLayer").classList.remove('selectedLayer');
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
@@ -1317,28 +1325,37 @@ function loadFuelDistribution(){
         outlineHTML.setAttribute("stroke", "blue");
         outlineHTML.setAttribute("stroke-opacity", "0.25");
         isFuelDisplayed = false;
+        document.getElementById("gasstationLayer").classList.remove('selectedLayer');
     } else {
         outlineHTML.setAttribute("stroke", "url(#gradientFuel)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isFuelDisplayed = true;
         isRestaurantDisplayed = false;
         isElevationDisplayed = false;
+        document.getElementById("gasstationLayer").classList.add('selectedLayer');
+        document.getElementById("restaurantLayer").classList.remove('selectedLayer');
+        document.getElementById("elevationLayer").classList.remove('selectedLayer');
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
 
 function loadElevationDistribution(){
+    console.log("elevation");
     var outlineHTML = document.getElementById("strokeRoute");
     if(isElevationDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
         outlineHTML.setAttribute("stroke-opacity", "0.25");
         isFuelDisplayed = false;
+        document.getElementById("elevationLayer").classList.remove('selectedLayer');
     } else {
         outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
-        isFuelDisplayed = true;
+        isElevationDisplayed = true;
         isRestaurantDisplayed = false;
         isFuelDisplayed = false;
+        document.getElementById("elevationLayer").classList.add('selectedLayer');
+        document.getElementById("restaurantLayer").classList.remove('selectedLayer');
+        document.getElementById("gasstationLayer").classList.remove('selectedLayer');
     }
 }
 
@@ -1459,7 +1476,6 @@ function dwellOnCircle(event){
                     
                     if (state == "pointPlaced" || state == "closeMove"){
                         updateBracketCloseText();
-                        var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketClose, false);
                     }
                    
@@ -1474,12 +1490,17 @@ function dwellOnCircle(event){
                 .on("drag", function(e){
                     if (state == "pointPlaced" || state == "closeMove"){
                         isMovingBrackets = true;
-                        markerBracketClose.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
-                        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-                        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-                        updateBracketCloseText();
-                        var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketClose, false);
+                        
+                        if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketClose.getLatLng()) < 50000){
+                            markerBracketClose.setLatLng( L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
+                            lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+                            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+                            updateBracketCloseText();
+                            updateMarkersRotation(markerBracketClose, false);
+                        
+                        }  else {
+                            markerBracketClose.dragging.disable();
+                        }
                     }
 
                     
@@ -1494,8 +1515,11 @@ function dwellOnCircle(event){
                         updateMarkersRotation(markerBracketOpen, true);
                     }
                     state = prevState;
+                    markerBracketOpen.dragging.enable();
                 })
                 .on("dragstart", function(e){
+                    // console.log(distAlongLine(markerBracketOpen.getLatLng(), circleZoneOfInterest.getLatLng(), polylineBracket.getLatLngs()));
+                    // console.log(distAlongLine(circleZoneOfInterest.getLatLng(), markerBracketOpen.getLatLng(), polylineBracket.getLatLngs()));
                     previousOpenPos = markerBracketOpen.getLatLng();
                     state = "openMove";
                     if (state == "pointPlaced" || state == "openMove"){
@@ -1506,12 +1530,17 @@ function dwellOnCircle(event){
                 .on("drag", function(e){
                     if (state == "pointPlaced" || state == "openMove"){
                         isMovingBrackets = true;
-                        markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
-                        lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
-                        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-                        updateBracketOpenText();
-                        var latLngs = polylineBracket.getLatLngs();
-                        updateMarkersRotation(markerBracketOpen, true);
+                        
+                        if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketOpen.getLatLng()) < 50000){
+                            markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
+                            lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
+                            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+                            updateBracketOpenText();
+                            var latLngs = polylineBracket.getLatLngs();
+                            updateMarkersRotation(markerBracketOpen, true);
+                        } else {
+                            markerBracketOpen.dragging.disable();
+                        }
                         
                     }
                    
@@ -2135,7 +2164,7 @@ onpointerup = (event) => {
     } else if (state == "pointPlaced"){
     } else if(state == "itinerary"){
         // console.log(state);
-        if (isPointerDown  && !isMovingMarker && !isMovingBrackets){
+        if (isPointerDown  && !isMovingMarker && !isMovingBrackets && !clickOnLayer){
             ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
 
             //Calculate if we're on the line or not
@@ -2181,15 +2210,9 @@ onpointerup = (event) => {
                 if (queryZone != null){
                     map.removeLayer(queryZone);
                 }
-                // if (queryZone.length != 0){
-                //     queryZone.forEach(element => {
-                //         map.removeLayer(element);
-                //     })
-                    
-                //     queryZone.length = 0;
-                // }
                 
-            if (!isFuelDisplayed && !isRestaurantDisplayed){
+                
+            if (!isFuelDisplayed && !isRestaurantDisplayed && !isElevationDisplayed){
                 outline.setStyle({color:"#000167"});
             }
                 itinerary.setStyle({color:"#6D6D6D"});
@@ -2213,7 +2236,6 @@ onpointerup = (event) => {
     isMovingMap = false;
     clickOnCircle = false;
     map.dragging.enable();
-    // console.log(isMovingMarker);
     
     
     var zoom = map.getZoom();
@@ -2243,6 +2265,11 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
+    if(markerBracketClose != null){
+        markerBracketOpen.dragging.enable();
+        markerBracketClose.dragging.enable();
+    }
+    // document.getElementsByTagName('body')[0].focus();
 }
 
 
