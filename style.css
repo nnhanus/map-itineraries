@@ -32,6 +32,9 @@ body{
     box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
 }
 
+.willnotrender { 
+    transform: translateZ(0); 
+ }
 
 /* .leaflet-control-zoom-in{
     border: solid blue 2px;

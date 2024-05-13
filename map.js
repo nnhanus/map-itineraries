@@ -86,7 +86,7 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         var elevationLayer = document.getElementById("elevationLayer");
-        // var redrawButton = document
+        var redrawButton = document.getElementById("redrawButton");
         container.onpointerdown = function(e){
             clickOnLayer = true;
         }
@@ -107,6 +107,10 @@ L.Control.Layers = L.Control.extend({
             var menu = document.getElementById("hiddenLayers");
             visibilityToggle(menu);
         };
+        redrawButton.onclick = function(e){
+            forceRedraw();
+            redrawButton.classList.add('selectedLayer');
+        }
         return container;
         
     },
@@ -180,10 +184,12 @@ routing.on("routesfound", function (e){
 
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
     var strokeHTML = stroke._path;
+    strokeHTML.setAttribute("class", "willnotrender");
     
     outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
+    outlinePathHTML.setAttribute("class", "willnotrender");
     // console.log(outlinePathHTML);
 
 
@@ -283,6 +289,8 @@ function createFilterShadow(){
     filter.id = "filterShadow";
     filter.setAttribute("filterUnits", "userSpaceOnUse");
     filter.setAttribute("color-interpolation-filters", "sRGB");
+    filter.setAttribute("width", width*2);
+    filter.setAttribute("height", height*2);
 
     var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
     flood.setAttribute("flood-opacity", "0");
@@ -334,6 +342,20 @@ function createFilterShadow(){
     svg[0].appendChild(defs);
 }
 
+
+function forceRedraw(){
+    stroke._path.style.display = "none";
+    // outlinePathHTML.style.display = "none";
+    stroke._path.style.display = "block";
+    // outlinePathHTML.style.display = "block";
+    // createFilterShadow();
+    // createFilterStroke();
+    // let strokeHTML = stroke._path;
+    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
+    // itinerary.bringToFront();
+
+}
 function createFilterStroke(){
     //Everything under white will appear, everything thing under black will not
     const oldMask = document.getElementById("strokeMask");
@@ -2265,11 +2287,12 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    if(markerBracketClose != null){
-        markerBracketOpen.dragging.enable();
-        markerBracketClose.dragging.enable();
-    }
+    // if(markerBracketClose != null){
+    //     markerBracketOpen.dragging.enable();
+    //     markerBracketClose.dragging.enable();
+    // }
     // document.getElementsByTagName('body')[0].focus();
+    
 }
 
 
