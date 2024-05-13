@@ -26,7 +26,7 @@ var time; //secondes
 var points = new Array();
 
 var markers = new Array(); //all the circles along the road.
-var previewIti = new Array();
+// var previewIti = new Array();
 var itineraryJSON;
 
 var circleZoneOfInterest = null;
@@ -43,6 +43,7 @@ var weatherLayerGroupLines = null;
 var isWeatherDisplayed = false;
 var isFuelDisplayed = false;
 var isRestaurantDisplayed = false;
+var isElevationDisplayed = false;
 var isInKM = true;
 
 var orService;
@@ -72,7 +73,7 @@ var openedMarker;
 var openedPopup;
 
 const startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
-const endRoute = L.latLng(53.55562497332884, 7.9839136794782375);
+const endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -84,6 +85,7 @@ L.Control.Layers = L.Control.extend({
         var weatherLayer = document.getElementById("weatherLayer");
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
+        var elevationLayer = document.getElementById("elevationLayer");
         fuelLayer.onclick = function(e){
             loadFuelDistribution();
         }
@@ -93,8 +95,11 @@ L.Control.Layers = L.Control.extend({
         weatherLayer.onclick = function(e){
             loadWeather();
         }
+        elevationLayer.onclick = function(e){
+            loadElevationDistribution();
+        }
         button.onclick =  function(e){
-            var menu = document.getElementById("listLayers");
+            var menu = document.getElementById("hiddenLayers");
             visibilityToggle(menu);
         };
         return container;
@@ -128,11 +133,13 @@ function visibilityToggle(element){
 var routing = L.Routing.control({
     
     waypoints: [
-        L.latLng(48.70973285709232, 2.1626934894717214), //660
+        // L.latLng(48.70973285709232, 2.1626934894717214), //660
         // L.latLng(48.70577272850384, 2.185514438847031)
         // L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
-        L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
+        // L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
         // L.latLng(43.32361856747493, -0.3548212423438274) // Pau
+        // L.latLng(47.206380448601664, -1.5645061284185262) //Nantes
+        startRoute, endRoute
     ],
     routeWhileDragging: false,
     geocoder: L.Control.Geocoder.nominatim(),
@@ -156,10 +163,12 @@ routing.on("routesfound", function (e){
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
+    var firstTime = true;
     if (itinerary != null){
         map.removeLayer(itinerary);
         map.removeLayer(outline);
         map.removeLayer(stroke);
+        firstTime = false;
     }
 
     // console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
@@ -216,7 +225,6 @@ routing.on("routesfound", function (e){
     });
 
 
-    
     createFilterShadow();
     createFilterStroke();
     
@@ -226,18 +234,38 @@ routing.on("routesfound", function (e){
 
     createGradientRestaurant();
     createGradientFuel();
+    createGradientElevation();
     
     // itinerary.bringToFront();
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-    if (circleZoneOfInterest != null){
+    if (!firstTime){
         var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
         circleZoneOfInterest.setLatLng(newLatLng);
-        dwellOnCircle();
+
+        var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
+        markerBracketClose.setLatLng(newLLClose);
+
+        var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+        markerBracketOpen.setLatLng(newLLOpen);
     } else {
         const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
         orService = new Openrouteservice.Directions({api_key : apiKey});
     }
 
+    console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
+
+    if(isElevationDisplayed){
+        isElevationDisplayed = false;
+        loadElevationDistribution();
+    } else if (isFuelDisplayed){
+        isFuelDisplayed = false;
+        loadFuelDistribution();
+    } else if (isRestaurantDisplayed){
+        isRestaurantDisplayed = false;
+        loadRestaurantDistribution()
+    }
+
+    console.log("end of routing");
     
 
 })
@@ -411,6 +439,56 @@ function createGradientFuel(){
     var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop6.setAttribute("offset", "0.81");
     stop6.setAttribute("stop-color", "#0100CC");
+    
+    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop7.setAttribute("offset", "100%");
+    stop7.setAttribute("stop-color", '#E6E6FD');
+
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    gradient.appendChild(stop4);
+    gradient.appendChild(stop5);
+    gradient.appendChild(stop6);
+    gradient.appendChild(stop7);
+
+    var defs = document.getElementById("defs");
+    defs.appendChild(gradient);
+}
+
+
+function createGradientElevation(){
+    var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
+    gradient.id = "gradientElevation";
+    gradient.setAttribute("x1", "0%");
+    gradient.setAttribute("y1", "0%");
+    gradient.setAttribute("x2", "0%");
+    gradient.setAttribute("y2", "100%");
+    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+
+    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    // stop1.setAttribute("offset", "0.0");
+    stop1.setAttribute("stop-color", '#000299');
+    
+    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop2.setAttribute("offset", "0.13");
+    stop2.setAttribute("stop-color", "#6566FF");
+
+    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop3.setAttribute("offset", "0.25");
+    stop3.setAttribute("stop-color", "#0100CC");
+    
+    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop4.setAttribute("offset", "0.37");
+    stop4.setAttribute("stop-color", "#7173FF");
+    
+    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop5.setAttribute("offset", "0.62");
+    stop5.setAttribute("stop-color", "#D9D9ED");
+    
+    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop6.setAttribute("offset", "0.75");
+    stop6.setAttribute("stop-color", "#00029C");
     
     var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop7.setAttribute("offset", "100%");
@@ -694,11 +772,11 @@ function oplQuery(queryString){
                         openedMarker.bindPopup(openedPopup);
                         
                     });
-                    const popup = L.popup().setContent(container);
+                    const popup = L.popup({closeOnClick:false,closeButton:false}).setContent(container);
                     openedMarker.unbindPopup(openedPopup);
                     openedMarker.bindPopup(popup);
                     openedMarker.openPopup();
-                    // map.closePopup();
+                        // map.closePopup();
                     // popup.setContent(container);
                     
                 });
@@ -727,10 +805,10 @@ function oplQuery(queryString){
             console.log("error");
         },
         afterRequest: function()  {
-            var length = markers.length;
-            for (var i = 0; i < length; i++){
-                previewIti.push([]);
-            }
+            // var length = markers.length;
+            // for (var i = 0; i < length; i++){
+            //     previewIti.push([]);
+            // }
 
             
             console.log("afterRequest");
@@ -759,13 +837,7 @@ function oplQuery(queryString){
 
 }
 
-// function buildRoutePreview(latLng, index){
-//     if (previewIti[index] == []){
-//     } else {
-//         return previewIti[index];
-//     }
 
-// }
 
 function makeClearButton(){
     var button = document.getElementById("clearDiv");
@@ -1234,7 +1306,7 @@ function loadRestaurantDistribution(){
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isRestaurantDisplayed = true;
         isFuelDisplayed = false;
-    
+        isElevationDisplayed = false;
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
@@ -1250,9 +1322,24 @@ function loadFuelDistribution(){
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isFuelDisplayed = true;
         isRestaurantDisplayed = false;
-    
+        isElevationDisplayed = false;
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
+}
+
+function loadElevationDistribution(){
+    var outlineHTML = document.getElementById("strokeRoute");
+    if(isElevationDisplayed){
+        outlineHTML.setAttribute("stroke", "blue");
+        outlineHTML.setAttribute("stroke-opacity", "0.25");
+        isFuelDisplayed = false;
+    } else {
+        outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
+        outlineHTML.setAttribute("stroke-opacity", "0.7");
+        isFuelDisplayed = true;
+        isRestaurantDisplayed = false;
+        isFuelDisplayed = false;
+    }
 }
 
 //Check is point is on path 
@@ -1330,7 +1417,7 @@ function dwellOnCircle(event){
     //make bracket appear
     var closest = L.GeometryUtil.closest(map, allPos, event); //get the closest point on the line
     isPointOnLine(closest, allPos, 5); // add all the points up to this point
-        
+    
     points.push(closest); //add this point
     var dist = 0;
     for (var i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
@@ -1343,7 +1430,6 @@ function dwellOnCircle(event){
     var distAbove = (percentAbove*distance)/100;
     var percentBelow = percent + timeDiffInPercent;
     var distBelow = (percentBelow*distance)/100;
-
     
     var pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
     var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
