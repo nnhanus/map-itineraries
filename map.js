@@ -192,46 +192,185 @@ routing.on("routesfound", function (e){
     outlinePathHTML.setAttribute("class", "willnotrender");
     // console.log(outlinePathHTML);
 
+    strokeHTML.onclick=function(e){
+        console.log("itinerary click");
 
-
-    outline.on("click", function(e){
         if (state == "pointPlaced"){
             state = "itinerary";
             map.removeLayer(circleZoneOfInterest);
             map.removeLayer(markerBracketOpen);
             map.removeLayer(markerBracketClose);
             map.removeLayer(polylineBracket);
-            stroke.setStyle({color:"blue"});
+            
+            console.log("itinerary click");
             itinerary.setStyle({color:"blue"});
-            if (!isFuelDisplayed && !isRestaurantDisplayed){
-                outline.setStyle({color:"blue"});      
-            }
+            stroke.setStyle({color:"blue"});
             bracketCloseText.style.visibility = "hidden";
             bracketOpenText.style.visibility = "hidden";
             circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
+        }
+    }
+    stroke.on("click", function(e){
+        console.log("stroke click");
+
+        if (state == "pointPlaced"){
+            state = "itinerary";
+            map.removeLayer(circleZoneOfInterest);
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);
+            console.log("stroke click");
+            stroke.setStyle({color:"blue"});
+            itinerary.setStyle({color:"blue"});
+            
+            bracketCloseText.style.visibility = "hidden";
+            bracketOpenText.style.visibility = "hidden";
+            circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
         }
     });
 
-    itinerary = L.polyline(allPos, {color: 'blue', weight: 5}).addTo(map); //Draw a new polyline with the points
+    outlinePathHTML.onclick=function(e){
+        console.log("itinerary click");
+
+        if (state == "pointPlaced"){
+            state = "itinerary";
+            map.removeLayer(circleZoneOfInterest);
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);
+            
+            console.log("itinerary click");
+            itinerary.setStyle({color:"blue"});
+            stroke.setStyle({color:"blue"});
+            bracketCloseText.style.visibility = "hidden";
+            bracketOpenText.style.visibility = "hidden";
+            circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
+        }
+    }
+    outline.on("click", function(e){
+        console.log("outline click");
+
+        if (state == "pointPlaced"){
+            state = "itinerary";
+            map.removeLayer(circleZoneOfInterest);
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);
+            console.log("outline click");
+            stroke.setStyle({color:"blue"});
+            itinerary.setStyle({color:"blue"});
+            
+            bracketCloseText.style.visibility = "hidden";
+            bracketOpenText.style.visibility = "hidden";
+            circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
+        }
+    });
+
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
+    let HTMLIti = itinerary._path;
+    HTMLIti.onclick = function(e){
+        console.log("itinerary click");
+
+        if (state == "pointPlaced"){
+            state = "itinerary";
+            map.removeLayer(circleZoneOfInterest);
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);
+            
+            console.log("itinerary click");
+            itinerary.setStyle({color:"blue"});
+            stroke.setStyle({color:"blue"});
+            bracketCloseText.style.visibility = "hidden";
+            bracketOpenText.style.visibility = "hidden";
+            circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
+        }
+    }
    
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
     itinerary.on("click", function(e){
+        console.log("itinerary click");
+
         if (state == "pointPlaced"){
             state = "itinerary";
             map.removeLayer(circleZoneOfInterest);
             map.removeLayer(markerBracketOpen);
             map.removeLayer(markerBracketClose);
             map.removeLayer(polylineBracket);
-            if (!isFuelDisplayed && !isRestaurantDisplayed){
-                outline.setStyle({color:"blue"});
-            }
             
+            console.log("itinerary click");
             itinerary.setStyle({color:"blue"});
             stroke.setStyle({color:"blue"});
             bracketCloseText.style.visibility = "hidden";
             bracketOpenText.style.visibility = "hidden";
             circleMarkerText.style.visibility = "hidden";
+
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                loadElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                loadFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                loadRestaurantDistribution()
+            }
         }
     });
 
@@ -278,6 +417,12 @@ routing.on("routesfound", function (e){
 
     console.log("end of routing");
     
+    // let lines = document.getElementsByClassName("leaflet-interactive");
+    // // lines.forEach(element => console.log(element));
+    // for(let i = 0; i < lines.length; i++){
+    //     console.log(lines.item(i));
+    // }
+    // console.log(lines);
 
 })
 
@@ -344,9 +489,9 @@ function createFilterShadow(){
 
 
 function forceRedraw(){
-    stroke._path.style.display = "none";
-    // outlinePathHTML.style.display = "none";
-    stroke._path.style.display = "block";
+    // stroke._path.style.display = "none";
+    // // outlinePathHTML.style.display = "none";
+    // stroke._path.style.display = "block";
     // outlinePathHTML.style.display = "block";
     // createFilterShadow();
     // createFilterStroke();
@@ -354,6 +499,25 @@ function forceRedraw(){
     // strokeHTML.setAttribute("filter", "url(#filterShadow)");
     // strokeHTML.setAttribute("mask", "url(#strokeMask)");
     // itinerary.bringToFront();
+    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
+    
+    // let oldPath = document.getElementById("maskStrokePath");
+    // let path = lineMask._path;
+    // path.id = "maskStrokePath";
+    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "1000px");
+    rect.setAttribute("height", "1000px");
+    rect.setAttribute("fill", "white");
+    let mask = document.getElementById("strokeMask");
+    // // oldPath.remove();
+    // path.setAttribute("stroke", "black");
+    // path.setAttribute("stroke-opacity", "1");
+    mask.replaceChild(rect, mask.childNodes[0]);
+    // mask.append(path);
+
+    // mask.setAttribute("maskUnits", "objectBoundingBox");
 
 }
 function createFilterStroke(){
@@ -368,8 +532,8 @@ function createFilterStroke(){
     var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", "0");
     rect.setAttribute("y", "0");
-    rect.setAttribute("width", "1000");
-    rect.setAttribute("height", "1000");
+    rect.setAttribute("width", "1000px");
+    rect.setAttribute("height", "1000px");
     rect.setAttribute("fill", "white");
     mask.appendChild(rect);
 
@@ -735,12 +899,13 @@ function polygonToLatLng(line){
 
 function oplQuery(queryString){
     console.log("oplQuery");
+    // console.log(queryString);
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
-        onSuccess: function(data) { //doesn't work the markers don't appear
+        onSuccess: function(data) { 
             // console.log(data);
             for (let i = 0; i < data.elements.length; i++) {
                 let pos;
@@ -856,10 +1021,9 @@ function oplQuery(queryString){
             makeClearButton();
             // map.removeLayer(polylineBracket);
 
-        } // we want to keep the circle
+        } 
         });
         map.addLayer(opl);
-
 
 }
 
@@ -1025,12 +1189,12 @@ function isVertical(pointA, pointB){
     } else {
         var coeff = Math.abs((pointB.y - pointA.y)/(pointB.x - pointA.x));
         // console.log(coeff);
-        if (coeff > 0.5){
-            // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
-        } else {
-            // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
-        }
-        return coeff > 0.5;
+        // if (coeff > 0.3){
+        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
+        // } else {
+        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
+        // }
+        return coeff > 0.3;
     }
 }
 
@@ -2166,6 +2330,7 @@ onpointermove = (event) => {
 
 onpointerup = (event) => {
     console.log(state);
+    console.log(event.target);
     // Get the pointer coords
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
@@ -2250,7 +2415,15 @@ onpointerup = (event) => {
         updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
     }
     if(state == "circleMove" || state == "openMove" || state == "closeMove"){
+        if (state == "openMove"){
+            markerBracketOpen.setLatLng(polylineBracket.getLatLngs()[0]);
+        } else if (state == "closeMove"){
+            let polyLatLngs = polylineBracket.getLatLngs();
+            markerBracketClose.setLatLng(polyLatLngs[polyLatLngs.length-1]);
+        }
         state = prevState;
+        
+
     }
     isPointerDown = false;
     isMovingMarker = false;
@@ -2287,10 +2460,13 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    // if(markerBracketClose != null){
-    //     markerBracketOpen.dragging.enable();
-    //     markerBracketClose.dragging.enable();
-    // }
+    if(markerBracketClose != null){
+        markerBracketOpen.dragging.enable();
+        markerBracketClose.dragging.enable();
+    }
+    stroke.bringToFront();
+    outline.bringToFront();
+    itinerary.bringToFront();
     // document.getElementsByTagName('body')[0].focus();
     
 }

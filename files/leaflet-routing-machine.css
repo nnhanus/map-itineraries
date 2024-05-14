@@ -217,6 +217,7 @@
     font-weight: bold;
     border-width: 5px;
     border-color: blue;
+    /* box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728); */
 }
 
 .leaflet-routing-collapse-btn:after {
@@ -233,6 +234,7 @@
     
     border-width: 5px;
     border-color: blue;
+    /* box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728); */
 }
 
 .leaflet-routing-container-hide .leaflet-routing-collapse-btn:after {

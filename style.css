@@ -28,13 +28,19 @@ body{
     padding: 2px 2px 2px 2px;
 }
 
-.leaflet-routing-collapse-btn{
+.leaflet-routing-container-hide.leaflet-bar.leaflet-routing-container{
     box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
 }
 
-.willnotrender { 
+.leaflet-control-zoom.leaflet-bar.leaflet-control{
+    box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
+    border: solid blue 2px;
+    border-radius: 4px;
+}
+
+/* .willnotrender { 
     transform: translateZ(0); 
- }
+ } */
 
 /* .leaflet-control-zoom-in{
     border: solid blue 2px;
