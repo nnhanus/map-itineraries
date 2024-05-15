@@ -16052,7 +16052,7 @@ module.exports={
 					L.extend({
 						isAlternative: true
 					}, this.options.altLineOptions || this.options.lineOptions));
-				this._alternatives[i].addTo(this._map);
+				// this._alternatives[i].addTo(this._map);
 				this._hookAltEvents(this._alternatives[i]);
 			}, this);
 
@@ -16061,7 +16061,7 @@ module.exports={
 					addWaypoints: addWaypoints,
 					extendToWaypoints: this.options.waypointMode === 'connect'
 				}, this.options.lineOptions));
-			this._line.addTo(this._map);
+			// this._line.addTo(this._map);
 			this._hookEvents(this._line);
 		},
 
@@ -18600,7 +18600,7 @@ module.exports = L.Routing = {
 
 			for (i = 0; i < this.options.dragStyles.length; i++) {
 				lines.push(L.polyline([prevWp.latLng, initialLatLng, nextWp.latLng],
-					this.options.dragStyles[i]).addTo(this._map));
+					this.options.dragStyles[i])/*.addTo(this._map)*/);
 			}
 
 			if (draggingEnabled) {

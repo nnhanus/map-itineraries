@@ -221,35 +221,35 @@ routing.on("routesfound", function (e){
             }
         }
     }
-    stroke.on("click", function(e){
-        console.log("stroke click");
+    // stroke.on("click", function(e){
+    //     console.log("stroke click");
 
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
-            console.log("stroke click");
-            stroke.setStyle({color:"blue"});
-            itinerary.setStyle({color:"blue"});
+    //     if (state == "pointPlaced"){
+    //         state = "itinerary";
+    //         map.removeLayer(circleZoneOfInterest);
+    //         map.removeLayer(markerBracketOpen);
+    //         map.removeLayer(markerBracketClose);
+    //         map.removeLayer(polylineBracket);
+    //         console.log("stroke click");
+    //         stroke.setStyle({color:"blue"});
+    //         itinerary.setStyle({color:"blue"});
             
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
+    //         bracketCloseText.style.visibility = "hidden";
+    //         bracketOpenText.style.visibility = "hidden";
+    //         circleMarkerText.style.visibility = "hidden";
 
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    });
+    //         if(isElevationDisplayed){
+    //             isElevationDisplayed = false;
+    //             loadElevationDistribution();
+    //         } else if (isFuelDisplayed){
+    //             isFuelDisplayed = false;
+    //             loadFuelDistribution();
+    //         } else if (isRestaurantDisplayed){
+    //             isRestaurantDisplayed = false;
+    //             loadRestaurantDistribution()
+    //         }
+    //     }
+    // });
 
     outlinePathHTML.onclick=function(e){
         console.log("itinerary click");
@@ -280,35 +280,35 @@ routing.on("routesfound", function (e){
             }
         }
     }
-    outline.on("click", function(e){
-        console.log("outline click");
+    // outline.on("click", function(e){
+    //     console.log("outline click");
 
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
-            console.log("outline click");
-            stroke.setStyle({color:"blue"});
-            itinerary.setStyle({color:"blue"});
+    //     if (state == "pointPlaced"){
+    //         state = "itinerary";
+    //         map.removeLayer(circleZoneOfInterest);
+    //         map.removeLayer(markerBracketOpen);
+    //         map.removeLayer(markerBracketClose);
+    //         map.removeLayer(polylineBracket);
+    //         console.log("outline click");
+    //         stroke.setStyle({color:"blue"});
+    //         itinerary.setStyle({color:"blue"});
             
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
+    //         bracketCloseText.style.visibility = "hidden";
+    //         bracketOpenText.style.visibility = "hidden";
+    //         circleMarkerText.style.visibility = "hidden";
 
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    });
+    //         if(isElevationDisplayed){
+    //             isElevationDisplayed = false;
+    //             loadElevationDistribution();
+    //         } else if (isFuelDisplayed){
+    //             isFuelDisplayed = false;
+    //             loadFuelDistribution();
+    //         } else if (isRestaurantDisplayed){
+    //             isRestaurantDisplayed = false;
+    //             loadRestaurantDistribution()
+    //         }
+    //     }
+    // });
 
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
     let HTMLIti = itinerary._path;
@@ -344,35 +344,35 @@ routing.on("routesfound", function (e){
    
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    itinerary.on("click", function(e){
-        console.log("itinerary click");
+    // itinerary.on("click", function(e){
+    //     console.log("itinerary click");
 
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
+    //     if (state == "pointPlaced"){
+    //         state = "itinerary";
+    //         map.removeLayer(circleZoneOfInterest);
+    //         map.removeLayer(markerBracketOpen);
+    //         map.removeLayer(markerBracketClose);
+    //         map.removeLayer(polylineBracket);
             
-            console.log("itinerary click");
-            itinerary.setStyle({color:"blue"});
-            stroke.setStyle({color:"blue"});
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
+    //         console.log("itinerary click");
+    //         itinerary.setStyle({color:"blue"});
+    //         stroke.setStyle({color:"blue"});
+    //         bracketCloseText.style.visibility = "hidden";
+    //         bracketOpenText.style.visibility = "hidden";
+    //         circleMarkerText.style.visibility = "hidden";
 
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    });
+    //         if(isElevationDisplayed){
+    //             isElevationDisplayed = false;
+    //             loadElevationDistribution();
+    //         } else if (isFuelDisplayed){
+    //             isFuelDisplayed = false;
+    //             loadFuelDistribution();
+    //         } else if (isRestaurantDisplayed){
+    //             isRestaurantDisplayed = false;
+    //             loadRestaurantDistribution()
+    //         }
+    //     }
+    // });
 
 
     createFilterShadow();
@@ -486,7 +486,6 @@ function createFilterShadow(){
     var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
     svg[0].appendChild(defs);
 }
-
 
 function forceRedraw(){
     // stroke._path.style.display = "none";
@@ -903,6 +902,7 @@ function oplQuery(queryString){
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
+        // endPoint: "https://mapitin.lisn.upsaclay.fr/api/interpreter",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
@@ -1003,13 +1003,6 @@ function oplQuery(queryString){
 
             
             console.log("afterRequest");
-            // var newZones = [];
-            // queryZone.forEach(element => {
-            //     var zones = element.getLatLngs();
-            //     map.removeLayer(element);
-            //     var nZone = L.polygon(zones, {fillColor: '#1b1bff', fillOpacity: 0.2, opacity:0}).addTo(map);
-            //     newZones.push(nZone); 
-            // });
             var nZone = L.polygon(queryZone.getLatLngs(), {fillColor: '#1b1bff', fillOpacity: 0.4, opacity:0}).addTo(map);
             map.removeLayer(queryZone);
             queryZone = nZone;
@@ -1906,7 +1899,8 @@ function openMenu(event){
         var restaurant = document.getElementById("restaurant");
         var gasstation = document.getElementById("gasstation");
         var supermarket = document.getElementById("supermarket");
-        restaurant.onclick = function(e){console.log("click"); menuDiv.style.visibility="hidden"; openSlider("'amenity'='restaurant'")};
+        restaurant.onclick = function(e){console.log("click"); 
+        menuDiv.style.visibility="hidden"; openSlider("'amenity'='restaurant'")};
         gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
         supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
         menuDiv.style.visibility = "visible";
@@ -2330,7 +2324,7 @@ onpointermove = (event) => {
 
 onpointerup = (event) => {
     console.log(state);
-    console.log(event.target);
+    // console.log(event.target);
     // Get the pointer coords
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
@@ -2464,9 +2458,9 @@ onpointerup = (event) => {
         markerBracketOpen.dragging.enable();
         markerBracketClose.dragging.enable();
     }
-    stroke.bringToFront();
-    outline.bringToFront();
-    itinerary.bringToFront();
+    // stroke.bringToFront();
+    // outline.bringToFront();
+    // itinerary.bringToFront();
     // document.getElementsByTagName('body')[0].focus();
     
 }
