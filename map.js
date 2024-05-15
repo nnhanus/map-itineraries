@@ -932,6 +932,9 @@ function oplQuery(queryString){
  *                                Changing State                                *
  ********************************************************************************/
 
+/**
+ * Create the clear result button
+ */
 function makeClearButton(){
     var button = document.getElementById("clearDiv");
     button.style.visibility = "visible";
@@ -939,37 +942,49 @@ function makeClearButton(){
     document.body.appendChild(button);
 }
 
-
+/**
+ * Go from queryResult to pointPlaced state
+ */
 function clearQueryResults(){
+    //Remove all the markers
     markers.forEach(element => {
         map.removeLayer(element);
     });
     markers.length = 0;
+
+    //Range markers become blue again and re-enable interactions
     circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
     markerBracketOpen.setIcon(bracket);
     markerBracketClose.setIcon(bracket);
     markerBracketOpen.dragging.enable();
     markerBracketClose.dragging.enable(); 
+
+    //Higlight polyline becomes visible again
     lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-    map.removeLayer(queryZone);
+    polylineBracket.setStyle({opacity:0.5});
+
+    map.removeLayer(queryZone);//remove the query zone
+
+    //Remove the clear button
     var button = document.getElementById("clearDiv");
     button.style.visibility = 'hidden';
+
     state = "pointPlaced";
     prevState = "pointPlaced";
-    polylineBracket.setStyle({opacity:0.5});
-    hideFloatingTexts();
-    markerBracketOpen.setIcon(bracket);
-    markerBracketClose.setIcon(bracket);
+
+    // hideFloatingTexts();
 }
 
-
+/**
+ * Disable interactions with the range markers, and gray them out
+ */
 function disableCircle(){
     circleZoneOfInterest.setStyle({color: "#6D6D6D", fillColor: "#A9A9A9"});
     markerBracketOpen.setIcon(bracketGreyed);
     markerBracketClose.setIcon(bracketGreyed);
+
     markerBracketOpen.dragging.disable();
     markerBracketClose.dragging.disable();
-    // L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
 }
 
 /********************************************************************************
