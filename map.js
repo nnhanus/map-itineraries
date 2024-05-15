@@ -57,7 +57,7 @@ const ppi = 269;
 var requestMade = false;
 var state = "itinerary";
 var prevState = "itinerary";
-//"itinerary" "pointPlaced" "circleMove" "opneMove" "closeMove" "menu" "slider" "loadingQuery" "queryResults"
+//"itinerary" "pointPlaced" "circleMove" "openMove" "closeMove" "menu" "slider" "loadingQuery" "queryResults"
 
 var isMovingMap = false;
 var previousOpenPos;
@@ -74,6 +74,8 @@ var openedPopup;
 
 const startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
 const endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
+
+const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -138,6 +140,39 @@ function visibilityToggle(element){
 
 }
 
+function forceRedraw(){
+    // stroke._path.style.display = "none";
+    // // outlinePathHTML.style.display = "none";
+    // stroke._path.style.display = "block";
+    // outlinePathHTML.style.display = "block";
+    // createFilterShadow();
+    // createFilterStroke();
+    // let strokeHTML = stroke._path;
+    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
+    // itinerary.bringToFront();
+    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
+    
+    // let oldPath = document.getElementById("maskStrokePath");
+    // let path = lineMask._path;
+    // path.id = "maskStrokePath";
+    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "1000px");
+    rect.setAttribute("height", "1000px");
+    rect.setAttribute("fill", "white");
+    let mask = document.getElementById("strokeMask");
+    // // oldPath.remove();
+    // path.setAttribute("stroke", "black");
+    // path.setAttribute("stroke-opacity", "1");
+    mask.replaceChild(rect, mask.childNodes[0]);
+    // mask.append(path);
+
+    // mask.setAttribute("maskUnits", "objectBoundingBox");
+
+}
+
 //Create the route
 var routing = L.Routing.control({
     
@@ -168,227 +203,47 @@ var routing = L.Routing.control({
 //Replace with itinerary and get the points, the time, and the distance
 routing.on("routesfound", function (e){
     console.log("reroute");
-    L.control.layers({}).addTo(map);
+
+    L.control.layers({}).addTo(map); //Add the layers menu to the map
+
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
+
     var firstTime = true;
-    if (itinerary != null){
+    if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
         map.removeLayer(itinerary);
         map.removeLayer(outline);
         map.removeLayer(stroke);
         firstTime = false;
     }
 
-    // console.log(document.querySelectorAll("svg.leaflet-zoom-animated"));
-
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
-    var strokeHTML = stroke._path;
-    strokeHTML.setAttribute("class", "willnotrender");
     
     outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
     outlinePathHTML.setAttribute("class", "willnotrender");
-    // console.log(outlinePathHTML);
-
-    strokeHTML.onclick=function(e){
-        console.log("itinerary click");
-
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
-            
-            console.log("itinerary click");
-            itinerary.setStyle({color:"blue"});
-            stroke.setStyle({color:"blue"});
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
-
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    }
-    // stroke.on("click", function(e){
-    //     console.log("stroke click");
-
-    //     if (state == "pointPlaced"){
-    //         state = "itinerary";
-    //         map.removeLayer(circleZoneOfInterest);
-    //         map.removeLayer(markerBracketOpen);
-    //         map.removeLayer(markerBracketClose);
-    //         map.removeLayer(polylineBracket);
-    //         console.log("stroke click");
-    //         stroke.setStyle({color:"blue"});
-    //         itinerary.setStyle({color:"blue"});
-            
-    //         bracketCloseText.style.visibility = "hidden";
-    //         bracketOpenText.style.visibility = "hidden";
-    //         circleMarkerText.style.visibility = "hidden";
-
-    //         if(isElevationDisplayed){
-    //             isElevationDisplayed = false;
-    //             loadElevationDistribution();
-    //         } else if (isFuelDisplayed){
-    //             isFuelDisplayed = false;
-    //             loadFuelDistribution();
-    //         } else if (isRestaurantDisplayed){
-    //             isRestaurantDisplayed = false;
-    //             loadRestaurantDistribution()
-    //         }
-    //     }
-    // });
-
-    outlinePathHTML.onclick=function(e){
-        console.log("itinerary click");
-
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
-            
-            console.log("itinerary click");
-            itinerary.setStyle({color:"blue"});
-            stroke.setStyle({color:"blue"});
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
-
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    }
-    // outline.on("click", function(e){
-    //     console.log("outline click");
-
-    //     if (state == "pointPlaced"){
-    //         state = "itinerary";
-    //         map.removeLayer(circleZoneOfInterest);
-    //         map.removeLayer(markerBracketOpen);
-    //         map.removeLayer(markerBracketClose);
-    //         map.removeLayer(polylineBracket);
-    //         console.log("outline click");
-    //         stroke.setStyle({color:"blue"});
-    //         itinerary.setStyle({color:"blue"});
-            
-    //         bracketCloseText.style.visibility = "hidden";
-    //         bracketOpenText.style.visibility = "hidden";
-    //         circleMarkerText.style.visibility = "hidden";
-
-    //         if(isElevationDisplayed){
-    //             isElevationDisplayed = false;
-    //             loadElevationDistribution();
-    //         } else if (isFuelDisplayed){
-    //             isFuelDisplayed = false;
-    //             loadFuelDistribution();
-    //         } else if (isRestaurantDisplayed){
-    //             isRestaurantDisplayed = false;
-    //             loadRestaurantDistribution()
-    //         }
-    //     }
-    // });
 
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
-    let HTMLIti = itinerary._path;
-    HTMLIti.onclick = function(e){
-        console.log("itinerary click");
-
-        if (state == "pointPlaced"){
-            state = "itinerary";
-            map.removeLayer(circleZoneOfInterest);
-            map.removeLayer(markerBracketOpen);
-            map.removeLayer(markerBracketClose);
-            map.removeLayer(polylineBracket);
-            
-            console.log("itinerary click");
-            itinerary.setStyle({color:"blue"});
-            stroke.setStyle({color:"blue"});
-            bracketCloseText.style.visibility = "hidden";
-            bracketOpenText.style.visibility = "hidden";
-            circleMarkerText.style.visibility = "hidden";
-
-            if(isElevationDisplayed){
-                isElevationDisplayed = false;
-                loadElevationDistribution();
-            } else if (isFuelDisplayed){
-                isFuelDisplayed = false;
-                loadFuelDistribution();
-            } else if (isRestaurantDisplayed){
-                isRestaurantDisplayed = false;
-                loadRestaurantDistribution()
-            }
-        }
-    }
-   
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    // itinerary.on("click", function(e){
-    //     console.log("itinerary click");
+    let HTMLIti = itinerary._path; //add interaction to delete point
+    HTMLIti.onclick = function(e){
+        pointPlacedToItinerary();
+    }
 
-    //     if (state == "pointPlaced"){
-    //         state = "itinerary";
-    //         map.removeLayer(circleZoneOfInterest);
-    //         map.removeLayer(markerBracketOpen);
-    //         map.removeLayer(markerBracketClose);
-    //         map.removeLayer(polylineBracket);
-            
-    //         console.log("itinerary click");
-    //         itinerary.setStyle({color:"blue"});
-    //         stroke.setStyle({color:"blue"});
-    //         bracketCloseText.style.visibility = "hidden";
-    //         bracketOpenText.style.visibility = "hidden";
-    //         circleMarkerText.style.visibility = "hidden";
+    let strokeHTML = stroke._path;
+    strokeHTML.onclick=function(e){ //add interaction to delete point
+        pointPlacedToItinerary();
+    }
 
-    //         if(isElevationDisplayed){
-    //             isElevationDisplayed = false;
-    //             loadElevationDistribution();
-    //         } else if (isFuelDisplayed){
-    //             isFuelDisplayed = false;
-    //             loadFuelDistribution();
-    //         } else if (isRestaurantDisplayed){
-    //             isRestaurantDisplayed = false;
-    //             loadRestaurantDistribution()
-    //         }
-    //     }
-    // });
-
-
-    createFilterShadow();
-    createFilterStroke();
+    outlinePathHTML.onclick=function(e){ //add interaction to delete point
+        pointPlacedToItinerary();
+    }
     
-    strokeHTML.setAttribute("filter", "url(#filterShadow)");
-    strokeHTML.setAttribute("mask", "url(#strokeMask)");
-    itinerary.bringToFront();
-
-    createGradientRestaurant();
-    createGradientFuel();
-    createGradientElevation();
-    
-    // itinerary.bringToFront();
-    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
     if (!firstTime){
+        //Make sure the range markers are on the new itinerary
         var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
         circleZoneOfInterest.setLatLng(newLatLng);
 
@@ -397,39 +252,99 @@ routing.on("routesfound", function (e){
 
         var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
         markerBracketOpen.setLatLng(newLLOpen);
+
+        //Check if a layer is activated and if yes re-activate it
+        if(isElevationDisplayed){
+            isElevationDisplayed = false;
+            loadElevationDistribution();
+        } else if (isFuelDisplayed){
+            isFuelDisplayed = false;
+            loadFuelDistribution();
+        } else if (isRestaurantDisplayed){
+            isRestaurantDisplayed = false;
+            loadRestaurantDistribution()
+        }
     } else {
+        //Create the ORS instance
         const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
         orService = new Openrouteservice.Directions({api_key : apiKey});
+
+        //Create the defs section to add the filters and mask
+        let defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
+        defs.id = "defs";
+        var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
+         svg[0].appendChild(defs);
+
+        createFloatingTexts(); //Creatte the cursor text and the marker text
     }
+
+    //Add shadow and stroke to the itinerary
+    createFilterShadow();
+    createFilterStroke();
+    strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    strokeHTML.setAttribute("mask", "url(#strokeMask)");
+
+    //Load the gradients
+    createGradientRestaurant();
+    createGradientFuel();
+    createGradientElevation();
+
+    //Make sure the layers are in the right order
+    stroke.bringToFront();
+    outline.bringToFront();
+    itinerary.bringToFront();
 
     console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
-
-    if(isElevationDisplayed){
-        isElevationDisplayed = false;
-        loadElevationDistribution();
-    } else if (isFuelDisplayed){
-        isFuelDisplayed = false;
-        loadFuelDistribution();
-    } else if (isRestaurantDisplayed){
-        isRestaurantDisplayed = false;
-        loadRestaurantDistribution()
-    }
-
+    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
     console.log("end of routing");
-    
-    // let lines = document.getElementsByClassName("leaflet-interactive");
-    // // lines.forEach(element => console.log(element));
-    // for(let i = 0; i < lines.length; i++){
-    //     console.log(lines.item(i));
-    // }
-    // console.log(lines);
-
 })
 
+//Revert from pointPlaced state to Itinerary state
+function pointPlacedToItinerary(){
+    if (state == "pointPlaced"){
+        state = "itinerary";
+        prevState = "itinerary";
+
+        //Remove markers, highlight polyline, & markers' texts
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        hideFloatingTexts();
+
+        //Change back to colored itinerary
+        itinerary.setStyle({color:"blue"});
+        stroke.setStyle({color:"blue"});
+        outline.setStyle({color:"blue"});
+
+        //If a layer was applied, re-apply it
+        if(isElevationDisplayed){
+            isElevationDisplayed = false;
+            loadElevationDistribution();
+        } else if (isFuelDisplayed){
+            isFuelDisplayed = false;
+            loadFuelDistribution();
+        } else if (isRestaurantDisplayed){
+            isRestaurantDisplayed = false;
+            loadRestaurantDistribution()
+        }
+    }
+}
+
+
+/********************************************************************************
+ *                    Initialize filters, gradients, & masks                    *
+ ********************************************************************************/
+
+//Creates a shadow that doesn't appear under the non-opaque outline itinerary
 function createFilterShadow(){
-    var defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
-    defs.id = "defs";
-    
+    //Delete the old filter if one exists
+    const oldFilter = document.getElementById("filterShadow");
+    if (oldFilter != null){
+        oldFilter.remove();
+    }
+ 
+    //Create filter and set attributes
     var filter = document.createElementNS("http://www.w3.org/2000/svg",'filter');
     filter.id = "filterShadow";
     filter.setAttribute("filterUnits", "userSpaceOnUse");
@@ -437,6 +352,7 @@ function createFilterShadow(){
     filter.setAttribute("width", width*2);
     filter.setAttribute("height", height*2);
 
+    //This is adapted from Figma svg code export so I'm not sure what every step does
     var flood = document.createElementNS("http://www.w3.org/2000/svg",'feFlood');
     flood.setAttribute("flood-opacity", "0");
     flood.setAttribute("result", "BackgroundImageFix");
@@ -472,6 +388,7 @@ function createFilterShadow(){
     blend2.setAttribute("in2", "effect1_dropShadow_269_714");
     blend2.setAttribute("result", "shape");
     
+    //Add each component to the filter
     filter.appendChild(flood);
     filter.appendChild(colorMatrix1);
     filter.appendChild(offset);
@@ -480,54 +397,26 @@ function createFilterShadow(){
     filter.appendChild(colorMatrix2);
     filter.appendChild(blend1);
     filter.appendChild(blend2);
-
+ 
+    //Add the filter to the defs
+    var defs = document.getElementById("defs");
     defs.appendChild(filter);
-
-    var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
-    svg[0].appendChild(defs);
 }
 
-function forceRedraw(){
-    // stroke._path.style.display = "none";
-    // // outlinePathHTML.style.display = "none";
-    // stroke._path.style.display = "block";
-    // outlinePathHTML.style.display = "block";
-    // createFilterShadow();
-    // createFilterStroke();
-    // let strokeHTML = stroke._path;
-    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
-    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
-    // itinerary.bringToFront();
-    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
-    
-    // let oldPath = document.getElementById("maskStrokePath");
-    // let path = lineMask._path;
-    // path.id = "maskStrokePath";
-    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", "0");
-    rect.setAttribute("y", "0");
-    rect.setAttribute("width", "1000px");
-    rect.setAttribute("height", "1000px");
-    rect.setAttribute("fill", "white");
-    let mask = document.getElementById("strokeMask");
-    // // oldPath.remove();
-    // path.setAttribute("stroke", "black");
-    // path.setAttribute("stroke-opacity", "1");
-    mask.replaceChild(rect, mask.childNodes[0]);
-    // mask.append(path);
-
-    // mask.setAttribute("maskUnits", "objectBoundingBox");
-
-}
+//Ads a stroke around the outline of the itinerary
 function createFilterStroke(){
-    //Everything under white will appear, everything thing under black will not
+    //Delete the old mask if one exists
     const oldMask = document.getElementById("strokeMask");
     if(oldMask != null){
         oldMask.remove();
     }
+
+    //Create the mask
     var mask = document.createElementNS("http://www.w3.org/2000/svg",'mask');
     mask.id = "strokeMask";
     mask.setAttribute("maskUnits", "userSpaceOnUse");
+
+    //Everything under white will appear, everything thing under black will not
     var rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
     rect.setAttribute("x", "0");
     rect.setAttribute("y", "0");
@@ -536,19 +425,28 @@ function createFilterStroke(){
     rect.setAttribute("fill", "white");
     mask.appendChild(rect);
 
+    //Create a black copy of the outline to use as the mask
     var lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
-    
     var path = lineMask._path;
     path.id = "maskStrokePath";
     path.setAttribute("stroke", "black");
     path.setAttribute("stroke-opacity", "1");
     mask.append(path);
     
+    //Add the mask to the defs
     var defs = document.getElementById("defs");
     defs.appendChild(mask);
 }
 
+//Create a gradient for the outline of the itinerary
 function createGradientRestaurant(){
+    //Delete the old gradient if it exists
+    const oldFilter = document.getElementById("gradientRestaurant");
+    if (oldFilter != null){
+        oldFilter.remove();
+    }
+
+    //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientRestaurant";
     gradient.setAttribute("x1", "0%");
@@ -557,34 +455,35 @@ function createGradientRestaurant(){
     gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
+    //Create the color stops for the gradient
     var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    // stop1.setAttribute("offset", "0.0");
-    stop1.setAttribute("stop-color", '#0000FF');
+    stop1.setAttribute("stop-color",  gradientPalette[2]);
     
     var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop2.setAttribute("offset", "0.16");
-    stop2.setAttribute("stop-color", "#E6E6FD");
+    stop2.setAttribute("stop-color", gradientPalette[6]);
 
     var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop3.setAttribute("offset", "0.29");
-    stop3.setAttribute("stop-color", "#6566FF");
+    stop3.setAttribute("stop-color", gradientPalette[4]);
     
     var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop4.setAttribute("offset", "0.41");
-    stop4.setAttribute("stop-color", "#D9D9ED");
+    stop4.setAttribute("stop-color", gradientPalette[3]);
     
     var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop5.setAttribute("offset", "0.58");
-    stop5.setAttribute("stop-color", "#00029C");
+    stop5.setAttribute("stop-color", gradientPalette[1]);
     
     var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop6.setAttribute("offset", "0.81");
-    stop6.setAttribute("stop-color", "#7173FF");
+    stop6.setAttribute("stop-color", gradientPalette[5]);
     
     var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", '#000299');
+    stop7.setAttribute("stop-color", gradientPalette[0]);
 
+    //Add the coor stops to the gradient
     gradient.appendChild(stop1);
     gradient.appendChild(stop2);
     gradient.appendChild(stop3);
@@ -593,11 +492,20 @@ function createGradientRestaurant(){
     gradient.appendChild(stop6);
     gradient.appendChild(stop7);
 
+    //Add the gradient to the defs
     var defs = document.getElementById("defs");
     defs.appendChild(gradient);
 }
 
+//Create a gradient for the outline of the itinerary
 function createGradientFuel(){
+    //Delete the old gradient if it exists
+    const oldFilter = document.getElementById("gradientFuel");
+    if (oldFilter != null){
+        oldFilter.remove();
+    }
+
+    //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientFuel";
     gradient.setAttribute("x1", "0%");
@@ -606,34 +514,35 @@ function createGradientFuel(){
     gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
+    //Create the color stops for the gradient
     var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    // stop1.setAttribute("offset", "0.0");
-    stop1.setAttribute("stop-color", '#000299');
+    stop1.setAttribute("stop-color", gradientPalette[0]);
     
     var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop2.setAttribute("offset", "0.16");
-    stop2.setAttribute("stop-color", "#D9D9ED");
+    stop2.setAttribute("stop-color", gradientPalette[4]);
 
     var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop3.setAttribute("offset", "0.22");
-    stop3.setAttribute("stop-color", "#00029C");
+    stop3.setAttribute("stop-color", gradientPalette[1]);
     
     var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop4.setAttribute("offset", "0.41");
-    stop4.setAttribute("stop-color", "#7173FF");
+    stop4.setAttribute("stop-color", gradientPalette[5]);
     
     var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop5.setAttribute("offset", "0.58");
-    stop5.setAttribute("stop-color", "#6566FF");
+    stop5.setAttribute("stop-color", gradientPalette[4]);
     
     var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop6.setAttribute("offset", "0.81");
-    stop6.setAttribute("stop-color", "#0100CC");
+    stop6.setAttribute("stop-color", gradientPalette[1]);
     
     var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", '#E6E6FD');
+    stop7.setAttribute("stop-color", gradientPalette[6]);
 
+    //Add the coor stops to the gradient
     gradient.appendChild(stop1);
     gradient.appendChild(stop2);
     gradient.appendChild(stop3);
@@ -642,11 +551,20 @@ function createGradientFuel(){
     gradient.appendChild(stop6);
     gradient.appendChild(stop7);
 
+    //Add the gradient to the defs
     var defs = document.getElementById("defs");
     defs.appendChild(gradient);
 }
 
+//Create a gradient for the outline of the itinerary
 function createGradientElevation(){
+    //Delete the old gradient if it exists
+    const oldFilter = document.getElementById("gradientElevation");
+    if (oldFilter != null){
+        oldFilter.remove();
+    }
+
+    //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientElevation";
     gradient.setAttribute("x1", "0%");
@@ -655,34 +573,35 @@ function createGradientElevation(){
     gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
+     //Create the color stops for the gradient
     var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    // stop1.setAttribute("offset", "0.0");
-    stop1.setAttribute("stop-color", '#000299');
+    stop1.setAttribute("stop-color", gradientPalette[1]);
     
     var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop2.setAttribute("offset", "0.13");
-    stop2.setAttribute("stop-color", "#6566FF");
+    stop2.setAttribute("stop-color", gradientPalette[3]);
 
     var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop3.setAttribute("offset", "0.25");
-    stop3.setAttribute("stop-color", "#0100CC");
+    stop3.setAttribute("stop-color", gradientPalette[4]);
     
     var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop4.setAttribute("offset", "0.37");
-    stop4.setAttribute("stop-color", "#7173FF");
+    stop4.setAttribute("stop-color", gradientPalette[5]);
     
     var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop5.setAttribute("offset", "0.62");
-    stop5.setAttribute("stop-color", "#D9D9ED");
+    stop5.setAttribute("stop-color", gradientPalette[6]);
     
     var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop6.setAttribute("offset", "0.75");
-    stop6.setAttribute("stop-color", "#00029C");
+    stop6.setAttribute("stop-color", gradientPalette[1]);
     
     var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", '#E6E6FD');
+    stop7.setAttribute("stop-color", gradientPalette[6]);
 
+    //Add the coor stops to the gradient
     gradient.appendChild(stop1);
     gradient.appendChild(stop2);
     gradient.appendChild(stop3);
@@ -691,9 +610,15 @@ function createGradientElevation(){
     gradient.appendChild(stop6);
     gradient.appendChild(stop7);
 
+    //Add the gradient to the defs
     var defs = document.getElementById("defs");
     defs.appendChild(gradient);
 }
+
+/********************************************************************************
+ *                    Initialize filters, gradients, & masks                    *
+ ********************************************************************************/
+
 
 function isochroneMinutes(type, value, units){
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units);
@@ -854,9 +779,14 @@ function isochroneToPolygon(body, type, length){
             }
             itinerary.setStyle({color:"blue"});
             stroke.setStyle({color:"blue"});
-            bracketCloseText.style.visibility = 'hidden';
-            bracketOpenText.style.visibility = 'hidden';
-            circleMarkerText.style.visibility = 'hidden';  
+
+            // let bracketOpenText = document.getElementById("bracketText");
+            // bracketCloseText.style.visibility = 'hidden';
+            // bracketOpenText.style.visibility = 'hidden';
+            // circleMarkerText.style.visibility = 'hidden';  
+
+            hideFloatingTexts();
+
             markerBracketOpen.dragging.enable();
             markerBracketClose.dragging.enable(); 
             markerBracketOpen.setIcon(bracket);
@@ -974,14 +904,10 @@ function oplQuery(queryString){
 
                 marker
                     .on("popupopen", function(e){
-                        bracketCloseText.style.zIndex = 300;
-                        bracketOpenText.style.zIndex = 300;
-                        circleMarkerText.style.zIndex = 300;
+                        hideFloatingTexts();
                     })
                     .on("popupclose", function(e){
-                        bracketCloseText.style.zIndex = 400;
-                        bracketOpenText.style.zIndex = 400;
-                        circleMarkerText.style.zIndex = 400;
+                        showFloatingTexts();
                     })
                     .on("click", function(e){
                         marker.setIcon(darkGreenIcon);
@@ -1055,9 +981,7 @@ function clearQueryResults(){
     // itinerary.setStyle({color:"blue"});
     // stroke.setStyle({color:"blue"});
     polylineBracket.setStyle({opacity:0.5});
-    bracketCloseText.style.visibility = 'hidden';
-    bracketOpenText.style.visibility = 'hidden';
-    circleMarkerText.style.visibility = 'hidden';
+    hideFloatingTexts();
     markerBracketOpen.setIcon(bracket);
     markerBracketClose.setIcon(bracket);
 
@@ -1226,8 +1150,10 @@ function distancePixelPoints(latlng, point){
     var distFromLine = getDistanceInCM(latlng, point, allPos);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
+    let ETAFloatingText = document.getElementById("cursorText");
     // console.log("distance : " + dist);
     if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+        
         ETAFloatingText.style.visibility='visible';
         map.dragging.disable();
         
@@ -1254,39 +1180,60 @@ function distancePixelPoints(latlng, point){
 
 }
 
-//Creatin of the textbox that follows the cursor
-var ETAFloatingText=document.createElement('div');
-ETAFloatingText.style.zIndex = 500;
-ETAFloatingText.style.visibility='hidden';
 
-ETAFloatingText.id="cursorText"; 
+function createFloatingTexts(){
+    let ETAFloatingText=document.createElement('div');
+    ETAFloatingText.style.zIndex = 500;
+    ETAFloatingText.style.visibility='hidden';
 
-document.body.appendChild(ETAFloatingText);
-var ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
+    ETAFloatingText.id="cursorText"; 
 
-var bracketOpenText=document.createElement('div');
-bracketOpenText.style.zIndex = 400;
-bracketOpenText.style.visibility='hidden';
-bracketOpenText.id="bracketText";
+    document.body.appendChild(ETAFloatingText);
 
-var bracketCloseText=document.createElement('div');
-bracketCloseText.style.zIndex = 400;
-bracketCloseText.style.visibility='hidden';
-bracketCloseText.id="bracketCloseText";
+    let bracketOpenText=document.createElement('div');
+    bracketOpenText.style.zIndex = 400;
+    bracketOpenText.style.visibility='hidden';
+    bracketOpenText.id="bracketText";
+    document.body.appendChild(bracketOpenText);
 
-var circleMarkerText=document.createElement('div');
-circleMarkerText.style.zIndex = 400;
-circleMarkerText.style.visibility='hidden';
-circleMarkerText.id="circleText";
+    let bracketCloseText=document.createElement('div');
+    bracketCloseText.style.zIndex = 400;
+    bracketCloseText.style.visibility='hidden';
+    bracketCloseText.id="bracketCloseText";
+    document.body.appendChild(bracketCloseText);
 
+    let circleMarkerText=document.createElement('div');
+    circleMarkerText.style.zIndex = 400;
+    circleMarkerText.style.visibility='hidden';
+    circleMarkerText.id="circleText";
+    document.body.appendChild(circleMarkerText);
+}
 
-document.body.appendChild(bracketOpenText);
-document.body.appendChild(bracketCloseText);
-document.body.appendChild(circleMarkerText);
+function hideFloatingTexts(){
+    let bracketOpenText = document.getElementById("bracketText");
+    let bracketCloseText = document.getElementById("bracketCloseText");
+    let circleMarkerText = document.getElementById("circleText");
 
+    bracketOpenText.style.visibility = 'hidden';
+    bracketCloseText.style.visibility = 'hidden';
+    circleMarkerText.style.visibility = 'hidden';
+
+}
+
+function showFloatingTexts(){
+    let bracketOpenText = document.getElementById("bracketText");
+    let bracketCloseText = document.getElementById("bracketCloseText");
+    let circleMarkerText = document.getElementById("circleText");
+
+    bracketOpenText.style.visibility = 'visible';
+    bracketCloseText.style.visibility = 'visible';
+    circleMarkerText.style.visibility = 'visible';
+}
 
 //Updates the textbox
 function moveCursor(e){
+    let ETAFloatingText = document.getElementById("cursorText");
+    let ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
     ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
     ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';    
 }
@@ -1673,6 +1620,7 @@ function dwellOnCircle(event){
                         if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketClose.getLatLng()) < 50000){
                             markerBracketClose.setLatLng( L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+                            let bracketCloseText = document.getElementById("bracketCloseText");
                             updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                             updateBracketCloseText();
                             updateMarkersRotation(markerBracketClose, false);
@@ -1713,6 +1661,7 @@ function dwellOnCircle(event){
                         if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketOpen.getLatLng()) < 50000){
                             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
+                            let bracketOpenText = document.getElementById("bracketText");
                             updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                             updateBracketOpenText();
                             var latLngs = polylineBracket.getLatLngs();
@@ -1731,18 +1680,22 @@ function dwellOnCircle(event){
     previousClosePos = circleLatLng;
     // console.log(previousOpenPos);
     // console.log(previousClosePos);
-    
-    bracketOpenText.style.visibility='visible';
+    let bracketOpenText = document.getElementById("bracketText");
+    // bracketOpenText.style.visibility='visible';
     updateBracketOpenText();
     // updatePosTexts(bracketOpenText, markerBracketOpen);
 
-    bracketCloseText.style.visibility='visible';
+    let bracketCloseText = document.getElementById("bracketCloseText");
+    // bracketCloseText.style.visibility='visible';
     updateBracketCloseText();
     // updatePosTexts(bracketCloseText, markerBracketClose);
 
-    circleMarkerText.style.visibility='visible';
+    let circleMarkerText = document.getElementById("circleText");
+    // circleMarkerText.style.visibility='visible';
     circleMarkerText.innerHTML=(dist/1000).toFixed(0) + "km";
     // updatePosTexts(circleMarkerText, circleZoneOfInterest);
+
+    showFloatingTexts()
 
     updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
     updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
@@ -1809,6 +1762,7 @@ function updateBracketCloseText(){
     for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
         distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
     }
+    let bracketCloseText = document.getElementById("bracketCloseText");
     bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
@@ -1827,6 +1781,7 @@ function updateBracketOpenText(){
     }
     // console.log(" real dist: "+ Math.round(distCircleBracket/1000));
     // console.log(" leaflet dist: " +  Math.round(closestAbove.distanceTo(closestBelow)/1000));
+    let bracketOpenText = document.getElementById("bracketText");
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
@@ -1840,7 +1795,7 @@ function updateMarkersRotation(marker, isOpen){
             vect = normalVector(toPixels(previousClosePos), toPixels(marker.getLatLng()));
         }
         var angle = getAngle(vect);
-        console.log(angle);
+        // console.log(angle);
         marker.setRotationAngle(angle);
         if (isOpen){
             previousOpenPos = marker.getLatLng();
@@ -2141,6 +2096,10 @@ function moveMarkers(latlng){
         var latlngBelow = L.latLng(pointBelow[1], pointBelow[0]);
         markerBracketClose.setLatLng(latlngBelow);
         
+        let bracketOpenText = document.getElementById("bracketText");
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        let circleMarkerText = document.getElementById("circleText");
+
         lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
         updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
         updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
@@ -2233,13 +2192,15 @@ function updatePositions(){
 
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
+        let bracketOpenText = document.getElementById("bracketText");
         bracketOpenText.style.left=toPixels(markerBracketOpen.getLatLng()).x+20+'px';
         bracketOpenText.style.top=toPixels(markerBracketOpen.getLatLng()).y-50+'px';
         // bracketOpenText.innerHTML="distance "+isMovingBrackets;
-
+        let bracketCloseText = document.getElementById("bracketCloseText");
         bracketCloseText.style.left=toPixels(markerBracketClose.getLatLng()).x+20+'px';
         bracketCloseText.style.top=toPixels(markerBracketClose.getLatLng()).y-50+'px';
         // bracketCloseText.innerHTML="distance "+isMovingBrackets;
+        let circleMarkerText = document.getElementById("circleText");
 
         circleMarkerText.style.left=toPixels(circleZoneOfInterest.getLatLng()).x+20+'px';
         circleMarkerText.style.top=toPixels(circleZoneOfInterest.getLatLng()).y-50+'px';
@@ -2281,6 +2242,9 @@ onpointermove = (event) => {
     // console.log(millis/1000);
     if ((millis / 1000) > 0.5){
         if(isPointerDown){
+            let bracketOpenText = document.getElementById("bracketText");
+            let bracketCloseText = document.getElementById("bracketCloseText");
+            let circleMarkerText = document.getElementById("circleText");
             updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
             updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
             updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
@@ -2326,6 +2290,7 @@ onpointerup = (event) => {
     console.log(state);
     // console.log(event.target);
     // Get the pointer coords
+    let ETAFloatingText = document.getElementById("cursorText");
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
@@ -2404,6 +2369,9 @@ onpointerup = (event) => {
         } 
     } 
     if (state != "itinerary"){
+        let bracketOpenText = document.getElementById("bracketText");
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        let circleMarkerText = document.getElementById("circleText");
         updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
         updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
         updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
