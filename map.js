@@ -77,6 +77,10 @@ const endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
 
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
+
+
+
+
 L.Control.Layers = L.Control.extend({
     options:{
         position: 'topright'
@@ -127,18 +131,6 @@ L.control.layers = function(opts) {
 }
 
 
-function visibilityToggle(element){
-    if (element.style.visibility == "visible"){
-        element.style.visibility = "collapse";
-        var claer = document.getElementById("clearDiv");
-        claer.style.top = "105px";
-    } else {
-        element.style.visibility = "visible";
-        var claer = document.getElementById("clearDiv");
-        claer.style.top = "205px";
-    }
-
-}
 
 function forceRedraw(){
     // stroke._path.style.display = "none";
@@ -172,6 +164,8 @@ function forceRedraw(){
     // mask.setAttribute("maskUnits", "objectBoundingBox");
 
 }
+
+
 
 //Create the route
 var routing = L.Routing.control({
@@ -228,19 +222,31 @@ routing.on("routesfound", function (e){
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    let HTMLIti = itinerary._path; //add interaction to delete point
-    HTMLIti.onclick = function(e){
-        pointPlacedToItinerary();
-    }
+    // let HTMLIti = itinerary._path; //add interaction to delete point
+    // HTMLIti.onclick = function(e){
+    //     if (state == "itinerary"){
+    //         itineraryToPointPlaced(e);
+    //     } else if (state == "pointPlaced"){
+    //         pointPlacedToItinerary();
+    //     }
+    // }
 
     let strokeHTML = stroke._path;
-    strokeHTML.onclick=function(e){ //add interaction to delete point
-        pointPlacedToItinerary();
-    }
+    // strokeHTML.onclick=function(e){ //add interaction to delete point
+    //     if (state == "itinerary"){
+    //         itineraryToPointPlaced(e);
+    //     } else if (state == "pointPlaced"){
+    //         pointPlacedToItinerary();
+    //     }
+    // }
 
-    outlinePathHTML.onclick=function(e){ //add interaction to delete point
-        pointPlacedToItinerary();
-    }
+    // outlinePathHTML.onclick=function(e){ //add interaction to delete point
+    //     if (state == "itinerary"){
+    //         itineraryToPointPlaced(e);
+    //     } else if (state == "pointPlaced"){
+    //         pointPlacedToItinerary();
+    //     }
+    // }
     
     if (!firstTime){
         //Make sure the range markers are on the new itinerary
@@ -299,44 +305,16 @@ routing.on("routesfound", function (e){
     console.log("end of routing");
 })
 
-//Revert from pointPlaced state to Itinerary state
-function pointPlacedToItinerary(){
-    if (state == "pointPlaced"){
-        state = "itinerary";
-        prevState = "itinerary";
 
-        //Remove markers, highlight polyline, & markers' texts
-        map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketOpen);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(polylineBracket);
-        hideFloatingTexts();
-
-        //Change back to colored itinerary
-        itinerary.setStyle({color:"blue"});
-        stroke.setStyle({color:"blue"});
-        outline.setStyle({color:"blue"});
-
-        //If a layer was applied, re-apply it
-        if(isElevationDisplayed){
-            isElevationDisplayed = false;
-            loadElevationDistribution();
-        } else if (isFuelDisplayed){
-            isFuelDisplayed = false;
-            loadFuelDistribution();
-        } else if (isRestaurantDisplayed){
-            isRestaurantDisplayed = false;
-            loadRestaurantDistribution()
-        }
-    }
-}
 
 
 /********************************************************************************
  *                    Initialize filters, gradients, & masks                    *
  ********************************************************************************/
 
-//Creates a shadow that doesn't appear under the non-opaque outline itinerary
+/**
+ * Creates a shadow that doesn't appear under the non-opaque outline itinerary
+ */
 function createFilterShadow(){
     //Delete the old filter if one exists
     const oldFilter = document.getElementById("filterShadow");
@@ -403,7 +381,9 @@ function createFilterShadow(){
     defs.appendChild(filter);
 }
 
-//Ads a stroke around the outline of the itinerary
+/**
+ * Adds a stroke around the outline of the itinerary
+ */
 function createFilterStroke(){
     //Delete the old mask if one exists
     const oldMask = document.getElementById("strokeMask");
@@ -438,7 +418,9 @@ function createFilterStroke(){
     defs.appendChild(mask);
 }
 
-//Create a gradient for the outline of the itinerary
+/**
+ * Create a gradient for the outline of the itinerary
+ */
 function createGradientRestaurant(){
     //Delete the old gradient if it exists
     const oldFilter = document.getElementById("gradientRestaurant");
@@ -497,7 +479,9 @@ function createGradientRestaurant(){
     defs.appendChild(gradient);
 }
 
-//Create a gradient for the outline of the itinerary
+/**
+ * Create a gradient for the outline of the itinerary
+ */
 function createGradientFuel(){
     //Delete the old gradient if it exists
     const oldFilter = document.getElementById("gradientFuel");
@@ -556,7 +540,10 @@ function createGradientFuel(){
     defs.appendChild(gradient);
 }
 
-//Create a gradient for the outline of the itinerary
+
+/**
+ * Create a gradient for the outline of the itinerary
+ */
 function createGradientElevation(){
     //Delete the old gradient if it exists
     const oldFilter = document.getElementById("gradientElevation");
@@ -619,7 +606,12 @@ function createGradientElevation(){
  *                            Isochrone & POI Queries                           *
  ********************************************************************************/
 
-//Send isochrone query to ORS
+/**
+ * Send isochrone query to ORS
+ * @param {string} type 
+ * @param {number} value 
+ * @param {string} units 
+ */
 function isochroneMinutes(type, value, units){
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units); //Get all the points
     L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
@@ -660,7 +652,58 @@ function isochroneMinutes(type, value, units){
     }
 } 
 
-//Build the string query for the isochrone
+/**
+ * Calculates the points on which to query for isochrones based on the slider value
+ * @param {L.LatLng[]} itinerary 
+ * @param {number} value 
+ * @param {string} units 
+ * @returns {L.LatLng[]} the points on which to query
+ */
+function getNeededPoints(itinerary, value, units){
+    //Set the distance between each points (in meters)
+    var distValue;
+    if (units == "distance"){
+        distValue = value*1000*0.7;
+    } else {
+        distValue = Math.floor(((value*1000*110)/36)/2); //Considering 110km/h car speed
+    }
+    // console.log(distValue);
+
+    var polygons = [];
+    var polygon = [itinerary[0]]; //the 1st point is the 1st point of the route (so the marker open)
+    var prevPoint = itinerary[0];
+
+    for (var i = 1; i < itinerary.length - 1 ; i++){
+        dist = itinerary[i].distanceTo(prevPoint);
+        if (dist > distValue){
+            polygon.push(itinerary[i]);
+            prevPoint = itinerary[i];
+
+            //Query limit of 5 points so we split the points into arrays with length 5
+            if (polygon.length > 4){
+                var poly = [];
+                polygon.forEach(element => {
+                    poly.push(element);
+                });
+                polygon.length = 0;
+                polygons.push(poly);
+            }
+        }
+    }
+    polygon.push(itinerary[itinerary.length-1]); //the last point is the last point of the rout (so the marker close)
+    polygons.push(polygon); 
+    
+    // console.log(poly);
+    return polygons;
+}
+
+/**
+ * Build the string query for the isochrone
+ * @param {L.LatLng[]} points 
+ * @param {number} value 
+ * @param {string} units 
+ * @returns 
+ */
 function makeIsoQuery(points, value, units){
     var queryString = '{"locations":[[';
     for (var i = 0; i < points.length-1; i++){
@@ -679,12 +722,13 @@ function makeIsoQuery(points, value, units){
 
 /**
  * Turn isochrone query result into a leaflet polygon
- * @param {*} body result
- * @param {*} type type of POI
- * @param {*} length the expected length of the result
+ * @param {Array} body result
+ * @param {string} type type of POI
+ * @param {number} length the expected length of the result
  * Called after each request so when there are diff requests for one (because more than 5 points), we need to know the expected length
  */
 function isochroneToPolygon(body, type, length){
+    console.log(body);
     if (body.length == length){ //Check if it is the right length
         // console.log("long enough");
         L.DomUtil.removeClass(circleZoneOfInterest._path, "pulse");
@@ -791,15 +835,11 @@ function isochroneToPolygon(body, type, length){
     }
 }
 
-// function latLngToPolygon(line){
-//     var polygon = [];
-//     line.forEach(element => {
-//         polygon.push([element.x, element.y]);
-//     });
-//     return polygon;
-// }
-
-//Array from LngLat to LatLng
+/**
+ * Array from LngLat to LatLng
+ * @param {L.LngLat[]} line 
+ * @returns LatLng[]
+ */
 function polygonToLatLng(line){
     // console.log(line);
     var polygon = [];
@@ -810,14 +850,17 @@ function polygonToLatLng(line){
     return polygon;
 }
 
-//Sends the Overpass Query using Leaflet Overpass Layer
+/**
+ * Sends the Overpass Query using Leaflet Overpass Layer
+ * @param {string} queryString 
+ */
 function oplQuery(queryString){
     console.log("oplQuery");
     // console.log(queryString);
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
-        // endPoint: "https://mapitin.lisn.upsaclay.fr/api/interpreter",
+        endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
@@ -927,7 +970,6 @@ function oplQuery(queryString){
 
 }
 
-
 /********************************************************************************
  *                                Changing State                                *
  ********************************************************************************/
@@ -987,13 +1029,120 @@ function disableCircle(){
     markerBracketClose.dragging.disable();
 }
 
+/**
+ * Revert from pointPlaced state to Itinerary state
+ */
+function pointPlacedToItinerary(latlng, point){
+    var distFromLine = getDistanceInCM(latlng, point, allPos);
+    var closest = L.GeometryUtil.closest(map, allPos, latlng);
+    var closestPixel = toPixels(closest);
+    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+        let distFromHighlight = getDistanceInCM(latlng, point, polylineBracket.getLatLngs());
+        if (distFromHighlight > 0.3 || distFromHighlight > 10 && closestPixel.y < point.y){
+        console.log("iti click");
+        state = "itinerary";
+        prevState = "itinerary";
+
+        //Remove markers, highlight polyline, & markers' texts
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        hideFloatingTexts();
+
+        //Change back to colored itinerary
+        itinerary.setStyle({color:"blue"});
+        stroke.setStyle({color:"blue"});
+        outline.setStyle({color:"blue"});
+
+        //If a layer was applied, re-apply it
+        if(isElevationDisplayed){
+            isElevationDisplayed = false;
+            loadElevationDistribution();
+        } else if (isFuelDisplayed){
+            isFuelDisplayed = false;
+            loadFuelDistribution();
+        } else if (isRestaurantDisplayed){
+            isRestaurantDisplayed = false;
+            loadRestaurantDistribution()
+        
+        }
+    }
+    }
+}
+
+function itineraryToPointPlaced(latlng, point){
+    console.log("iti");
+    // let latlng = e.latlng;
+    // let point = toPixels(latlng);
+    console.log("pointer down : " + isPointerDown + ", !movingbrackets: " + !isMovingBrackets + ", !movemarker: " + !isMovingMarker + ", !clickLayer: " + !clickOnLayer);
+    if (isPointerDown  && !isMovingMarker && !isMovingBrackets && !clickOnLayer){
+        let ETAFloatingText = document.getElementById("cursorText");
+        ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
+
+        //Calculate if we're on the line or not
+        var distFromLine = getDistanceInCM(latlng, point, allPos);
+        var closest = L.GeometryUtil.closest(map, allPos, latlng);
+        var closestPixel = toPixels(closest);
+        if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+            var closest = L.GeometryUtil.closest(map, allPos, latlng);
+            if (circleZoneOfInterest != null){
+                map.removeLayer(circleZoneOfInterest);
+                markers.forEach(element => {map.removeLayer(element);});
+                if (markerBracketClose != null){
+                    map.removeLayer(markerBracketClose);
+                    map.removeLayer(markerBracketOpen);
+                    map.removeLayer(polylineBracket);
+                    markerBracketClose = null;
+                    markerBracketOpen = null;
+                }
+            }
+            
+            // circleMarker = circleClosest;
+
+            isPointOnLine(closest, allPos, 5)
+            points.push(closest);
+            var dist = 0;
+            for (var i = 0; i < points.length - 1; i++){
+                dist += points[i].distanceTo(points[i+1]);
+            }
+            var percent = dist*100/distance;
+
+            var circle = L.circle(closest, {color: 'blue', fillColor: '#2B8DFF', fillOpacity: 1, radius: 1500}).addTo(map);
+            // circleCreated = false;
+            
+            circleZoneOfInterest = circle; 
+            circleZoneOfInterest.bringToFront();   
+            // circleClosest.bringToFront();
+            dwellOnCircle(latlng);
+            // circleZoneOfInterest.dragging.enable()
+
+            var circleHTML = circleZoneOfInterest._path;
+            circleHTML.onclick = function(e){openMenu()};
+            circleHTML.onpointerdown = function(e){clickOnCircle = true};
+            if (queryZone != null){
+                map.removeLayer(queryZone);
+            }
+            
+            
+        if (!isFuelDisplayed && !isRestaurantDisplayed && !isElevationDisplayed){
+            outline.setStyle({color:"#000167"});
+        }
+            itinerary.setStyle({color:"#6D6D6D"});
+            stroke.setStyle({color:"#6D6D6D"});
+            state = "pointPlaced";
+            prevState = "pointPlaced";
+        }
+    } 
+}
+
 /********************************************************************************
  *                                  Utilities                                   *
  ********************************************************************************/
 /**
  * 
- * @param {Array} line Array in Point(x,y) 
- * @returns Array in LatLng(lat,lng)
+ * @param {L.Point[]} line Array in Point(x,y) 
+ * @returns {L.LatLng[]} Array in LatLng(lat,lng)
  */
 function pointToLatLng(line){
     var res = [];
@@ -1005,8 +1154,8 @@ function pointToLatLng(line){
 
 /**
  * 
- * @param {Array} line Array in LatLng(lat,lng)
- * @returns Array in Point(x,y)
+ * @param {L.LatLng[]} line Array in LatLng(lat,lng)
+ * @returns {L.Point[]} Array in Point(x,y)
  */
 function latLngToPoint(line){
     var res = [];
@@ -1018,122 +1167,96 @@ function latLngToPoint(line){
 
 /**
  * 
- * @param {LatLng} latlng LatLng(lat,lng)
- * @returns Point(x,y)
+ * @param {L.LatLng} latlng LatLng(lat,lng)
+ * @returns {L.Point} Point(x,y)
  */
 function toPixels(latlng){
     return map.latLngToContainerPoint(latlng);
 }
 
-
-function getNeededPoints(itinerary, value, units){
-    var distValue;
-    if (units == "distance"){
-        distValue = value*1000*0.7;
+/**
+ * Toggles visibility of an HTML element from visible to collapse
+ * @param {HTMLElement} element 
+ */
+function visibilityToggle(element){
+    if (element.style.visibility == "visible"){
+        element.style.visibility = "collapse";
     } else {
-        distValue = Math.floor(((value*1000*110)/36)/2);
+        element.style.visibility = "visible";
     }
-    // console.log(distValue);
-    var polygons = [];
-    var polygon = [itinerary[0]];
-    var prevPoint = itinerary[0];
-    for (var i = 1; i < itinerary.length - 1 ; i++){
-        dist = itinerary[i].distanceTo(prevPoint);
-        if (dist > distValue){
-            polygon.push(itinerary[i]);
-            prevPoint = itinerary[i];
-            if (polygon.length > 4){
-                var poly = [];
-                polygon.forEach(element => {
-                    poly.push(element);
-                });
-                polygon.length = 0;
-                polygons.push(poly);
-            }
-        }
-    }
-    polygon.push(itinerary[itinerary.length-1]);
-    polygons.push(polygon);
-    
-    // console.log(poly);
-    return polygons;
 }
 
-function itineraryPass(itinerary, distValue){
+
+
+// function itineraryPass(itinerary, distValue){
     
-    var dist = 0;
-    var polygon = [];
-    var prevPoint = itinerary[0];
-    var forstPoint;
-    for (var i = 0; i < itinerary.length - 1; i++){
-        dist += itinerary[i].distanceTo(itinerary[i+1]);
-        if (dist > distValue){
+//     var dist = 0;
+//     var polygon = [];
+//     var prevPoint = itinerary[0];
+//     var forstPoint;
+//     for (var i = 0; i < itinerary.length - 1; i++){
+//         dist += itinerary[i].distanceTo(itinerary[i+1]);
+//         if (dist > distValue){
             
-            if (forstPoint == null){
-                forstPoint = itinerary[i+1];
-            }
-            // var circleColor;
-            var isVerticaal = isVertical(toPixels(prevPoint), toPixels(itinerary[i+1]));
-            // if (isVerticaal){
-            //         circleColor = L.circle(itinerary[i+1], {radius : distValue, color: "red"}).addTo(map);
-            //     } else {
-            //         circleColor = L.circle(itinerary[i+1], {radius : distValue, color: "green"}).addTo(map);
-            //     }
-            var pointDown;
-            var pointUp;
-            var circleDist = L.circle(itinerary[i+1], {radius : distValue}).addTo(map);
-            var circleBounds = circleDist.getBounds();
-            map.removeLayer(circleDist);
-            if (isVerticaal){
-                pointDown = L.latLng(itinerary[i+1].lat, circleBounds.getWest());
-                pointUp = L.latLng(itinerary[i+1].lat, circleBounds.getEast());
-            } else {
-                pointDown = L.latLng(circleBounds.getSouth(), itinerary[i+1].lng);
-                pointUp = L.latLng(circleBounds.getNorth(), itinerary[i+1].lng);
-            }
+//             if (forstPoint == null){
+//                 forstPoint = itinerary[i+1];
+//             }
+//             var isVerticaal = isVertical(toPixels(prevPoint), toPixels(itinerary[i+1]));
+//             var pointDown;
+//             var pointUp;
+//             var circleDist = L.circle(itinerary[i+1], {radius : distValue}).addTo(map);
+//             var circleBounds = circleDist.getBounds();
+//             map.removeLayer(circleDist);
+//             if (isVerticaal){
+//                 pointDown = L.latLng(itinerary[i+1].lat, circleBounds.getWest());
+//                 pointUp = L.latLng(itinerary[i+1].lat, circleBounds.getEast());
+//             } else {
+//                 pointDown = L.latLng(circleBounds.getSouth(), itinerary[i+1].lng);
+//                 pointUp = L.latLng(circleBounds.getNorth(), itinerary[i+1].lng);
+//             }
             
             
-            polygon.splice(polygon.length/2, 0,pointDown, pointUp);
-            prevPoint = itinerary[i+1];
+//             polygon.splice(polygon.length/2, 0,pointDown, pointUp);
+//             prevPoint = itinerary[i+1];
 
-            dist = 0;
-        }
-    }
+//             dist = 0;
+//         }
+//     }
 
-    var pointDown;
-    var pointUp;
-    var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
-    var circleBounds = circleDist.getBounds();
-    map.removeLayer(circleDist);
-    if (isVertical(toPixels(prevPoint), toPixels(itinerary[itinerary.length-1]))){
-        pointDown = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getWest());
-        pointUp = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getEast());
-    } else {
-        pointDown = L.latLng(circleBounds.getSouth(), itinerary[itinerary.length-1].lng);
-        pointUp = L.latLng(circleBounds.getNorth(), itinerary[itinerary.length-1].lng);
-    }
-    polygon.splice(polygon.length/2, 0, pointDown, pointUp);
+//     var pointDown;
+//     var pointUp;
+//     var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
+//     var circleBounds = circleDist.getBounds();
+//     map.removeLayer(circleDist);
+//     if (isVertical(toPixels(prevPoint), toPixels(itinerary[itinerary.length-1]))){
+//         pointDown = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getWest());
+//         pointUp = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getEast());
+//     } else {
+//         pointDown = L.latLng(circleBounds.getSouth(), itinerary[itinerary.length-1].lng);
+//         pointUp = L.latLng(circleBounds.getNorth(), itinerary[itinerary.length-1].lng);
+//     }
+//     polygon.splice(polygon.length/2, 0, pointDown, pointUp);
 
-    var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
-    var circleBounds = circleDist.getBounds();
-    map.removeLayer(circleDist);
-    if (isVertical(toPixels(itinerary[0]), toPixels(forstPoint))){
-        pointDown = L.latLng(itinerary[0].lat, circleBounds.getWest());
-        pointUp = L.latLng(itinerary[0].lat, circleBounds.getEast());
-    } else {
-        pointDown = L.latLng(circleBounds.getSouth(), itinerary[0].lng);
-        pointUp = L.latLng(circleBounds.getNorth(), itinerary[0].lng);
-    }
-    polygon.splice(0, 0, pointDown);
-    polygon.splice(polygon.length, 0, pointUp);
+//     var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
+//     var circleBounds = circleDist.getBounds();
+//     map.removeLayer(circleDist);
+//     if (isVertical(toPixels(itinerary[0]), toPixels(forstPoint))){
+//         pointDown = L.latLng(itinerary[0].lat, circleBounds.getWest());
+//         pointUp = L.latLng(itinerary[0].lat, circleBounds.getEast());
+//     } else {
+//         pointDown = L.latLng(circleBounds.getSouth(), itinerary[0].lng);
+//         pointUp = L.latLng(circleBounds.getNorth(), itinerary[0].lng);
+//     }
+//     polygon.splice(0, 0, pointDown);
+//     polygon.splice(polygon.length, 0, pointUp);
 
-    var zone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
-    // queryZone.push(zone);
-    queryZone = zone;
+//     var zone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
+//     // queryZone.push(zone);
+//     queryZone = zone;
 
-    return polygon;
+//     return polygon;
 
-}
+// }
 
 /**
  * 
@@ -1161,9 +1284,9 @@ function isVertical(pointA, pointB){
 }
 
 /**
- * 
- * @param {Array} coords Array in LatLng(lat,lng)
- * @returns Array in JSTS Coord(lat,lng)
+ * Coords in LatLng to JSTS
+ * @param {LatLng[]} coords Array in LatLng(lat,lng)
+ * @returns {JSTSCoords[]} Array in JSTS Coord(lat,lng)
  */
 function latLngToJSTS(coords){
     var coordsJSTS = [];
@@ -1174,9 +1297,9 @@ function latLngToJSTS(coords){
 }
 
 /**
- * 
- * @param {Array} coords Array in JSTS Coord(lat,lng)
- * @returns Array in LatLng(lat,lng)
+ * Coords in JSTS to LatLng
+ * @param {JSTSCoords[]} coords Array in JSTS Coord(lat,lng)
+ * @returns {LatLng[]} Array in LatLng(lat,lng)
  */
 function JSTStoLatLng(coords){
     var coordsLatLng = [];
@@ -2171,26 +2294,26 @@ function moveMarkers(latlng){
     } 
 }
 
-//Builds the string for the query and makes the query
-function makeQuery(type, distValue){
-    var queryString = "";
-    isMenuOn = false;
-    var latLngCircle = circleZoneOfInterest.getLatLng();
+// //Builds the string for the query and makes the query
+// function makeQuery(type, distValue){
+//     var queryString = "";
+//     isMenuOn = false;
+//     var latLngCircle = circleZoneOfInterest.getLatLng();
     
-    if (markerBracketOpen == null){
-        queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
-        var zone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
-        queryZone = zone;
-        // queryZone.push(zone);
+//     if (markerBracketOpen == null){
+//         queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
+//         var zone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
+//         queryZone = zone;
+//         // queryZone.push(zone);
 
-    } else {        
-        var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
-        queryString = arrayToQuery(polygon, type);
+//     } else {        
+//         var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
+//         queryString = arrayToQuery(polygon, type);
 
-    }
-    console.log(queryString);
-    oplQuery(queryString);
-}
+//     }
+//     console.log(queryString);
+//     oplQuery(queryString);
+// }
 
 function createButton(label, container) {
     var btn = L.DomUtil.create('button', '', container);
@@ -2239,6 +2362,10 @@ function updatePositions(){
 
 
 }
+
+/********************************************************************************
+ *                                Event Handlers                                *
+ ********************************************************************************/
 
 
 map.on("zoomanim", function(e){
@@ -2359,65 +2486,9 @@ onpointerup = (event) => {
         markerBracketClose.dragging.enable();
         markerBracketOpen.dragging.enable();
     } else if (state == "pointPlaced"){
+        pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
-        // console.log(state);
-        if (isPointerDown  && !isMovingMarker && !isMovingBrackets && !clickOnLayer){
-            ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
-
-            //Calculate if we're on the line or not
-            var distFromLine = getDistanceInCM(latlng, point, allPos);
-            var closest = L.GeometryUtil.closest(map, allPos, latlng);
-            var closestPixel = toPixels(closest);
-            if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
-                var closest = L.GeometryUtil.closest(map, allPos, latlng);
-                if (circleZoneOfInterest != null){
-                    map.removeLayer(circleZoneOfInterest);
-                    markers.forEach(element => {map.removeLayer(element);});
-                    if (markerBracketClose != null){
-                        map.removeLayer(markerBracketClose);
-                        map.removeLayer(markerBracketOpen);
-                        map.removeLayer(polylineBracket);
-                        markerBracketClose = null;
-                        markerBracketOpen = null;
-                    }
-                }
-                
-                // circleMarker = circleClosest;
-
-                isPointOnLine(closest, allPos, 5)
-                points.push(closest);
-                var dist = 0;
-                for (var i = 0; i < points.length - 1; i++){
-                    dist += points[i].distanceTo(points[i+1]);
-                }
-                var percent = dist*100/distance;
-
-                var circle = L.circle(closest, {color: 'blue', fillColor: '#2B8DFF', fillOpacity: 1, radius: 1500}).addTo(map);
-                // circleCreated = false;
-                
-                circleZoneOfInterest = circle; 
-                circleZoneOfInterest.bringToFront();   
-                // circleClosest.bringToFront();
-                dwellOnCircle(latlng);
-                // circleZoneOfInterest.dragging.enable()
-
-                var circleHTML = circleZoneOfInterest._path;
-                circleHTML.onclick = function(e){openMenu()};
-                circleHTML.onpointerdown = function(e){clickOnCircle = true};
-                if (queryZone != null){
-                    map.removeLayer(queryZone);
-                }
-                
-                
-            if (!isFuelDisplayed && !isRestaurantDisplayed && !isElevationDisplayed){
-                outline.setStyle({color:"#000167"});
-            }
-                itinerary.setStyle({color:"#6D6D6D"});
-                stroke.setStyle({color:"#6D6D6D"});
-                state = "pointPlaced";
-                prevState = "pointPlaced";
-            }
-        } 
+        itineraryToPointPlaced(latlng,point);
     } 
     if (state != "itinerary"){
         let bracketOpenText = document.getElementById("bracketText");
@@ -2473,9 +2544,11 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    if(markerBracketClose != null){
-        markerBracketOpen.dragging.enable();
-        markerBracketClose.dragging.enable();
+    if(markerBracketClose != null && markerBracketOpen != null){
+        if (map.hasLayer(markerBracketClose)){
+            markerBracketOpen.dragging.enable();
+            markerBracketClose.dragging.enable();            
+        }
     }
     // stroke.bringToFront();
     // outline.bringToFront();
