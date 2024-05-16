@@ -994,6 +994,22 @@ function oplQuery(queryString){
 
 }
 
+/**
+ * Takes an array of LatLng and turns it into a OPL query
+ * @param {L.LatLng[]} itinerary 
+ * @param {string} type 
+ * @returns {string}
+ */
+function arrayToQuery(itinerary, type){
+    var queryString = "node(poly:\"";
+    for (var i = 0; i < itinerary.length - 1; i++){
+        queryString += itinerary[i].lat + " " + itinerary[i].lng + " ";
+    }
+    queryString += itinerary[itinerary.length-1].lat + " " + itinerary[itinerary.length-1].lng + "\")[" + type + "];out;";
+    return queryString;
+    
+}
+
 /********************************************************************************
  *                                Changing State                                *
  ********************************************************************************/
@@ -1167,6 +1183,204 @@ function itineraryToPointPlaced(latlng, point){
     } 
 }
 
+
+/**
+ * Handles Interactions with the query menu
+ * @param {PointerEvent} event 
+ */
+function openMenu(event){
+    console.log(state);
+    if (state == "pointPlaced"){
+        state = "menu";
+        var menuDiv = document.getElementById("menu");
+        menuDiv.onpointerdown = function(e){console.log("menu OnPointerDown"); clickOnMenu = true};
+        // menuDiv.bringToFront();
+        var restaurant = document.getElementById("restaurant");
+        var gasstation = document.getElementById("gasstation");
+        var supermarket = document.getElementById("supermarket");
+        restaurant.onclick = function(e){console.log("click"); closeMenu(); openSlider("'amenity'='restaurant'")};
+        gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
+        supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
+        menuDiv.style.visibility = "visible";
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
+        var top = circlePos.y - 70;
+        // console.log()
+        if (top < 5){
+            top = circlePos.y + 50;
+        }
+        menuDiv.style.left=circlePos.x - 50 + 'px';
+        menuDiv.style.top=top +  'px';
+        isMenuOn = true;
+        // if (circleCreated){
+            // window.alert("clicked");
+        // }
+        
+    } else if (state == "circleMove" || state == "openMove" || state == "closeMove"){
+        state = prevState;
+    }
+}
+
+
+/**
+ * Closes the menu
+ */
+function closeMenu(){
+    var menuDiv = document.getElementById("menu");
+    menuDiv.style.visibility="hidden";
+    clickOnMenu = false;
+}
+
+/********************************************************************************
+ *                                    Slider                                    *
+ ********************************************************************************/
+
+/**
+ * Handles Interactions with the query slider
+ * @param {PointerEvent} type 
+ */
+function openSlider(type){  
+    state = "slider";
+    closeMenu();
+    var sliderDiv = document.getElementById("slider");
+    var value = document.getElementById("value");
+    var range = document.getElementById("range");            
+    setSliderMinMax(true, range);
+    // getDistPolyLine(polylineBracket.getLatLngs());
+    sliderDiv.addEventListener("input", (event) => {
+        value.textContent = event.target.value;
+      });
+    sliderDiv.onpointerdown = function(e){clickOnSlider = true};
+    range.onclick = function(e){console.log("onPointerUp"); clickOnSlider = false};
+    // sliderDiv.onpointerup = function(e){clickOnSlider = false};
+    sliderDiv.style.visibility = "visible";
+    var circlePos = toPixels(circleZoneOfInterest.getLatLng());
+    var top = circlePos.y - 150;
+    if (top < 5){
+        top+=200;
+    }
+    sliderDiv.style.left=circlePos.x - 65 + 'px';
+    sliderDiv.style.top=top +  'px';
+    var kmButton = document.getElementById("km");
+    var minButton = document.getElementById("min");
+    kmButton.onclick = function(e){toggleMinKM(true)};
+    minButton.onclick = function(e){toggleMinKM(false)};
+    //recup la valeur du slider
+    //recup le bouton clicked du menu d'avant
+    var goButton = document.getElementById("go");
+    goButton.onclick = function(e){clickGoButton(type)};
+    
+}
+
+/**
+ * Toggle between units for the slider
+ * @param {boolean} isKiloMeter 
+ */
+function toggleMinKM(isKiloMeter){
+    var kmButton = document.getElementById("km");
+    var minButton = document.getElementById("min");
+    var range = document.getElementById("range");
+    clickOnSlider = false;
+    setSliderMinMax(isKiloMeter, range);
+    if (isKiloMeter){
+        isInKM = true;
+        kmButton.setAttribute("class", "selected");
+        minButton.setAttribute("class", "unselected");
+        // document.getElementById("value2").setAttribute("label","15");
+        // document.getElementById("value3").setAttribute("label","30");
+        // document.getElementById("value4").setAttribute("label","45");
+    } else {
+        isInKM = false;
+        minButton.setAttribute("class", "selected");
+        kmButton.setAttribute("class", "unselected");
+        // document.getElementById("value2").setAttribute("label","10");
+        // document.getElementById("value3").setAttribute("label","20");
+        // document.getElementById("value4").setAttribute("label","30");
+    }
+    // updateSlider();
+}
+
+/**
+ * Set the min and max value of the slider according to the range
+ * @param {boolean} isKiloMeter 
+ * @param {HTMLElement} slider 
+ */
+function setSliderMinMax(isKiloMeter, slider){
+    var value = getDistPolyLine(polylineBracket.getLatLngs());
+    if (isKiloMeter){
+        var min = Math.round(value/5);
+        if (value > 50){
+            value = 50;
+            min = 20;
+        }
+        slider.setAttribute("min", min);
+        slider.setAttribute("max", value);
+        console.log(value/10);
+        console.log(value/3);
+    } else {
+        var percent = (100*value)/(distance/1000);
+        var percTime = (percent*time )/100;
+        var inMinutes = Math.round(percTime/60);
+        console.log(time);
+        console.log(percent);
+        console.log(percTime);
+        var min = Math.round(inMinutes/5);
+        var max = Math.round(inMinutes);
+        if (max < 60){
+            max = 60;
+            min = 40;
+        }
+        slider.setAttribute("min", min);
+        slider.setAttribute("max", max);
+        console.log(Math.round(inMinutes/5));
+        console.log(Math.round(inMinutes));
+
+    }
+}
+
+/**
+ * Calculate the total distance of the route in km
+ * @param {L.LatLng[]} route 
+ * @returns {number}
+ */
+function getDistPolyLine(route){
+    var dist = 0;
+    for (var i = 0; i < route.length - 1; i++){
+        dist += route[i].distanceTo(route[i+1]);
+    }
+    console.log(Math.round(dist/1000));
+    return Math.round(dist/1000);
+
+}
+
+/**
+ * Handles click on the Go button: starts the isochrone query
+ * @param {string} type 
+ */
+function clickGoButton(type){
+    state = "loadingQuery";
+    var sliderDiv = document.getElementById("slider");
+    disableCircle();
+    sliderDiv.style.visibility = "hidden";
+    clickOnSlider = false;
+    if (isInKM){
+        // makeQuery(type, getSliderValue());
+        isochroneMinutes(type, getSliderValue(), "distance");
+    } else {
+        isochroneMinutes(type, getSliderValue(), "time");
+    }
+
+}
+
+/**
+ * Returns the current value of the slider
+ * @returns {number}
+ */
+function getSliderValue(){
+    var value = document.getElementById("range").value;
+    console.log(value);
+    return value;
+}
+
 /********************************************************************************
  *                                Layer Handlers                                *
  ********************************************************************************/
@@ -1308,6 +1522,40 @@ function getWeatherPos(pos, index){
 }
 
 /**
+ * Updates the position of the weather icons
+ */
+function updatePositions(){
+    var layers = weatherLayerGroup.getLayers();
+    var lines = weatherLayerGroupLines.getLayers();
+    var prevPoint = toPixels(allPos[0]);
+    for (var i = 0; i < layers.length; i++){
+        var latLng = layers[i].getLatLng();
+        var curLine = lines[i].getLatLngs();
+        var closest;
+        if (curLine[0] == latLng){
+            closest = curLine[1];
+        } else {
+            closest = curLine[0];
+        }
+       
+        var closestXY = toPixels(closest);
+       
+        var newXY;
+        if (isVertical(prevPoint, closestXY)){
+            newXY = L.point((closestXY.x-60), closestXY.y);
+        } else {
+            newXY = L.point(closestXY.x, (closestXY.y+60));
+        }
+        var newLatLng = map.containerPointToLatLng(newXY);
+        layers[i].setLatLng(newLatLng);
+        prevPoint = closestXY;
+        lines[i].setLatLngs([newLatLng, closest]);
+    }
+
+
+}
+
+/**
  * Toggle Restaurant Distribution gradient
  */
 function toggleRestaurantDistribution(){
@@ -1409,6 +1657,46 @@ function createFloatingTexts(){
     circleMarkerText.style.visibility='hidden';
     circleMarkerText.id="circleText";
     document.body.appendChild(circleMarkerText);
+}
+
+/**
+ * Updates text from drag on itinerary
+ * @param {L.LatLng} latlng 
+ * @param {L.Point} point 
+ */
+function distancePixelPoints(latlng, point){
+    // map.removeLayer(routing_line);
+    var distFromLine = getDistanceInCM(latlng, point, allPos);
+    var closest = L.GeometryUtil.closest(map, allPos, latlng);
+    var closestPixel = toPixels(closest);
+    let ETAFloatingText = document.getElementById("cursorText");
+    // console.log("distance : " + dist);
+    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+        
+        ETAFloatingText.style.visibility='visible';
+        map.dragging.disable();
+        
+        // if (point.distanceTo(previousLatLng) > 3){
+        // console.log( point.distanceTo(previousLatLng) );
+        
+        // previousLatLng = point;
+        isPointOnLine(closest, allPos, 5)
+        
+        points.push(closest);
+        var dist = 0;
+        for (var i = 0; i < points.length - 1; i++){
+            dist += points[i].distanceTo(points[i+1]);
+        }
+        var percent = dist*100/distance;
+        ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
+       
+    
+    } else
+    
+    {
+        ETAFloatingText.style.visibility='hidden';
+    }
+
 }
 
 /**
@@ -1717,6 +2005,120 @@ function updateBracketOpenText(){
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
+/**
+ * Handles the moving of the markers
+ * @param {L.LatLng} latlng 
+ */
+function moveMarkers(latlng){
+    // console.log("movemarkers");
+    // console.log(state);
+    if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
+        // console.log("dist before open: " + markerBracketOpen.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()) + ", close : " + + markerBracketClose.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()));
+        
+        var prevCirclePose = circleZoneOfInterest.getLatLng();
+
+        var closest = L.GeometryUtil.closest(map, allPos, latlng);
+        circleZoneOfInterest.setLatLng(closest);
+
+        var diff = prevCirclePose.distanceTo(closest);
+        console.log("diff " + diff);
+
+        var distPrev = prevCirclePose.distanceTo(allPos[0]);
+        var distAct = closest.distanceTo(allPos[0]);
+        var diffSign;
+
+        var distCircleBracket = 0;
+        if (distPrev < distAct){
+            diffSign = diff;
+            var closestAbove = L.GeometryUtil.closest(map, allPos, prevCirclePose);
+            isPointOnLine(closestAbove, allPos, 0.5);
+            var pointsAbove = new Array();
+            points.forEach(element => {pointsAbove.push(element)});
+            var closestBelow = closest;
+            isPointOnLine(closestBelow, allPos, 0.5);
+
+            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
+            }
+        } else {
+            diffSign = -diff;
+            var closestAbove = closest;
+            isPointOnLine(closestAbove, allPos, 0.5);
+            var pointsAbove = new Array();
+            points.forEach(element => {pointsAbove.push(element)});
+            var closestBelow = L.GeometryUtil.closest(map, allPos, prevCirclePose);
+            isPointOnLine(closestBelow, allPos, 0.5);
+
+            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
+            }
+            distCircleBracket = -distCircleBracket;
+        }
+
+
+        console.log("diff calc: " + distCircleBracket);
+
+
+        var openClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+        isPointOnLine(openClosestAbove, allPos, 0.5);
+        var openPointsAbove = new Array();
+        points.forEach(element => {openPointsAbove.push(element)});
+        
+        
+
+        
+
+        var openDistCircleBracket = 0;
+        for (var i = 0; i < openPointsAbove.length - 1; i++){ //calculate the distance from the start to this point
+            openDistCircleBracket += openPointsAbove[i].distanceTo(openPointsAbove[i+1]);
+        }
+        console.log("dist bracket : " + Math.round(openDistCircleBracket/1000));
+        openDistCircleBracket += distCircleBracket;
+        var pointAbove = turf.along(itineraryJSON, openDistCircleBracket/1000).geometry.coordinates;
+        var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
+        markerBracketOpen.setLatLng(latlngAbove);
+        console.log("LatLng above : " + latlngAbove);
+
+
+        var closeClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
+        isPointOnLine(closeClosestAbove, allPos, 0.5);
+        var closePointsAbove = new Array();
+        points.forEach(element => {closePointsAbove.push(element)});
+        var closeDistCircleBracket = 0;
+        for (var i = 0; i < closePointsAbove.length - 1; i++){ //calculate the distance from the start to this point
+            closeDistCircleBracket += closePointsAbove[i].distanceTo(closePointsAbove[i+1]);
+        }
+        closeDistCircleBracket += distCircleBracket;
+        var pointBelow = turf.along(itineraryJSON, closeDistCircleBracket/1000).geometry.coordinates;
+        var latlngBelow = L.latLng(pointBelow[1], pointBelow[0]);
+        markerBracketClose.setLatLng(latlngBelow);
+        
+        let bracketOpenText = document.getElementById("bracketText");
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        let circleMarkerText = document.getElementById("circleText");
+
+        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+        isPointOnLine(closest, allPos, 5);
+        updateBracketCloseText();
+        updateBracketOpenText();
+        
+        points.push(closest);
+        var dist = 0;
+        for (var i = 0; i < points.length - 1; i++){
+            dist += points[i].distanceTo(points[i+1]);
+        }
+        var percent = dist*100/distance;
+        circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
+        // state = "circleMove";
+        // console.log("stateChanged");
+    } 
+}
+
 /********************************************************************************
  *                              Brackets Rotations                              *
  ********************************************************************************/
@@ -1926,45 +2328,7 @@ function getDistanceInCM(latlng, point, route){
     return ((point.distanceTo(closestPixel)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
 }
 
-/**
- * Updates text from drag on itinerary
- * @param {L.LatLng} latlng 
- * @param {L.Point} point 
- */
-function distancePixelPoints(latlng, point){
-    // map.removeLayer(routing_line);
-    var distFromLine = getDistanceInCM(latlng, point, allPos);
-    var closest = L.GeometryUtil.closest(map, allPos, latlng);
-    var closestPixel = toPixels(closest);
-    let ETAFloatingText = document.getElementById("cursorText");
-    // console.log("distance : " + dist);
-    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
-        
-        ETAFloatingText.style.visibility='visible';
-        map.dragging.disable();
-        
-        // if (point.distanceTo(previousLatLng) > 3){
-        // console.log( point.distanceTo(previousLatLng) );
-        
-        // previousLatLng = point;
-        isPointOnLine(closest, allPos, 5)
-        
-        points.push(closest);
-        var dist = 0;
-        for (var i = 0; i < points.length - 1; i++){
-            dist += points[i].distanceTo(points[i+1]);
-        }
-        var percent = dist*100/distance;
-        ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
-       
-    
-    } else
-    
-    {
-        ETAFloatingText.style.visibility='hidden';
-    }
 
-}
 
 /**
  *Alerts the screen resolution of the device 
@@ -2083,320 +2447,6 @@ function inHours(time){
 }
 
 /**
- * Handles Interactions with the query menu
- * @param {PointerEvent} event 
- */
-function openMenu(event){
-    console.log(state);
-    if (state == "pointPlaced"){
-        state = "menu";
-        var menuDiv = document.getElementById("menu");
-        menuDiv.onpointerdown = function(e){console.log("menu OnPointerDown"); clickOnMenu = true};
-        // menuDiv.bringToFront();
-        var restaurant = document.getElementById("restaurant");
-        var gasstation = document.getElementById("gasstation");
-        var supermarket = document.getElementById("supermarket");
-        restaurant.onclick = function(e){console.log("click"); 
-        menuDiv.style.visibility="hidden"; openSlider("'amenity'='restaurant'")};
-        gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
-        supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
-        menuDiv.style.visibility = "visible";
-        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
-        var top = circlePos.y - 70;
-        // console.log()
-        if (top < 5){
-            top = circlePos.y + 50;
-        }
-        menuDiv.style.left=circlePos.x - 50 + 'px';
-        menuDiv.style.top=top +  'px';
-        isMenuOn = true;
-        // if (circleCreated){
-            // window.alert("clicked");
-        // }
-        
-        circleCreated = true;
-    } else if (state == "circleMove" || state == "openMove" || state == "closeMove"){
-        state = prevState;
-    }
-}
-
-var circleCreated = false;
-
-/**
- * Closes the menu
- */
-function closeMenu(){
-    var menuDiv = document.getElementById("menu");
-    menuDiv.style.visibility="hidden";
-    if (requestMade){
-        map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(markerBracketOpen);  
-    }
-    
-}
-
-
-/**
- * Handles Interactions with the query slider
- * @param {PointerEvent} type 
- */
-function openSlider(type){  
-    state = "slider";
-    var sliderDiv = document.getElementById("slider");
-    var value = document.getElementById("value");
-    var range = document.getElementById("range");            
-    setSliderMinMax(true, range);
-    // getDistPolyLine(polylineBracket.getLatLngs());
-    sliderDiv.addEventListener("input", (event) => {
-        value.textContent = event.target.value;
-      });
-    sliderDiv.onpointerdown = function(e){clickOnSlider = true};
-    range.onpointerup = function(e){clickOnSlider = false};
-    // sliderDiv.onpointerup = function(e){clickOnSlider = false};
-    sliderDiv.style.visibility = "visible";
-    var circlePos = toPixels(circleZoneOfInterest.getLatLng());
-    var top = circlePos.y - 150;
-    if (top < 5){
-        top+=200;
-    }
-    sliderDiv.style.left=circlePos.x - 65 + 'px';
-    sliderDiv.style.top=top +  'px';
-    var kmButton = document.getElementById("km");
-    var minButton = document.getElementById("min");
-    kmButton.onclick = function(e){toggleMinKM(true)};
-    minButton.onclick = function(e){toggleMinKM(false)};
-    //recup la valeur du slider
-    //recup le bouton clicked du menu d'avant
-    var goButton = document.getElementById("go");
-    goButton.onclick = function(e){clickGoButton(type)};
-    
-}
-
-/**
- * Toggle between units for the slider
- * @param {boolean} isKiloMeter 
- */
-function toggleMinKM(isKiloMeter){
-    var kmButton = document.getElementById("km");
-    var minButton = document.getElementById("min");
-    var range = document.getElementById("range");
-    clickOnSlider = false;
-    setSliderMinMax(isKiloMeter, range);
-    if (isKiloMeter){
-        isInKM = true;
-        kmButton.setAttribute("class", "selected");
-        minButton.setAttribute("class", "unselected");
-        // document.getElementById("value2").setAttribute("label","15");
-        // document.getElementById("value3").setAttribute("label","30");
-        // document.getElementById("value4").setAttribute("label","45");
-    } else {
-        isInKM = false;
-        minButton.setAttribute("class", "selected");
-        kmButton.setAttribute("class", "unselected");
-        // document.getElementById("value2").setAttribute("label","10");
-        // document.getElementById("value3").setAttribute("label","20");
-        // document.getElementById("value4").setAttribute("label","30");
-    }
-    // updateSlider();
-}
-
-/**
- * Set the min and max value of the slider according to the range
- * @param {boolean} isKiloMeter 
- * @param {HTMLElement} slider 
- */
-function setSliderMinMax(isKiloMeter, slider){
-    var value = getDistPolyLine(polylineBracket.getLatLngs());
-    if (isKiloMeter){
-        var min = Math.round(value/5);
-        if (value > 50){
-            value = 50;
-            min = 20;
-        }
-        slider.setAttribute("min", min);
-        slider.setAttribute("max", value);
-        console.log(value/10);
-        console.log(value/3);
-    } else {
-        var percent = (100*value)/(distance/1000);
-        var percTime = (percent*time )/100;
-        var inMinutes = Math.round(percTime/60);
-        console.log(time);
-        console.log(percent);
-        console.log(percTime);
-        var min = Math.round(inMinutes/5);
-        var max = Math.round(inMinutes);
-        if (max < 60){
-            max = 60;
-            min = 40;
-        }
-        slider.setAttribute("min", min);
-        slider.setAttribute("max", max);
-        console.log(Math.round(inMinutes/5));
-        console.log(Math.round(inMinutes));
-
-    }
-}
-
-/**
- * Calculate the total distance of the route in km
- * @param {L.LatLng[]} route 
- * @returns {number}
- */
-function getDistPolyLine(route){
-    var dist = 0;
-    for (var i = 0; i < route.length - 1; i++){
-        dist += route[i].distanceTo(route[i+1]);
-    }
-    console.log(Math.round(dist/1000));
-    return Math.round(dist/1000);
-
-}
-
-/**
- * Handles click on the Go button: starts the isochrone query
- * @param {string} type 
- */
-function clickGoButton(type){
-    state = "loadingQuery";
-    var sliderDiv = document.getElementById("slider");
-    disableCircle();
-    sliderDiv.style.visibility = "hidden";
-    if (isInKM){
-        // makeQuery(type, getSliderValue());
-        isochroneMinutes(type, getSliderValue(), "distance");
-    } else {
-        isochroneMinutes(type, getSliderValue(), "time");
-    }
-
-}
-
-/**
- * Returns the current value of the slider
- * @returns {number}
- */
-function getSliderValue(){
-    var value = document.getElementById("range").value;
-    console.log(value);
-    return value;
-}
-
-/**
- * Handles the moving of the markers
- * @param {L.LatLng} latlng 
- */
-function moveMarkers(latlng){
-    // console.log("movemarkers");
-    // console.log(state);
-    if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
-        // console.log("dist before open: " + markerBracketOpen.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()) + ", close : " + + markerBracketClose.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()));
-        
-        var prevCirclePose = circleZoneOfInterest.getLatLng();
-
-        var closest = L.GeometryUtil.closest(map, allPos, latlng);
-        circleZoneOfInterest.setLatLng(closest);
-
-        var diff = prevCirclePose.distanceTo(closest);
-        console.log("diff " + diff);
-
-        var distPrev = prevCirclePose.distanceTo(allPos[0]);
-        var distAct = closest.distanceTo(allPos[0]);
-        var diffSign;
-
-        var distCircleBracket = 0;
-        if (distPrev < distAct){
-            diffSign = diff;
-            var closestAbove = L.GeometryUtil.closest(map, allPos, prevCirclePose);
-            isPointOnLine(closestAbove, allPos, 0.5);
-            var pointsAbove = new Array();
-            points.forEach(element => {pointsAbove.push(element)});
-            var closestBelow = closest;
-            isPointOnLine(closestBelow, allPos, 0.5);
-
-            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
-            }
-        } else {
-            diffSign = -diff;
-            var closestAbove = closest;
-            isPointOnLine(closestAbove, allPos, 0.5);
-            var pointsAbove = new Array();
-            points.forEach(element => {pointsAbove.push(element)});
-            var closestBelow = L.GeometryUtil.closest(map, allPos, prevCirclePose);
-            isPointOnLine(closestBelow, allPos, 0.5);
-
-            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
-            }
-            distCircleBracket = -distCircleBracket;
-        }
-
-
-        console.log("diff calc: " + distCircleBracket);
-
-
-        var openClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-        isPointOnLine(openClosestAbove, allPos, 0.5);
-        var openPointsAbove = new Array();
-        points.forEach(element => {openPointsAbove.push(element)});
-        
-        
-
-        
-
-        var openDistCircleBracket = 0;
-        for (var i = 0; i < openPointsAbove.length - 1; i++){ //calculate the distance from the start to this point
-            openDistCircleBracket += openPointsAbove[i].distanceTo(openPointsAbove[i+1]);
-        }
-        console.log("dist bracket : " + Math.round(openDistCircleBracket/1000));
-        openDistCircleBracket += distCircleBracket;
-        var pointAbove = turf.along(itineraryJSON, openDistCircleBracket/1000).geometry.coordinates;
-        var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-        markerBracketOpen.setLatLng(latlngAbove);
-        console.log("LatLng above : " + latlngAbove);
-
-
-        var closeClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
-        isPointOnLine(closeClosestAbove, allPos, 0.5);
-        var closePointsAbove = new Array();
-        points.forEach(element => {closePointsAbove.push(element)});
-        var closeDistCircleBracket = 0;
-        for (var i = 0; i < closePointsAbove.length - 1; i++){ //calculate the distance from the start to this point
-            closeDistCircleBracket += closePointsAbove[i].distanceTo(closePointsAbove[i+1]);
-        }
-        closeDistCircleBracket += distCircleBracket;
-        var pointBelow = turf.along(itineraryJSON, closeDistCircleBracket/1000).geometry.coordinates;
-        var latlngBelow = L.latLng(pointBelow[1], pointBelow[0]);
-        markerBracketClose.setLatLng(latlngBelow);
-        
-        let bracketOpenText = document.getElementById("bracketText");
-        let bracketCloseText = document.getElementById("bracketCloseText");
-        let circleMarkerText = document.getElementById("circleText");
-
-        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
-        isPointOnLine(closest, allPos, 5);
-        updateBracketCloseText();
-        updateBracketOpenText();
-        
-        points.push(closest);
-        var dist = 0;
-        for (var i = 0; i < points.length - 1; i++){
-            dist += points[i].distanceTo(points[i+1]);
-        }
-        var percent = dist*100/distance;
-        circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
-        // state = "circleMove";
-        // console.log("stateChanged");
-    } 
-}
-
-/**
  * Creates a button with the specified label in the specified container
  * @param {string} label 
  * @param {HTMLElement} container 
@@ -2408,55 +2458,9 @@ function createButton(label, container) {
     btn.innerHTML = label;
     return btn;
 }
-/**
- * Takes an array of LatLng and turns it into a OPL query
- * @param {L.LatLng[]} itinerary 
- * @param {string} type 
- * @returns {string}
- */
-function arrayToQuery(itinerary, type){
-    var queryString = "node(poly:\"";
-    for (var i = 0; i < itinerary.length - 1; i++){
-        queryString += itinerary[i].lat + " " + itinerary[i].lng + " ";
-    }
-    queryString += itinerary[itinerary.length-1].lat + " " + itinerary[itinerary.length-1].lng + "\")[" + type + "];out;";
-    return queryString;
-    
-}
-
-/**
- * Updates the position of the weather icons
- */
-function updatePositions(){
-    var layers = weatherLayerGroup.getLayers();
-    var lines = weatherLayerGroupLines.getLayers();
-    var prevPoint = toPixels(allPos[0]);
-    for (var i = 0; i < layers.length; i++){
-        var latLng = layers[i].getLatLng();
-        var curLine = lines[i].getLatLngs();
-        var closest;
-        if (curLine[0] == latLng){
-            closest = curLine[1];
-        } else {
-            closest = curLine[0];
-        }
-       
-        var closestXY = toPixels(closest);
-       
-        var newXY;
-        if (isVertical(prevPoint, closestXY)){
-            newXY = L.point((closestXY.x-60), closestXY.y);
-        } else {
-            newXY = L.point(closestXY.x, (closestXY.y+60));
-        }
-        var newLatLng = map.containerPointToLatLng(newXY);
-        layers[i].setLatLng(newLatLng);
-        prevPoint = closestXY;
-        lines[i].setLatLngs([newLatLng, closest]);
-    }
 
 
-}
+
 
 /********************************************************************************
  *                                Event Handlers                                *
@@ -2567,19 +2571,21 @@ onpointerup = (event) => {
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    
+    console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
     if (state == "menu" && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
         state = "pointPlaced";
         markerBracketClose.dragging.enable();
         markerBracketOpen.dragging.enable();
+        clickOnMenu = false;
     } else if (state == "slider" && !clickOnSlider && !isMovingMap  && (prevZoom == map.getZoom())){
         var sliderDiv = document.getElementById("slider");
         sliderDiv.style.visibility = "hidden";
         state = "pointPlaced";
         markerBracketClose.dragging.enable();
         markerBracketOpen.dragging.enable();
+        clickOnSlider = false;
     } else if (state == "pointPlaced"){
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
@@ -2609,6 +2615,7 @@ onpointerup = (event) => {
     isMovingBrackets = false;
     isMovingMap = false;
     clickOnCircle = false;
+    clickOnLayer = false;
     map.dragging.enable();
     
     
