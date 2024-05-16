@@ -97,17 +97,17 @@ L.Control.Layers = L.Control.extend({
             clickOnLayer = true;
         }
         fuelLayer.onclick = function(e){
-            loadFuelDistribution();
+            toggleFuelDistribution();
             clickOnLayer = true;
         }
         restaurantLayer.onclick = function(e){
-            loadRestaurantDistribution();
+            toggleRestaurantDistribution();
         }
         weatherLayer.onclick = function(e){
             loadWeather();
         }
         elevationLayer.onclick = function(e){
-            loadElevationDistribution();
+            toggleElevationDistribution();
         }
         button.onclick =  function(e){
             var menu = document.getElementById("hiddenLayers");
@@ -262,13 +262,13 @@ routing.on("routesfound", function (e){
         //Check if a layer is activated and if yes re-activate it
         if(isElevationDisplayed){
             isElevationDisplayed = false;
-            loadElevationDistribution();
+            toggleElevationDistribution();
         } else if (isFuelDisplayed){
             isFuelDisplayed = false;
-            loadFuelDistribution();
+            toggleFuelDistribution();
         } else if (isRestaurantDisplayed){
             isRestaurantDisplayed = false;
-            loadRestaurantDistribution()
+            toggleRestaurantDistribution()
         }
     } else {
         //Create the ORS instance
@@ -652,6 +652,30 @@ function isochroneMinutes(type, value, units){
     }
 } 
 
+// `let request = new XMLHttpRequest();
+
+// request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
+
+// request.responseType = "json";
+
+// request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+// request.setRequestHeader('Content-Type', 'application/json');
+// request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
+
+// request.onreadystatechange = function () {
+//     if (this.readyState === 4) {
+//         console.log('Status:', this.status);
+//         console.log('Headers:', this.getAllResponseHeaders());
+//         console.log('Body:', this.response);
+//     }
+// };
+
+// const body = '{"locations":[[1.06571,48.23889],[0.87957,48.20013],[0.70104,48.15214],[0.52317,48.09511],[0.3454,48.05335]],"profile":"driving-car","range":[20000],"range_type":"distance"}';
+// console.log(body);
+// request.send(body);`
+
+//{"locations":[[1.06571,48.23889],[0.87957,48.20013],[0.70104,48.15214],[0.52317,48.09511],[0.3454,48.05335]],"profile":"driving-car","range":[20000],"range_type":"distance"}
+
 /**
  * Calculates the points on which to query for isochrones based on the slider value
  * @param {L.LatLng[]} itinerary 
@@ -1031,6 +1055,8 @@ function disableCircle(){
 
 /**
  * Revert from pointPlaced state to Itinerary state
+ * @param {L.LatLng} latlng 
+ * @param {L.Point} point 
  */
 function pointPlacedToItinerary(latlng, point){
     var distFromLine = getDistanceInCM(latlng, point, allPos);
@@ -1058,19 +1084,24 @@ function pointPlacedToItinerary(latlng, point){
         //If a layer was applied, re-apply it
         if(isElevationDisplayed){
             isElevationDisplayed = false;
-            loadElevationDistribution();
+            toggleElevationDistribution();
         } else if (isFuelDisplayed){
             isFuelDisplayed = false;
-            loadFuelDistribution();
+            toggleFuelDistribution();
         } else if (isRestaurantDisplayed){
             isRestaurantDisplayed = false;
-            loadRestaurantDistribution()
+            toggleRestaurantDistribution()
         
         }
     }
     }
 }
 
+/**
+ * Change from Itinerary state to Point Placed state
+ * @param {L.LatLng} latlng 
+ * @param {L.Point} point 
+ */
 function itineraryToPointPlaced(latlng, point){
     console.log("iti");
     // let latlng = e.latlng;
@@ -1114,7 +1145,7 @@ function itineraryToPointPlaced(latlng, point){
             circleZoneOfInterest = circle; 
             circleZoneOfInterest.bringToFront();   
             // circleClosest.bringToFront();
-            dwellOnCircle(latlng);
+            createBrackets(latlng);
             // circleZoneOfInterest.dragging.enable()
 
             var circleHTML = circleZoneOfInterest._path;
@@ -1137,336 +1168,14 @@ function itineraryToPointPlaced(latlng, point){
 }
 
 /********************************************************************************
- *                                  Utilities                                   *
+ *                                Layer Handlers                                *
  ********************************************************************************/
-/**
- * 
- * @param {L.Point[]} line Array in Point(x,y) 
- * @returns {L.LatLng[]} Array in LatLng(lat,lng)
- */
-function pointToLatLng(line){
-    var res = [];
-    line.forEach(element => {
-        res.push(map.containerPointToLatLng(element));
-    })
-    return res;
-}
 
 /**
- * 
- * @param {L.LatLng[]} line Array in LatLng(lat,lng)
- * @returns {L.Point[]} Array in Point(x,y)
+ * Toggle Weather layer and load all needed icons
  */
-function latLngToPoint(line){
-    var res = [];
-    line.forEach(element => {
-        res.push(toPixels(element));
-    })
-    return res;
-}
-
-/**
- * 
- * @param {L.LatLng} latlng LatLng(lat,lng)
- * @returns {L.Point} Point(x,y)
- */
-function toPixels(latlng){
-    return map.latLngToContainerPoint(latlng);
-}
-
-/**
- * Toggles visibility of an HTML element from visible to collapse
- * @param {HTMLElement} element 
- */
-function visibilityToggle(element){
-    if (element.style.visibility == "visible"){
-        element.style.visibility = "collapse";
-    } else {
-        element.style.visibility = "visible";
-    }
-}
-
-
-
-// function itineraryPass(itinerary, distValue){
-    
-//     var dist = 0;
-//     var polygon = [];
-//     var prevPoint = itinerary[0];
-//     var forstPoint;
-//     for (var i = 0; i < itinerary.length - 1; i++){
-//         dist += itinerary[i].distanceTo(itinerary[i+1]);
-//         if (dist > distValue){
-            
-//             if (forstPoint == null){
-//                 forstPoint = itinerary[i+1];
-//             }
-//             var isVerticaal = isVertical(toPixels(prevPoint), toPixels(itinerary[i+1]));
-//             var pointDown;
-//             var pointUp;
-//             var circleDist = L.circle(itinerary[i+1], {radius : distValue}).addTo(map);
-//             var circleBounds = circleDist.getBounds();
-//             map.removeLayer(circleDist);
-//             if (isVerticaal){
-//                 pointDown = L.latLng(itinerary[i+1].lat, circleBounds.getWest());
-//                 pointUp = L.latLng(itinerary[i+1].lat, circleBounds.getEast());
-//             } else {
-//                 pointDown = L.latLng(circleBounds.getSouth(), itinerary[i+1].lng);
-//                 pointUp = L.latLng(circleBounds.getNorth(), itinerary[i+1].lng);
-//             }
-            
-            
-//             polygon.splice(polygon.length/2, 0,pointDown, pointUp);
-//             prevPoint = itinerary[i+1];
-
-//             dist = 0;
-//         }
-//     }
-
-//     var pointDown;
-//     var pointUp;
-//     var circleDist = L.circle(itinerary[itinerary.length-1], {radius : distValue}).addTo(map);
-//     var circleBounds = circleDist.getBounds();
-//     map.removeLayer(circleDist);
-//     if (isVertical(toPixels(prevPoint), toPixels(itinerary[itinerary.length-1]))){
-//         pointDown = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getWest());
-//         pointUp = L.latLng(itinerary[itinerary.length-1].lat, circleBounds.getEast());
-//     } else {
-//         pointDown = L.latLng(circleBounds.getSouth(), itinerary[itinerary.length-1].lng);
-//         pointUp = L.latLng(circleBounds.getNorth(), itinerary[itinerary.length-1].lng);
-//     }
-//     polygon.splice(polygon.length/2, 0, pointDown, pointUp);
-
-//     var circleDist = L.circle(itinerary[0], {radius : distValue}).addTo(map);
-//     var circleBounds = circleDist.getBounds();
-//     map.removeLayer(circleDist);
-//     if (isVertical(toPixels(itinerary[0]), toPixels(forstPoint))){
-//         pointDown = L.latLng(itinerary[0].lat, circleBounds.getWest());
-//         pointUp = L.latLng(itinerary[0].lat, circleBounds.getEast());
-//     } else {
-//         pointDown = L.latLng(circleBounds.getSouth(), itinerary[0].lng);
-//         pointUp = L.latLng(circleBounds.getNorth(), itinerary[0].lng);
-//     }
-//     polygon.splice(0, 0, pointDown);
-//     polygon.splice(polygon.length, 0, pointUp);
-
-//     var zone = L.polygon(polygon, {color:'blue', className:"pulse"}).addTo(map);
-//     // queryZone.push(zone);
-//     queryZone = zone;
-
-//     return polygon;
-
-// }
-
-/**
- * 
- * @param {Point} pointA Point(x,y)
- * @param {Point} pointB Point(x,y)
- * @returns if the segment from pointA to pointB is vertical or not
- */
-function isVertical(pointA, pointB){
-    if ((pointB.y - pointA.y) == 0){
-        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
-        return false;
-    } else if (pointB.x - pointA.x == 0){
-        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);    
-        return true;
-    } else {
-        var coeff = Math.abs((pointB.y - pointA.y)/(pointB.x - pointA.x));
-        // console.log(coeff);
-        // if (coeff > 0.3){
-        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
-        // } else {
-        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
-        // }
-        return coeff > 0.3;
-    }
-}
-
-/**
- * Coords in LatLng to JSTS
- * @param {LatLng[]} coords Array in LatLng(lat,lng)
- * @returns {JSTSCoords[]} Array in JSTS Coord(lat,lng)
- */
-function latLngToJSTS(coords){
-    var coordsJSTS = [];
-    for(var i = 0; i < coords.length; i++){
-        coordsJSTS.push(new jsts.geom.Coordinate(coords[i].lat, coords[i].lng));
-    }
-    return coordsJSTS;
-}
-
-/**
- * Coords in JSTS to LatLng
- * @param {JSTSCoords[]} coords Array in JSTS Coord(lat,lng)
- * @returns {LatLng[]} Array in LatLng(lat,lng)
- */
-function JSTStoLatLng(coords){
-    var coordsLatLng = [];
-    for(var i = 0; i < coords.length; i++){
-        coordsLatLng.push(L.latLng(coords[i].x, coords[i].y));
-    }
-    return coordsLatLng;
-
-}
-
-
-//Returns the distance between a point and the itinerary in cm
-function getDistanceInCM(latlng, point, route){
-    var closest = L.GeometryUtil.closest(map, route, latlng);
-    var closestPixel = toPixels(closest);
-    return ((point.distanceTo(closestPixel)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
-}
-
-//Updates text from drag on itinerary
-function distancePixelPoints(latlng, point){
-    // map.removeLayer(routing_line);
-    var distFromLine = getDistanceInCM(latlng, point, allPos);
-    var closest = L.GeometryUtil.closest(map, allPos, latlng);
-    var closestPixel = toPixels(closest);
-    let ETAFloatingText = document.getElementById("cursorText");
-    // console.log("distance : " + dist);
-    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
-        
-        ETAFloatingText.style.visibility='visible';
-        map.dragging.disable();
-        
-        // if (point.distanceTo(previousLatLng) > 3){
-        // console.log( point.distanceTo(previousLatLng) );
-        
-        // previousLatLng = point;
-        isPointOnLine(closest, allPos, 5)
-        
-        points.push(closest);
-        var dist = 0;
-        for (var i = 0; i < points.length - 1; i++){
-            dist += points[i].distanceTo(points[i+1]);
-        }
-        var percent = dist*100/distance;
-        ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
-       
-    
-    } else
-    
-    {
-        ETAFloatingText.style.visibility='hidden';
-    }
-
-}
-
-
-function createFloatingTexts(){
-    let ETAFloatingText=document.createElement('div');
-    ETAFloatingText.style.zIndex = 500;
-    ETAFloatingText.style.visibility='hidden';
-
-    ETAFloatingText.id="cursorText"; 
-
-    document.body.appendChild(ETAFloatingText);
-
-    let bracketOpenText=document.createElement('div');
-    bracketOpenText.style.zIndex = 400;
-    bracketOpenText.style.visibility='hidden';
-    bracketOpenText.id="bracketText";
-    document.body.appendChild(bracketOpenText);
-
-    let bracketCloseText=document.createElement('div');
-    bracketCloseText.style.zIndex = 400;
-    bracketCloseText.style.visibility='hidden';
-    bracketCloseText.id="bracketCloseText";
-    document.body.appendChild(bracketCloseText);
-
-    let circleMarkerText=document.createElement('div');
-    circleMarkerText.style.zIndex = 400;
-    circleMarkerText.style.visibility='hidden';
-    circleMarkerText.id="circleText";
-    document.body.appendChild(circleMarkerText);
-}
-
-function hideFloatingTexts(){
-    let bracketOpenText = document.getElementById("bracketText");
-    let bracketCloseText = document.getElementById("bracketCloseText");
-    let circleMarkerText = document.getElementById("circleText");
-
-    bracketOpenText.style.visibility = 'hidden';
-    bracketCloseText.style.visibility = 'hidden';
-    circleMarkerText.style.visibility = 'hidden';
-
-}
-
-function showFloatingTexts(){
-    let bracketOpenText = document.getElementById("bracketText");
-    let bracketCloseText = document.getElementById("bracketCloseText");
-    let circleMarkerText = document.getElementById("circleText");
-
-    bracketOpenText.style.visibility = 'visible';
-    bracketCloseText.style.visibility = 'visible';
-    circleMarkerText.style.visibility = 'visible';
-}
-
-//Updates the textbox
-function moveCursor(e){
-    let ETAFloatingText = document.getElementById("cursorText");
-    let ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
-    ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
-    ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';    
-}
-//Get the screen resolution of the device 
-function getResolution() {
-    alert("Your screen resolution is: " + (screen.width* window.devicePixelRatio) + "x" + (screen.height* window.devicePixelRatio));
-}
-
-//Green marker icon for POI
-// var greenIcon = new L.Icon({
-//     iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-//     shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-//     iconSize: [25, 41],
-//     iconAnchor: [12, 41],
-//     popupAnchor: [1, -34],
-//     shadowSize: [41, 41]
-//   });
-
-var greenIcon = new L.Icon({
-    iconUrl: 'icons/marker_green.svg',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-
-var darkGreenIcon = new L.Icon({
-iconUrl: 'icons/marker_dark_green.svg',
-shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-iconSize: [25, 41],
-iconAnchor: [12, 41],
-popupAnchor: [1, -34],
-shadowSize: [41, 41]
-});
-
-var bracket = L.icon({
-    iconUrl: 'icons/circle-marker.svg',
-    shadowUrl: 'icons/shadow_circle.svg',
-
-    iconSize:     [70, 50], // size of the icon
-    shadowSize:   [70, 50], // size of the shadow
-    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [35, 21],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-var bracketGreyed = L.icon({
-    iconUrl: 'icons/circle-marker-greyed.svg',
-    shadowUrl: 'icons/shadow_circle.svg',
-
-    iconSize:     [70, 50], // size of the icon
-    shadowSize:   [70, 50], // size of the shadow
-    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [35, 21],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-
-
 function loadWeather(){
+    //Load all the icons
     var weatherSunny = L.icon({
         iconUrl: 'icons/sunny.svg',
         shadowUrl: 'icons/shadow.png',
@@ -1544,16 +1253,9 @@ function loadWeather(){
         popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
     });
 
+    //Create the layer for the first time
     if (weatherLayerGroup == null){
         var length = allPos.length;
-        // console.log(Math.floor(length*(1/8)));
-        // var marker1 = L.marker(allPos[Math.floor(length*(1/8))], {icon: weatherCloudSun});
-        // var marker2 = L.marker(allPos[Math.floor(length*(2/8))], {icon: weatherCloudy});
-        // var marker3 = L.marker(allPos[Math.floor(length*(3/8))], {icon: weatherRainy});
-        // var marker4 = L.marker(allPos[Math.floor(length*(4/8))], {icon: weatherSnowy});
-        // var marker5 = L.marker(allPos[Math.floor(length*(5/8))], {icon: weatherStormy});
-        // var marker6 = L.marker(allPos[Math.floor(length*(6/8))], {icon: weatherSunny});
-        // var marker7 = L.marker(allPos[Math.floor(length*(7/8))], {icon: weatherWindy});
 
         var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
         var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(2/8))], 2), {icon: weatherCloudSun});
@@ -1571,12 +1273,12 @@ function loadWeather(){
         weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line4, line6]).addTo(map);
         isWeatherDisplayed = true;
         updatePositions();
-    } else if (!isWeatherDisplayed){
+    } else if (!isWeatherDisplayed){ //Display
         weatherLayerGroup.addTo(map);
         weatherLayerGroupLines.addTo(map);
         isWeatherDisplayed = true;
         document.getElementById("weatherLayer").classList.add('selectedLayer');
-    } else {
+    } else { //Hide
         weatherLayerGroup.removeFrom(map);
         weatherLayerGroupLines.removeFrom(map);
         isWeatherDisplayed = false;
@@ -1585,6 +1287,12 @@ function loadWeather(){
 
 }
 
+/**
+ * Returns the updated position of the weather icon after zoom
+ * @param {L.LatLng} pos 
+ * @param {number} index 
+ * @returns {L.LatLng} 
+ */
 function getWeatherPos(pos, index){
     var posXY = toPixels(pos);
     var length = allPos.length;
@@ -1599,7 +1307,10 @@ function getWeatherPos(pos, index){
     return newPosLatLng;
 }
 
-function loadRestaurantDistribution(){
+/**
+ * Toggle Restaurant Distribution gradient
+ */
+function toggleRestaurantDistribution(){
     var outlineHTML = document.getElementById("strokeRoute");
     if(isRestaurantDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
@@ -1619,7 +1330,10 @@ function loadRestaurantDistribution(){
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
 
-function loadFuelDistribution(){
+/**
+ * Toggle Gas station Distribution gradient
+ */
+function toggleFuelDistribution(){
     var outlineHTML = document.getElementById("strokeRoute");
     if(isFuelDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
@@ -1639,7 +1353,10 @@ function loadFuelDistribution(){
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
 
-function loadElevationDistribution(){
+/**
+ * Toggle Elevation gradient
+ */
+function toggleElevationDistribution(){
     console.log("elevation");
     var outlineHTML = document.getElementById("strokeRoute");
     if(isElevationDisplayed){
@@ -1659,58 +1376,84 @@ function loadElevationDistribution(){
     }
 }
 
-//Check is point is on path 
-function isPointOnLine(point, path, accuracy) {
-    points.length = 0;
-    // console.log(path.length);
-    for (var i = 0; i < path.length - 1; i++) {
-        points.push(path[i]);
-        if (L.GeometryUtil.belongsSegment(point, path[i], path[i + 1], accuracy)) {
-            return true;
-        }
-    }
-    return false;
+/********************************************************************************
+ *                                   Brackets                                   *
+ ********************************************************************************/
+
+/**
+ * Create the HTML Floating texts elements
+ */
+function createFloatingTexts(){
+    let ETAFloatingText=document.createElement('div');
+    ETAFloatingText.style.zIndex = 500;
+    ETAFloatingText.style.visibility='hidden';
+
+    ETAFloatingText.id="cursorText"; 
+
+    document.body.appendChild(ETAFloatingText);
+
+    let bracketOpenText=document.createElement('div');
+    bracketOpenText.style.zIndex = 400;
+    bracketOpenText.style.visibility='hidden';
+    bracketOpenText.id="bracketText";
+    document.body.appendChild(bracketOpenText);
+
+    let bracketCloseText=document.createElement('div');
+    bracketCloseText.style.zIndex = 400;
+    bracketCloseText.style.visibility='hidden';
+    bracketCloseText.id="bracketCloseText";
+    document.body.appendChild(bracketCloseText);
+
+    let circleMarkerText=document.createElement('div');
+    circleMarkerText.style.zIndex = 400;
+    circleMarkerText.style.visibility='hidden';
+    circleMarkerText.id="circleText";
+    document.body.appendChild(circleMarkerText);
 }
 
-//Returns a string "x min y sec"
-function toMinutes(time){
-    var mins = Math.floor(time/60);
-    var rest = (time - (60*mins)).toFixed(0);
-    return (mins + " min " /*+ rest + " sec"*/);
-}
+/**
+ * Hides the floating texts
+ */
+function hideFloatingTexts(){
+    let bracketOpenText = document.getElementById("bracketText");
+    let bracketCloseText = document.getElementById("bracketCloseText");
+    let circleMarkerText = document.getElementById("circleText");
 
-//Returns a string "x hour y min"
-function toHour(time){
-    var mins = Math.floor(time/60);
-    var hours = Math.floor(mins/60);
-    var rest = (mins - (60*hours)).toFixed(0);
-    return (hours + " h " + rest + " min");;
-}
-
-//Returns a string "x hour y min" but for the time diff 
-function inHours(time){
-    var now = new Date();
-    var now_hour = now.getHours();
-    var now_min = now.getMinutes();
-    var time_mins = Math.floor(time/60);
-    var time_hours = Math.floor(time_mins/60);
-    var rest = Math.floor(time_mins - (60*time_hours));
-    var add = 0;
-    var in_minutes = now_min + rest;
-    while(in_minutes >= 60) {
-        in_minutes = in_minutes - 60;
-        add ++;
-    }
-    var in_hours = now_hour + time_hours + add;
-    if (in_hours >= 24){
-        in_hours = in_hours - 24;
-    }
-    return (in_hours + " h " + in_minutes + " min");
-
+    bracketOpenText.style.visibility = 'hidden';
+    bracketCloseText.style.visibility = 'hidden';
+    circleMarkerText.style.visibility = 'hidden';
 
 }
 
-//Draws/updates the selected part of the route
+/**
+ * Shows the floating texts
+ */
+function showFloatingTexts(){
+    let bracketOpenText = document.getElementById("bracketText");
+    let bracketCloseText = document.getElementById("bracketCloseText");
+    let circleMarkerText = document.getElementById("circleText");
+
+    bracketOpenText.style.visibility = 'visible';
+    bracketCloseText.style.visibility = 'visible';
+    circleMarkerText.style.visibility = 'visible';
+}
+
+/**
+ * Updates the ETA floating text position
+ * @param {PointerEvent} e 
+ */
+function moveCursor(e){
+    let ETAFloatingText = document.getElementById("cursorText");
+    let ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
+    ETAFloatingText.style.left=e.clientX-ETAFloatingTextSize[0]-20+'px';
+    ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';    
+}
+
+/**
+ * Draws/updates the selected part of the route
+ * @param {L.LatLng} latlngAbove 
+ * @param {.LatLng} latlngBelow 
+ */
 function lineBracketsHighlight(latlngAbove, latlngBelow){
     var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
     isPointOnLine(closestAbove, allPos, 0.5);
@@ -1728,8 +1471,11 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     circleZoneOfInterest.bringToFront()
 }
 
-//Handles the dwell/right click on the circle 
-function dwellOnCircle(event){
+/**
+ * Spawns the range markers
+ * @param {PointerEvent} event 
+ */
+function createBrackets(event){
     //greys out rest
     //make bracket appear
     var closest = L.GeometryUtil.closest(map, allPos, event); //get the closest point on the line
@@ -1888,6 +1634,12 @@ function dwellOnCircle(event){
     updateMarkersRotation(markerBracketClose, false);
 }
 
+/**
+ * Updates the range markers' texts positions
+ * @param {HTMLElement} text 
+ * @param {*} element 
+ * @param {boolean} isVert 
+ */
 function updatePosTexts(text, element, isVert){
 
     if (element != null){
@@ -1923,6 +1675,9 @@ function updatePosTexts(text, element, isVert){
 
 }
 
+/**
+ * Update text from the close range marker
+ */
 function updateBracketCloseText(){
     var closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
@@ -1940,6 +1695,9 @@ function updateBracketCloseText(){
     bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
+/**
+ * Update text from the open range marker
+ */
 function updateBracketOpenText(){
     var closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
@@ -1959,6 +1717,15 @@ function updateBracketOpenText(){
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
 }
 
+/********************************************************************************
+ *                              Brackets Rotations                              *
+ ********************************************************************************/
+
+/**
+ * Updates the rotation of the marker so it is perpendicular to the itinerary
+ * @param {L.Marker} marker 
+ * @param {boolean} isOpen 
+ */
 function updateMarkersRotation(marker, isOpen){
     var dist = getDistMarkers(marker.getLatLng(), isOpen);
     if (dist > 0.3 || previousClosePos == circleZoneOfInterest.getLatLng() || previousOpenPos == circleZoneOfInterest.getLatLng()){   
@@ -1979,6 +1746,12 @@ function updateMarkersRotation(marker, isOpen){
     } 
 }
 
+/**
+ * Get the distance between the marker and its previous position
+ * @param {L.LatLng} pos 
+ * @param {true} isOpen 
+ * @returns {number}
+ */
 function getDistMarkers(pos, isOpen){
     var posPixel = toPixels(pos);
     var lastPixels;
@@ -1987,13 +1760,23 @@ function getDistMarkers(pos, isOpen){
     } else {
         lastPixels = toPixels(previousClosePos); 
     }
-    return ((posPixel.distanceTo(lastPixels)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
+    return ((posPixel.distanceTo(lastPixels)*2.54/(ppi/window.devicePixelRatio))); 
 }
 
+/**
+ * Returns the angle in degrees
+ * @param {number} radians 
+ * @returns {number}
+ */
 function radToDeg(radians){
   return radians * (180/Math.PI);
 }
 
+/**
+ * Returns the angle in radians
+ * @param {number} degrees 
+ * @returns {number}
+ */
 function degToRad(degrees)
 {
   // Store the value of pi.
@@ -2002,6 +1785,11 @@ function degToRad(degrees)
   return degrees * (pi/180);
 }
 
+/**
+ * Returns the ange by which to rotate a marker
+ * @param {number} coeff 
+ * @returns {number}
+ */
 function getAngle(coeff){
     var norm = Math.sqrt(coeff[0]*coeff[0] + coeff[1]*coeff[1]);
     var dot = coeff[0]/norm;
@@ -2010,6 +1798,12 @@ function getAngle(coeff){
     return 360-radToDeg(angle);
 }
 
+/**
+ * Returns the normal vector of the line formed by pointA and pointB
+ * @param {L.Point} pointA 
+ * @param {L.Point} pointB 
+ * @returns {L.Point[]}
+ */
 function normalVector(pointA, pointB){
     // console.log(pointA);
     // console.log(pointB);
@@ -2017,7 +1811,281 @@ function normalVector(pointA, pointB){
     return [coeffDirecteur, -1];
 }
 
-//Handles Interactions with the query menu
+/********************************************************************************
+ *                                  Utilities                                   *
+ ********************************************************************************/
+/**
+ * 
+ * @param {L.Point[]} line Array in Point(x,y) 
+ * @returns {L.LatLng[]} Array in LatLng(lat,lng)
+ */
+function pointToLatLng(line){
+    var res = [];
+    line.forEach(element => {
+        res.push(map.containerPointToLatLng(element));
+    })
+    return res;
+}
+
+/**
+ * 
+ * @param {L.LatLng[]} line Array in LatLng(lat,lng)
+ * @returns {L.Point[]} Array in Point(x,y)
+ */
+function latLngToPoint(line){
+    var res = [];
+    line.forEach(element => {
+        res.push(toPixels(element));
+    })
+    return res;
+}
+
+/**
+ * 
+ * @param {L.LatLng} latlng LatLng(lat,lng)
+ * @returns {L.Point} Point(x,y)
+ */
+function toPixels(latlng){
+    return map.latLngToContainerPoint(latlng);
+}
+
+/**
+ * Toggles visibility of an HTML element from visible to collapse
+ * @param {HTMLElement} element 
+ */
+function visibilityToggle(element){
+    if (element.style.visibility == "visible"){
+        element.style.visibility = "collapse";
+    } else {
+        element.style.visibility = "visible";
+    }
+}
+
+/**
+ * 
+ * @param {Point} pointA Point(x,y)
+ * @param {Point} pointB Point(x,y)
+ * @returns if the segment from pointA to pointB is vertical or not
+ */
+function isVertical(pointA, pointB){
+    if ((pointB.y - pointA.y) == 0){
+        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
+        return false;
+    } else if (pointB.x - pointA.x == 0){
+        // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);    
+        return true;
+    } else {
+        var coeff = Math.abs((pointB.y - pointA.y)/(pointB.x - pointA.x));
+        // console.log(coeff);
+        // if (coeff > 0.3){
+        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'red', weight:3}).addTo(map);
+        // } else {
+        //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
+        // }
+        return coeff > 0.3;
+    }
+}
+
+/**
+ * Coords in LatLng to JSTS
+ * @param {LatLng[]} coords Array in LatLng(lat,lng)
+ * @returns {JSTSCoords[]} Array in JSTS Coord(lat,lng)
+ */
+function latLngToJSTS(coords){
+    var coordsJSTS = [];
+    for(var i = 0; i < coords.length; i++){
+        coordsJSTS.push(new jsts.geom.Coordinate(coords[i].lat, coords[i].lng));
+    }
+    return coordsJSTS;
+}
+
+/**
+ * Coords in JSTS to LatLng
+ * @param {JSTSCoords[]} coords Array in JSTS Coord(lat,lng)
+ * @returns {LatLng[]} Array in LatLng(lat,lng)
+ */
+function JSTStoLatLng(coords){
+    var coordsLatLng = [];
+    for(var i = 0; i < coords.length; i++){
+        coordsLatLng.push(L.latLng(coords[i].x, coords[i].y));
+    }
+    return coordsLatLng;
+
+}
+
+/**
+ * Returns the distance between a point and the itinerary in cm
+ * @param {L.LatLng} latlng 
+ * @param {L.Point} point 
+ * @param {L.LatLng[]} route 
+ * @returns 
+ */
+function getDistanceInCM(latlng, point, route){
+    var closest = L.GeometryUtil.closest(map, route, latlng);
+    var closestPixel = toPixels(closest);
+    return ((point.distanceTo(closestPixel)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
+}
+
+/**
+ * Updates text from drag on itinerary
+ * @param {L.LatLng} latlng 
+ * @param {L.Point} point 
+ */
+function distancePixelPoints(latlng, point){
+    // map.removeLayer(routing_line);
+    var distFromLine = getDistanceInCM(latlng, point, allPos);
+    var closest = L.GeometryUtil.closest(map, allPos, latlng);
+    var closestPixel = toPixels(closest);
+    let ETAFloatingText = document.getElementById("cursorText");
+    // console.log("distance : " + dist);
+    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+        
+        ETAFloatingText.style.visibility='visible';
+        map.dragging.disable();
+        
+        // if (point.distanceTo(previousLatLng) > 3){
+        // console.log( point.distanceTo(previousLatLng) );
+        
+        // previousLatLng = point;
+        isPointOnLine(closest, allPos, 5)
+        
+        points.push(closest);
+        var dist = 0;
+        for (var i = 0; i < points.length - 1; i++){
+            dist += points[i].distanceTo(points[i+1]);
+        }
+        var percent = dist*100/distance;
+        ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
+       
+    
+    } else
+    
+    {
+        ETAFloatingText.style.visibility='hidden';
+    }
+
+}
+
+/**
+ *Alerts the screen resolution of the device 
+ */
+function getResolution() {
+    alert("Your screen resolution is: " + (screen.width* window.devicePixelRatio) + "x" + (screen.height* window.devicePixelRatio));
+}
+
+var greenIcon = new L.Icon({
+    iconUrl: 'icons/marker_green.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+var darkGreenIcon = new L.Icon({
+iconUrl: 'icons/marker_dark_green.svg',
+shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+iconSize: [25, 41],
+iconAnchor: [12, 41],
+popupAnchor: [1, -34],
+shadowSize: [41, 41]
+});
+
+var bracket = L.icon({
+    iconUrl: 'icons/circle-marker.svg',
+    shadowUrl: 'icons/shadow_circle.svg',
+
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [35, 21],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+});
+var bracketGreyed = L.icon({
+    iconUrl: 'icons/circle-marker-greyed.svg',
+    shadowUrl: 'icons/shadow_circle.svg',
+
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [35, 21],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+});
+
+
+/**
+ * Check if a point is on a route and stores all the points between the start of the route and the point
+ * @param {L.LatLng} point 
+ * @param {L.LatLng[]} path 
+ * @param {number} accuracy 
+ * @returns 
+ */ 
+function isPointOnLine(point, path, accuracy) {
+    points.length = 0;
+    // console.log(path.length);
+    for (var i = 0; i < path.length - 1; i++) {
+        points.push(path[i]);
+        if (L.GeometryUtil.belongsSegment(point, path[i], path[i + 1], accuracy)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * Returns a string "x min"
+ * @param {number} time 
+ * @returns {string}
+ */
+function toMinutes(time){
+    var mins = Math.floor(time/60);
+    var rest = (time - (60*mins)).toFixed(0);
+    return (mins + " min " /*+ rest + " sec"*/);
+}
+
+/**
+ * Returns a string "x hour y min"
+ * @param {number} time 
+ * @returns {string}
+ */
+function toHour(time){
+    var mins = Math.floor(time/60);
+    var hours = Math.floor(mins/60);
+    var rest = (mins - (60*hours)).toFixed(0);
+    return (hours + " h " + rest + " min");;
+}
+
+/**
+ * Returns a string "x hour y min" but for the time diff
+ * @param {number} time 
+ * @returns {s}
+ */ 
+function inHours(time){
+    var now = new Date();
+    var now_hour = now.getHours();
+    var now_min = now.getMinutes();
+    var time_mins = Math.floor(time/60);
+    var time_hours = Math.floor(time_mins/60);
+    var rest = Math.floor(time_mins - (60*time_hours));
+    var add = 0;
+    var in_minutes = now_min + rest;
+    while(in_minutes >= 60) {
+        in_minutes = in_minutes - 60;
+        add ++;
+    }
+    var in_hours = now_hour + time_hours + add;
+    if (in_hours >= 24){
+        in_hours = in_hours - 24;
+    }
+    return (in_hours + " h " + in_minutes + " min");
+
+
+}
+
+/**
+ * Handles Interactions with the query menu
+ * @param {PointerEvent} event 
+ */
 function openMenu(event){
     console.log(state);
     if (state == "pointPlaced"){
@@ -2051,8 +2119,12 @@ function openMenu(event){
         state = prevState;
     }
 }
+
 var circleCreated = false;
 
+/**
+ * Closes the menu
+ */
 function closeMenu(){
     var menuDiv = document.getElementById("menu");
     menuDiv.style.visibility="hidden";
@@ -2064,7 +2136,11 @@ function closeMenu(){
     
 }
 
-//Handles Interactions with the query slider
+
+/**
+ * Handles Interactions with the query slider
+ * @param {PointerEvent} type 
+ */
 function openSlider(type){  
     state = "slider";
     var sliderDiv = document.getElementById("slider");
@@ -2097,6 +2173,10 @@ function openSlider(type){
     
 }
 
+/**
+ * Toggle between units for the slider
+ * @param {boolean} isKiloMeter 
+ */
 function toggleMinKM(isKiloMeter){
     var kmButton = document.getElementById("km");
     var minButton = document.getElementById("min");
@@ -2121,6 +2201,11 @@ function toggleMinKM(isKiloMeter){
     // updateSlider();
 }
 
+/**
+ * Set the min and max value of the slider according to the range
+ * @param {boolean} isKiloMeter 
+ * @param {HTMLElement} slider 
+ */
 function setSliderMinMax(isKiloMeter, slider){
     var value = getDistPolyLine(polylineBracket.getLatLngs());
     if (isKiloMeter){
@@ -2154,6 +2239,11 @@ function setSliderMinMax(isKiloMeter, slider){
     }
 }
 
+/**
+ * Calculate the total distance of the route in km
+ * @param {L.LatLng[]} route 
+ * @returns {number}
+ */
 function getDistPolyLine(route){
     var dist = 0;
     for (var i = 0; i < route.length - 1; i++){
@@ -2164,6 +2254,10 @@ function getDistPolyLine(route){
 
 }
 
+/**
+ * Handles click on the Go button: starts the isochrone query
+ * @param {string} type 
+ */
 function clickGoButton(type){
     state = "loadingQuery";
     var sliderDiv = document.getElementById("slider");
@@ -2178,12 +2272,20 @@ function clickGoButton(type){
 
 }
 
+/**
+ * Returns the current value of the slider
+ * @returns {number}
+ */
 function getSliderValue(){
     var value = document.getElementById("range").value;
     console.log(value);
     return value;
 }
 
+/**
+ * Handles the moving of the markers
+ * @param {L.LatLng} latlng 
+ */
 function moveMarkers(latlng){
     // console.log("movemarkers");
     // console.log(state);
@@ -2294,34 +2396,24 @@ function moveMarkers(latlng){
     } 
 }
 
-// //Builds the string for the query and makes the query
-// function makeQuery(type, distValue){
-//     var queryString = "";
-//     isMenuOn = false;
-//     var latLngCircle = circleZoneOfInterest.getLatLng();
-    
-//     if (markerBracketOpen == null){
-//         queryString = "node(around:" + distValue*1000 + "," + latLngCircle.lat + "," + latLngCircle.lng + ")[" + type + "];out;";
-//         var zone = L.circle(latLngCircle, {radius: distValue*1000, color: "blue", className:"pulse"}).addTo(map);
-//         queryZone = zone;
-//         // queryZone.push(zone);
-
-//     } else {        
-//         var polygon = itineraryPass(polylineBracket.getLatLngs(), distValue*1000);
-//         queryString = arrayToQuery(polygon, type);
-
-//     }
-//     console.log(queryString);
-//     oplQuery(queryString);
-// }
-
+/**
+ * Creates a button with the specified label in the specified container
+ * @param {string} label 
+ * @param {HTMLElement} container 
+ * @returns 
+ */
 function createButton(label, container) {
     var btn = L.DomUtil.create('button', '', container);
     btn.setAttribute('type', 'button');
     btn.innerHTML = label;
     return btn;
 }
-
+/**
+ * Takes an array of LatLng and turns it into a OPL query
+ * @param {L.LatLng[]} itinerary 
+ * @param {string} type 
+ * @returns {string}
+ */
 function arrayToQuery(itinerary, type){
     var queryString = "node(poly:\"";
     for (var i = 0; i < itinerary.length - 1; i++){
@@ -2332,6 +2424,9 @@ function arrayToQuery(itinerary, type){
     
 }
 
+/**
+ * Updates the position of the weather icons
+ */
 function updatePositions(){
     var layers = weatherLayerGroup.getLayers();
     var lines = weatherLayerGroupLines.getLayers();
