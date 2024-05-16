@@ -602,6 +602,50 @@ function createGradientElevation(){
     defs.appendChild(gradient);
 }
 
+//Icon for POI
+var greenIcon = new L.Icon({
+    iconUrl: 'icons/marker_green.svg',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+//Icon for POI after being clicked
+var darkGreenIcon = new L.Icon({
+iconUrl: 'icons/marker_dark_green.svg',
+shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+iconSize: [25, 41],
+iconAnchor: [12, 41],
+popupAnchor: [1, -34],
+shadowSize: [41, 41]
+});
+
+//Icon for range markers
+var bracket = L.icon({
+    iconUrl: 'icons/circle-marker.svg',
+    shadowUrl: 'icons/shadow_circle.svg',
+
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [35, 21],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+});
+
+//Greyed Icons for range markers
+var bracketGreyed = L.icon({
+    iconUrl: 'icons/circle-marker-greyed.svg',
+    shadowUrl: 'icons/shadow_circle.svg',
+
+    iconSize:     [70, 50], // size of the icon
+    shadowSize:   [70, 50], // size of the shadow
+    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
+    shadowAnchor: [35, 21],  // the same for the shadow
+    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
+});
+
 /********************************************************************************
  *                            Isochrone & POI Queries                           *
  ********************************************************************************/
@@ -1183,7 +1227,6 @@ function itineraryToPointPlaced(latlng, point){
     } 
 }
 
-
 /**
  * Handles Interactions with the query menu
  * @param {PointerEvent} event 
@@ -1219,7 +1262,6 @@ function openMenu(event){
         state = prevState;
     }
 }
-
 
 /**
  * Closes the menu
@@ -1665,14 +1707,16 @@ function createFloatingTexts(){
  * @param {L.Point} point 
  */
 function distancePixelPoints(latlng, point){
+    
+    let ETAFloatingText = document.getElementById("cursorText");
+    if (state == "itinerary"){
     // map.removeLayer(routing_line);
     var distFromLine = getDistanceInCM(latlng, point, allPos);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
-    let ETAFloatingText = document.getElementById("cursorText");
     // console.log("distance : " + dist);
     if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
-        
+
         ETAFloatingText.style.visibility='visible';
         map.dragging.disable();
         
@@ -1689,7 +1733,7 @@ function distancePixelPoints(latlng, point){
         }
         var percent = dist*100/distance;
         ETAFloatingText.innerHTML="ETA " + inHours(percent*time/100);
-       
+    }
     
     } else
     
@@ -1740,7 +1784,7 @@ function moveCursor(e){
 /**
  * Draws/updates the selected part of the route
  * @param {L.LatLng} latlngAbove 
- * @param {.LatLng} latlngBelow 
+ * @param {L.LatLng} latlngBelow 
  */
 function lineBracketsHighlight(latlngAbove, latlngBelow){
     var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
@@ -1751,7 +1795,10 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     isPointOnLine(closestBelow, allPos, 0.5);
     
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    map.removeLayer(polylineBracket);
+    if (polylineBracket != null){
+        map.removeLayer(polylineBracket);
+    }
+    
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
 
     // console.log(isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng())));
@@ -1766,53 +1813,48 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
 function createBrackets(event){
     //greys out rest
     //make bracket appear
-    var closest = L.GeometryUtil.closest(map, allPos, event); //get the closest point on the line
+    let closest = L.GeometryUtil.closest(map, allPos, event); //get the closest point on the line
     isPointOnLine(closest, allPos, 5); // add all the points up to this point
     
-    points.push(closest); //add this point
-    var dist = 0;
-    for (var i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
-        dist += points[i].distanceTo(points[i+1]);
-    }
-    var percent = dist*100/distance; //get it in %
-    var timeDiff = 1200;
-    var timeDiffInPercent = timeDiff*100/time; //get the time diff between the brackets in % 
-    var percentAbove = percent - timeDiffInPercent; 
-    var distAbove = (percentAbove*distance)/100;
-    var percentBelow = percent + timeDiffInPercent;
-    var distBelow = (percentBelow*distance)/100;
-    
-    var pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
-    var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-    var markerAbove = L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
-    // L.marker(latlngAbove).addTo(map);
-
-    var pointBelow = turf.along(itineraryJSON, distBelow/1000).geometry.coordinates;
-    var latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
-    var markerBelow = L.marker(latlngBelow, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
-    // L.marker(latlngBelow).addTo(map);
-
     if (markerBracketClose != null && markerBracketOpen != null){
         map.removeLayer(markerBracketClose);
         map.removeLayer(markerBracketOpen);
         map.removeLayer(polylineBracket);
-    
     }
-    markerBracketClose = markerBelow;
-    markerBracketOpen = markerAbove;
-    markerBracketClose.dragging.enable();
+
+    points.push(closest); //add this point
+    let dist = 0;
+    for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
+        dist += points[i].distanceTo(points[i+1]);
+    }
+    let percent = dist*100/distance; //get it in %
+    let timeDiff = 1200;
+    let timeDiffInPercent = timeDiff*100/time; //get the time diff between the brackets in % 
+    let percentAbove = percent - timeDiffInPercent; 
+    let distAbove = (percentAbove*distance)/100;
+    let percentBelow = percent + timeDiffInPercent;
+    let distBelow = (percentBelow*distance)/100;
+    
+    //Create Marker Open
+    let pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
+    let latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
+    markerBracketOpen = L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
     markerBracketOpen.dragging.enable();
 
-    // console.log(isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng())));
+  
+    //Create Marker Close
+    let pointBelow = turf.along(itineraryJSON, distBelow/1000).geometry.coordinates;
+    let latlngBelow =  L.latLng(pointBelow[1], pointBelow[0]);
+    markerBracketClose = L.marker(latlngBelow, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
+    markerBracketClose.dragging.enable();
 
+    //Marker interactions
     markerBracketClose
                 .on("dragend", function(e){
-                    
                     if (state == "pointPlaced" || state == "closeMove"){
                         updateBracketCloseText();
                         updateMarkersRotation(markerBracketClose, false);
                     }
-                   
                 })
                 .on("dragstart", function(e){
                     previousClosePos = markerBracketClose.getLatLng();
@@ -1831,7 +1873,7 @@ function createBrackets(event){
                             let bracketCloseText = document.getElementById("bracketCloseText");
                             updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                             updateBracketCloseText();
-                            updateMarkersRotation(markerBracketClose, false);
+                            // updateMarkersRotation(markerBracketClose, false);
                         
                         }  else {
                             markerBracketClose.dragging.disable();
@@ -1846,15 +1888,10 @@ function createBrackets(event){
                 .on("dragend", function(e){
                     if (state == "pointPlaced" || state == "openMove"){
                         updateBracketOpenText();
-                        var latLngs = polylineBracket.getLatLngs();
                         updateMarkersRotation(markerBracketOpen, true);
                     }
-                    state = prevState;
-                    markerBracketOpen.dragging.enable();
                 })
                 .on("dragstart", function(e){
-                    // console.log(distAlongLine(markerBracketOpen.getLatLng(), circleZoneOfInterest.getLatLng(), polylineBracket.getLatLngs()));
-                    // console.log(distAlongLine(circleZoneOfInterest.getLatLng(), markerBracketOpen.getLatLng(), polylineBracket.getLatLngs()));
                     previousOpenPos = markerBracketOpen.getLatLng();
                     state = "openMove";
                     if (state == "pointPlaced" || state == "openMove"){
@@ -1873,7 +1910,7 @@ function createBrackets(event){
                             updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
                             updateBracketOpenText();
                             var latLngs = polylineBracket.getLatLngs();
-                            updateMarkersRotation(markerBracketOpen, true);
+                            // updateMarkersRotation(markerBracketOpen, true);
                         } else {
                             markerBracketOpen.dragging.disable();
                         }
@@ -1882,44 +1919,34 @@ function createBrackets(event){
                    
                 })
 
-    var circlePos = circleZoneOfInterest.getLatLng();
-    var circleLatLng = L.latLng(circlePos.lat, circlePos.lng);
-    previousOpenPos = circleLatLng;
-    previousClosePos = circleLatLng;
-    // console.log(previousOpenPos);
-    // console.log(previousClosePos);
+    
+    //Set floating texts
     let bracketOpenText = document.getElementById("bracketText");
-    // bracketOpenText.style.visibility='visible';
     updateBracketOpenText();
-    // updatePosTexts(bracketOpenText, markerBracketOpen);
 
     let bracketCloseText = document.getElementById("bracketCloseText");
-    // bracketCloseText.style.visibility='visible';
     updateBracketCloseText();
-    // updatePosTexts(bracketCloseText, markerBracketClose);
 
     let circleMarkerText = document.getElementById("circleText");
-    // circleMarkerText.style.visibility='visible';
     circleMarkerText.innerHTML=(dist/1000).toFixed(0) + "km";
-    // updatePosTexts(circleMarkerText, circleZoneOfInterest);
 
     showFloatingTexts()
 
+    //Set floating texts positions
     updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
     updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
     updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
 
-    isPointOnLine(latlngAbove, allPos, 0.5);
-    var pointsAbove = new Array();
-    points.forEach(element => {pointsAbove.push(element)});
-    isPointOnLine(latlngBelow, allPos, 0.5);
-    
-    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
-    circleZoneOfInterest.bringToFront();
+    //Draw the highlight line
+    lineBracketsHighlight(latlngAbove, latlngBelow);
 
-    updateMarkersRotation(markerBracketOpen, true);
-    updateMarkersRotation(markerBracketClose, false);
+    //Rotation
+    // let circlePos = circleZoneOfInterest.getLatLng();
+    // previousOpenPos = circlePos;
+    // previousClosePos = circlePos;
+
+    // updateMarkersRotation(markerBracketOpen, true);
+    // updateMarkersRotation(markerBracketClose, false);
 }
 
 /**
@@ -2117,6 +2144,23 @@ function moveMarkers(latlng){
         // state = "circleMove";
         // console.log("stateChanged");
     } 
+}
+
+/**
+ * Update the range markers positions
+ */
+function updateMarkerTextPos(){
+    if (markerBracketClose != null){
+
+    
+        let bracketOpenText = document.getElementById("bracketText");
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        let circleMarkerText = document.getElementById("circleText");
+
+        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+    }
 }
 
 /********************************************************************************
@@ -2328,54 +2372,12 @@ function getDistanceInCM(latlng, point, route){
     return ((point.distanceTo(closestPixel)*2.54/(ppi/window.devicePixelRatio))); //269 = ppi from phone
 }
 
-
-
 /**
  *Alerts the screen resolution of the device 
  */
 function getResolution() {
     alert("Your screen resolution is: " + (screen.width* window.devicePixelRatio) + "x" + (screen.height* window.devicePixelRatio));
 }
-
-var greenIcon = new L.Icon({
-    iconUrl: 'icons/marker_green.svg',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-
-var darkGreenIcon = new L.Icon({
-iconUrl: 'icons/marker_dark_green.svg',
-shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-iconSize: [25, 41],
-iconAnchor: [12, 41],
-popupAnchor: [1, -34],
-shadowSize: [41, 41]
-});
-
-var bracket = L.icon({
-    iconUrl: 'icons/circle-marker.svg',
-    shadowUrl: 'icons/shadow_circle.svg',
-
-    iconSize:     [70, 50], // size of the icon
-    shadowSize:   [70, 50], // size of the shadow
-    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [35, 21],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-var bracketGreyed = L.icon({
-    iconUrl: 'icons/circle-marker-greyed.svg',
-    shadowUrl: 'icons/shadow_circle.svg',
-
-    iconSize:     [70, 50], // size of the icon
-    shadowSize:   [70, 50], // size of the shadow
-    iconAnchor:   [35, 25], // point of the icon which will correspond to marker's location
-    shadowAnchor: [35, 21],  // the same for the shadow
-    popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-});
-
 
 /**
  * Check if a point is on a route and stores all the points between the start of the route and the point
@@ -2508,7 +2510,7 @@ onpointerdown = (event) => {
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
     }
-    if (circleZoneOfInterest != null && event.target == circleZoneOfInterest._path){
+    if (circleZoneOfInterest != null && event.target == circleZoneOfInterest._path || event.target == outlinePathHTML || event.target == stroke._path || event.target == itinerary._path){
         map.dragging.disable();
     }
 
@@ -2516,17 +2518,14 @@ onpointerdown = (event) => {
 
 onpointermove = (event) => {
     const millis = Date.now() - startTime;
-    // console.log(millis/1000);
-    if ((millis / 1000) > 0.5){
-        if(isPointerDown){
-            let bracketOpenText = document.getElementById("bracketText");
-            let bracketCloseText = document.getElementById("bracketCloseText");
-            let circleMarkerText = document.getElementById("circleText");
-            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-            updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+    if ((millis / 1000) > 0.2){
+        if(isPointerDown){ //Only for computers
+
+            updateMarkerTextPos();
             isMovingMap = true;
-            moveCursor(event); //text follow mouse
+
+            
+
             var point = L.point(event.clientX, event.clientY); //point in pixel
             var latlng = map.containerPointToLatLng(point); //point in latlng
             distancePixelPoints(latlng, point);
@@ -2538,28 +2537,30 @@ onpointermove = (event) => {
                 }
                 moveMarkers(latlng); //move the threemarkers together
             }
+        } 
+    }
+    moveCursor(event); //text follow mouse
+        
+    if (isMenuOn){
+        var menuDiv = document.getElementById("menu");
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
+        var top = circlePos.y - 70;
+        // console.log()
+        if (top < 5){
+            top = circlePos.y + 50;
         }
-        if (isMenuOn){
-            var menuDiv = document.getElementById("menu");
-            var circlePos = toPixels(circleZoneOfInterest.getLatLng());
-            var top = circlePos.y - 70;
-            // console.log()
-            if (top < 5){
-                top = circlePos.y + 50;
-            }
-            menuDiv.style.left=circlePos.x - 50 + 'px';
-            menuDiv.style.top=top +  'px';
+        menuDiv.style.left=circlePos.x - 50 + 'px';
+        menuDiv.style.top=top +  'px';
 
-            var sliderDiv = document.getElementById("slider");
-            // // sliderDiv.style.visibility = "visible";
-            // // var circlePos = toPixels(circleMarker.getLatLng());
-            var topSlider = circlePos.y - 150;
-            if (topSlider < 5){
-                topSlider+=200;
-            }
-            sliderDiv.style.left=circlePos.x - 65 + 'px';
-            sliderDiv.style.top=topSlider +  'px';
+        var sliderDiv = document.getElementById("slider");
+        // // sliderDiv.style.visibility = "visible";
+        // // var circlePos = toPixels(circleMarker.getLatLng());
+        var topSlider = circlePos.y - 150;
+        if (topSlider < 5){
+            topSlider+=200;
         }
+        sliderDiv.style.left=circlePos.x - 65 + 'px';
+        sliderDiv.style.top=topSlider +  'px';
     }
 };
 
