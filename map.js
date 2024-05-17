@@ -72,14 +72,18 @@ var clickOnLayer = false;
 var openedMarker;
 var openedPopup;
 
-const startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
-const endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
+var defaultBracketRange = 1200;
+var transportationMode = "car"; //"car" or "foot"
 
+var startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
+var endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
+
+const coordsCar = [L.latLng(48.70973285709232, 2.1626934894717214), L.latLng(47.206380448601664, -1.5645061284185262)];
+const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.60558934874214, 1.445792850446871)];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-
-
-
+// const startRoute = L.latLng(43.59210153989353, 1.4447266282743285); //Walking in Toulouse
+// const endRoute = L.latLng(43.60558934874214, 1.445792850446871);
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -114,8 +118,9 @@ L.Control.Layers = L.Control.extend({
             visibilityToggle(menu);
         };
         redrawButton.onclick = function(e){
-            forceRedraw();
-            redrawButton.classList.add('selectedLayer');
+            // forceRedraw();
+            // redrawButton.classList.add('selectedLayer');
+            switchMode();
         }
         return container;
         
@@ -165,7 +170,43 @@ function forceRedraw(){
 
 }
 
+function switchMode(){
+    let fuel = document.getElementById("gasstation");
+    if (circleZoneOfInterest != null){
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        hideFloatingTexts();
+        state = "itinerary";
+    }
+    isRestaurantDisplayed = false;
+    isFuelDisplayed = false;
+    isElevationDisplayed = false;  
+    if (isWeatherDisplayed){
+        loadWeather();
+        weatherLayerGroup = null;
+    }
+    weatherLayerGroup = null;
+    switch (transportationMode){
+        case "foot":
+            defaultBracketRange = 1200;
+            startRoute = coordsCar[0];
+            endRoute = coordsCar[1];
+            transportationMode = "car";
+            fuel.setAttribute("src", "icons/fuelIcon.svg");
+           break; 
+        case "car":
+            defaultBracketRange = 300;
+            startRoute = coordsFoot[0];
+            endRoute = coordsFoot[1];
+            transportationMode = "foot";
+            fuel.setAttribute("src", "icons/bakery.svg");
+           break; 
+    }
+    routing.setWaypoints([startRoute, endRoute]);
 
+}
 
 //Create the route
 var routing = L.Routing.control({
@@ -203,7 +244,9 @@ routing.on("routesfound", function (e){
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
     time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
-
+    if (transportationMode == "foot"){
+        time = time*2.5;
+    }
     var firstTime = true;
     if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
         map.removeLayer(itinerary);
@@ -250,14 +293,18 @@ routing.on("routesfound", function (e){
     
     if (!firstTime){
         //Make sure the range markers are on the new itinerary
-        var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
-        circleZoneOfInterest.setLatLng(newLatLng);
+        if (circleZoneOfInterest != null){
 
-        var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
-        markerBracketClose.setLatLng(newLLClose);
+        
+            var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
+            circleZoneOfInterest.setLatLng(newLatLng);
 
-        var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-        markerBracketOpen.setLatLng(newLLOpen);
+            var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
+            markerBracketClose.setLatLng(newLLClose);
+
+            var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+            markerBracketOpen.setLatLng(newLLOpen);
+        }
 
         //Check if a layer is activated and if yes re-activate it
         if(isElevationDisplayed){
@@ -304,8 +351,6 @@ routing.on("routesfound", function (e){
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
     console.log("end of routing");
 })
-
-
 
 
 /********************************************************************************
@@ -733,9 +778,14 @@ function getNeededPoints(itinerary, value, units){
     if (units == "distance"){
         distValue = value*1000*0.7;
     } else {
-        distValue = Math.floor(((value*1000*110)/36)/2); //Considering 110km/h car speed
+        if (transportationMode == "foot"){
+            
+        } else {
+            distValue = Math.floor(((value*1000*110)/36)/2); //Considering 110km/h car speed
+        }
+        
     }
-    // console.log(distValue);
+    console.log(distValue);
 
     var polygons = [];
     var polygon = [itinerary[0]]; //the 1st point is the 1st point of the route (so the marker open)
@@ -746,7 +796,7 @@ function getNeededPoints(itinerary, value, units){
         if (dist > distValue){
             polygon.push(itinerary[i]);
             prevPoint = itinerary[i];
-
+            L.circle(itinerary[i], {radius:50, color:"red"}).addTo(map);
             //Query limit of 5 points so we split the points into arrays with length 5
             if (polygon.length > 4){
                 var poly = [];
@@ -774,10 +824,15 @@ function getNeededPoints(itinerary, value, units){
  */
 function makeIsoQuery(points, value, units){
     var queryString = '{"locations":[[';
+    let profile = '"driving-car"';
+    if (transportationMode == "foot"){
+        profile = '"foot-walking"';
+    }
     for (var i = 0; i < points.length-1; i++){
         queryString+= points[i].lng + ',' + points[i].lat + '],['; //Add each point
     }
-    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":"driving-car","range":[';
+    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":' + profile + ',"range":[';
+    
     //Unit conversions 
     if (units == "distance"){
         queryString+= value*1000;
@@ -785,6 +840,7 @@ function makeIsoQuery(points, value, units){
         queryString+= value*60;
     }
     queryString+= '],"range_type":"' + units + '"}';
+    console.log(queryString);
     return queryString;
 }
 
@@ -924,7 +980,7 @@ function polygonToLatLng(line){
  */
 function oplQuery(queryString){
     console.log("oplQuery");
-    // console.log(queryString);
+    console.log(queryString);
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
@@ -1242,7 +1298,13 @@ function openMenu(event){
         var gasstation = document.getElementById("gasstation");
         var supermarket = document.getElementById("supermarket");
         restaurant.onclick = function(e){console.log("click"); closeMenu(); openSlider("'amenity'='restaurant'")};
-        gasstation.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'amenity'='fuel'")};
+        gasstation.onclick = function(e){
+            menuDiv.style.visibility="hidden"; 
+            let type = "'amenity'='fuel'";
+            if (transportationMode == "foot"){
+                type = "'shop'='bakery'"
+            }
+            openSlider(type)};
         supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
         menuDiv.style.visibility = "visible";
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
@@ -1348,7 +1410,11 @@ function toggleMinKM(isKiloMeter){
  */
 function setSliderMinMax(isKiloMeter, slider){
     var value = getDistPolyLine(polylineBracket.getLatLngs());
+    slider.setAttribute("step", 1);
     if (isKiloMeter){
+        if (transportationMode == "foot"){
+            slider.setAttribute("step", 0.1);
+        }
         var min = Math.round(value/5);
         if (value > 50){
             value = 50;
@@ -1359,15 +1425,19 @@ function setSliderMinMax(isKiloMeter, slider){
         console.log(value/10);
         console.log(value/3);
     } else {
+        console.log("value" + value);
         var percent = (100*value)/(distance/1000);
+        console.log("percent" + percent);
         var percTime = (percent*time )/100;
+        console.log("% time" + percTime);
         var inMinutes = Math.round(percTime/60);
-        console.log(time);
-        console.log(percent);
-        console.log(percTime);
+        console.log("minutes" + inMinutes);
+        // console.log(time);
+        // console.log(percent);
+        // console.log(percTime);
         var min = Math.round(inMinutes/5);
         var max = Math.round(inMinutes);
-        if (max < 60){
+        if (max > 60){
             max = 60;
             min = 40;
         }
@@ -1832,14 +1902,15 @@ function createBrackets(event){
         dist += points[i].distanceTo(points[i+1]);
     }
     let percent = dist*100/distance; //get it in %
-    let timeDiff = 1200;
-    let timeDiffInPercent = timeDiff*100/time; //get the time diff between the brackets in % 
+    let timeDiffInPercent = defaultBracketRange*100/time; //get the time diff between the brackets in % 
     let percentAbove = percent - timeDiffInPercent; 
     let distAbove = (percentAbove*distance)/100;
     let percentBelow = percent + timeDiffInPercent;
     let distBelow = (percentBelow*distance)/100;
     
     //Create Marker Open
+    console.log(itineraryJSON);
+    console.log(distAbove/1000);
     let pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
     let latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
     markerBracketOpen = L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
@@ -2459,9 +2530,6 @@ function createButton(label, container) {
     return btn;
 }
 
-
-
-
 /********************************************************************************
  *                                Event Handlers                                *
  ********************************************************************************/
@@ -2588,6 +2656,7 @@ onpointerup = (event) => {
     } else if (state == "pointPlaced"){
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
+        console.log(latlng);
         itineraryToPointPlaced(latlng,point);
     } 
     if (state != "itinerary"){
