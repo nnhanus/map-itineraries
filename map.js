@@ -43,6 +43,7 @@ var isWeatherDisplayed = false;
 var isFuelDisplayed = false;
 var isRestaurantDisplayed = false;
 var isElevationDisplayed = false;
+var isSupermarketDisplayed = false;
 var isInKM = true;
 
 var orService;
@@ -79,7 +80,7 @@ var startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
 var endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
 
 const coordsCar = [L.latLng(48.70973285709232, 2.1626934894717214), L.latLng(47.206380448601664, -1.5645061284185262)];
-const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.60558934874214, 1.445792850446871)];
+const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.605736609310455, 1.4460502897743588)];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
 // const startRoute = L.latLng(43.59210153989353, 1.4447266282743285); //Walking in Toulouse
@@ -96,7 +97,7 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         var elevationLayer = document.getElementById("elevationLayer");
-        var redrawButton = document.getElementById("supermarkerLayer");
+        var redrawButton = document.getElementById("supermarketLayer");
         container.onpointerdown = function(e){
             clickOnLayer = true;
         }
@@ -118,9 +119,10 @@ L.Control.Layers = L.Control.extend({
             visibilityToggle(menu);
         };
         redrawButton.onclick = function(e){
+            toggleSupermarketDistribution();
             // forceRedraw();
             // redrawButton.classList.add('selectedLayer');
-            switchMode();
+            // switchMode();
         }
         return container;
         
@@ -143,7 +145,6 @@ L.Control.Mode = L.Control.extend({
         var container = document.getElementById("changeMode");
         let icon = document.getElementById("switchButton");
         container.onclick = function(e){
-            console.log("switcharoo");
             console.log(transportationMode);
             // clickOnLayer = true;
             if(transportationMode == "car"){
@@ -198,10 +199,11 @@ function forceRedraw(){
 }
 
 function switchMode(){
+    
     let fuel = document.getElementById("gasstation");
     let fuelLayer = document.getElementById("gasstationLayer");
     hideLayers();
-    state = "itinerary";
+    
     switch (transportationMode){
         case "foot":
             defaultBracketRange = 1200;
@@ -220,6 +222,9 @@ function switchMode(){
             fuelLayer.setAttribute("src", "icons/bakery.svg");
            break; 
     }
+    console.log("WE ARE CHANGING THE STATE !!!");
+    state = "itinerary";
+    prevState = "itinerary";
     routing.setWaypoints([startRoute, endRoute]);
 
 }
@@ -243,6 +248,8 @@ function hideLayers(){
     toggleFuelDistribution();
     isElevationDisplayed = true;
     toggleElevationDistribution(); 
+    isSupermarketDisplayed = true;
+    toggleSupermarketDistribution();
 
     if (isWeatherDisplayed){
         loadWeather();
@@ -385,15 +392,16 @@ routing.on("routesfound", function (e){
     createGradientRestaurant();
     createGradientFuel();
     createGradientElevation();
+    createGradientSupermarket();
 
     //Make sure the layers are in the right order
     stroke.bringToFront();
     outline.bringToFront();
     itinerary.bringToFront();
 
-    console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
+    // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-    console.log("end of routing");
+    // console.log("end of routing");
 })
 
 
@@ -676,6 +684,64 @@ function createGradientElevation(){
     var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
     stop7.setAttribute("offset", "100%");
     stop7.setAttribute("stop-color", gradientPalette[6]);
+
+    //Add the coor stops to the gradient
+    gradient.appendChild(stop1);
+    gradient.appendChild(stop2);
+    gradient.appendChild(stop3);
+    gradient.appendChild(stop4);
+    gradient.appendChild(stop5);
+    gradient.appendChild(stop6);
+    gradient.appendChild(stop7);
+
+    //Add the gradient to the defs
+    var defs = document.getElementById("defs");
+    defs.appendChild(gradient);
+}
+
+function createGradientSupermarket(){
+    //Delete the old gradient if it exists
+    const oldFilter = document.getElementById("gradientMarket");
+    if (oldFilter != null){
+        oldFilter.remove();
+    }
+
+    //Create the gradient
+    var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
+    gradient.id = "gradientMarket";
+    gradient.setAttribute("x1", "0%");
+    gradient.setAttribute("y1", "0%");
+    gradient.setAttribute("x2", "0%");
+    gradient.setAttribute("y2", "100%");
+    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+
+     //Create the color stops for the gradient
+    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop1.setAttribute("stop-color", gradientPalette[6]);
+    
+    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop2.setAttribute("offset", "0.13");
+    stop2.setAttribute("stop-color", gradientPalette[4]);
+
+    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop3.setAttribute("offset", "0.25");
+    stop3.setAttribute("stop-color", gradientPalette[2]);
+    
+    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop4.setAttribute("offset", "0.37");
+    stop4.setAttribute("stop-color", gradientPalette[1]);
+    
+    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop5.setAttribute("offset", "0.62");
+    stop5.setAttribute("stop-color", gradientPalette[3]);
+    
+    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop6.setAttribute("offset", "0.75");
+    stop6.setAttribute("stop-color", gradientPalette[5]);
+    
+    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+    stop7.setAttribute("offset", "100%");
+    stop7.setAttribute("stop-color", gradientPalette[2]);
 
     //Add the coor stops to the gradient
     gradient.appendChild(stop1);
@@ -1035,6 +1101,7 @@ function oplQuery(queryString){
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
+            console.log("ON SUCCESS");
             // console.log(data);
             for (let i = 0; i < data.elements.length; i++) {
                 let pos;
@@ -1120,13 +1187,16 @@ function oplQuery(queryString){
                     })
     
                 this._markers.addLayer(marker); //Add to map
+                
             }
+            console.log("WE ARE SETTING THE STATE TO RESULTS");
+            state = "queryResults";
         },
         onError: function(xhr){
             console.log("error");
         },
         afterRequest: function()  {
-            // console.log("afterRequest");
+            console.log("afterRequest");
             //Replace pulsing queryZone with non pulsing one
             // map.removeLayer(queryZone);
             // var nZone = L.polygon(queryZone.getLatLngs(), {fillColor: '#1b1bff', fillOpacity: 0.4, opacity:0}).addTo(map);
@@ -1135,7 +1205,7 @@ function oplQuery(queryString){
             // queryZone._path.removeClass("pulse");
             L.DomUtil.removeClass(queryZone._path, "pulse");
             queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
-            state = "queryResults";
+            
             
             polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
             makeClearButton(); //Add button to clear  query result
@@ -1747,6 +1817,7 @@ function toggleRestaurantDistribution(){
         document.getElementById("restaurantLayer").classList.add('selectedLayer');
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
         document.getElementById("gasstationLayer").classList.remove('selectedLayer');
+        document.getElementById("supermarketLayer").classList.remove('selectedLayer');
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
@@ -1770,6 +1841,7 @@ function toggleFuelDistribution(){
         document.getElementById("gasstationLayer").classList.add('selectedLayer');
         document.getElementById("restaurantLayer").classList.remove('selectedLayer');
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
+        document.getElementById("supermarketLayer").classList.remove('selectedLayer');
     }
     // L.DomUtil.addClass(outlineHTML, "outlineRestaurant");
 }
@@ -1786,12 +1858,38 @@ function toggleElevationDistribution(){
         isElevationDisplayed = false;
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
     } else {
-        outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
+        outlineHTML.setAttribute("stroke", "url(#gradientMarket)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isElevationDisplayed = true;
         isRestaurantDisplayed = false;
         isFuelDisplayed = false;
         document.getElementById("elevationLayer").classList.add('selectedLayer');
+        document.getElementById("restaurantLayer").classList.remove('selectedLayer');
+        document.getElementById("gasstationLayer").classList.remove('selectedLayer');
+        document.getElementById("supermarketLayer").classList.remove('selectedLayer');
+    }
+}
+
+/**
+ * Toggle Supermarket gradient
+ */
+function toggleSupermarketDistribution(){
+    console.log("elevation");
+    var outlineHTML = document.getElementById("strokeRoute");
+    if(isSupermarketDisplayed){
+        outlineHTML.setAttribute("stroke", "blue");
+        outlineHTML.setAttribute("stroke-opacity", "0.25");
+        isSupermarketDisplayed = false;
+        document.getElementById("supermarketLayer").classList.remove('selectedLayer');
+    } else {
+        outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
+        outlineHTML.setAttribute("stroke-opacity", "0.7");
+        isSupermarketDisplayed = true;
+        isRestaurantDisplayed = false;
+        isFuelDisplayed = false;
+        isElevationDisplayed = false;
+        document.getElementById("supermarketLayer").classList.add('selectedLayer');
+        document.getElementById("elevationLayer").classList.remove('selectedLayer');
         document.getElementById("restaurantLayer").classList.remove('selectedLayer');
         document.getElementById("gasstationLayer").classList.remove('selectedLayer');
     }
