@@ -1370,6 +1370,7 @@ function closeMenu(){
  * @param {PointerEvent} type 
  */
 function openSlider(type){  
+    if (state == "menu"){
     state = "slider";
     closeMenu();
     var sliderDiv = document.getElementById("slider");
@@ -1399,6 +1400,9 @@ function openSlider(type){
     //recup le bouton clicked du menu d'avant
     var goButton = document.getElementById("go");
     goButton.onclick = function(e){clickGoButton(type)};
+}else if (state == "circleMove" || state == "openMove" || state == "closeMove"){
+    state = prevState;
+}
     
 }
 
@@ -1959,13 +1963,15 @@ function createBrackets(event){
                     }
                 })
                 .on("dragstart", function(e){
-                    previousClosePos = markerBracketClose.getLatLng();
-                    state = "closeMove";
                     if (state == "pointPlaced" || state == "closeMove"){
+                        previousClosePos = markerBracketClose.getLatLng();
+                        state = "closeMove";
+                        
                         isMovingBrackets = true;
                     }
                 })
                 .on("drag", function(e){
+                    console.log(state);
                     if (state == "pointPlaced" || state == "closeMove"){
                         isMovingBrackets = true;
                         
@@ -1994,9 +2000,10 @@ function createBrackets(event){
                     }
                 })
                 .on("dragstart", function(e){
-                    previousOpenPos = markerBracketOpen.getLatLng();
-                    state = "openMove";
                     if (state == "pointPlaced" || state == "openMove"){
+                        previousOpenPos = markerBracketOpen.getLatLng();
+                        state = "openMove";
+                    
                         console.log("drag open");
                         isMovingBrackets = true;
                     }
@@ -2137,8 +2144,8 @@ function updateBracketOpenText(){
  * @param {L.LatLng} latlng 
  */
 function moveMarkers(latlng){
-    // console.log("movemarkers");
-    // console.log(state);
+    console.log("movemarkers");
+    console.log(state);
     if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
         // console.log("dist before open: " + markerBracketOpen.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()) + ", close : " + + markerBracketClose.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()));
         
@@ -2599,7 +2606,7 @@ onpointerdown = (event) => {
     startTime = Date.now();
     isPointerDown = true;
     prevZoom = map.getZoom();
-    if (state == "menu"){
+    if (state == "menu" || state == "slider"){
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
     }
@@ -2613,12 +2620,8 @@ onpointermove = (event) => {
     const millis = Date.now() - startTime;
     if ((millis / 1000) > 0.2){
         if(isPointerDown){ //Only for computers
-
             updateMarkerTextPos();
             isMovingMap = true;
-
-            
-
             var point = L.point(event.clientX, event.clientY); //point in pixel
             var latlng = map.containerPointToLatLng(point); //point in latlng
             distancePixelPoints(latlng, point);
