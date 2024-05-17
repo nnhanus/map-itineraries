@@ -172,22 +172,9 @@ function forceRedraw(){
 
 function switchMode(){
     let fuel = document.getElementById("gasstation");
-    if (circleZoneOfInterest != null){
-        map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketOpen);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(polylineBracket);
-        hideFloatingTexts();
-        state = "itinerary";
-    }
-    isRestaurantDisplayed = false;
-    isFuelDisplayed = false;
-    isElevationDisplayed = false;  
-    if (isWeatherDisplayed){
-        loadWeather();
-        weatherLayerGroup = null;
-    }
-    weatherLayerGroup = null;
+    let fuelLayer = document.getElementById("gasstationLayer");
+    hideLayers();
+    state = "itinerary";
     switch (transportationMode){
         case "foot":
             defaultBracketRange = 1200;
@@ -195,6 +182,7 @@ function switchMode(){
             endRoute = coordsCar[1];
             transportationMode = "car";
             fuel.setAttribute("src", "icons/fuelIcon.svg");
+            fuelLayer.setAttribute("src", "icons/fuelIcon.svg");
            break; 
         case "car":
             defaultBracketRange = 300;
@@ -202,12 +190,40 @@ function switchMode(){
             endRoute = coordsFoot[1];
             transportationMode = "foot";
             fuel.setAttribute("src", "icons/bakery.svg");
+            fuelLayer.setAttribute("src", "icons/bakery.svg");
            break; 
     }
     routing.setWaypoints([startRoute, endRoute]);
 
 }
 
+function hideLayers(){
+
+    clearQueryResults();
+
+    if (circleZoneOfInterest != null){
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        hideFloatingTexts();
+        
+    }
+
+    isRestaurantDisplayed = true;
+    toggleRestaurantDistribution();
+    isFuelDisplayed = true;
+    toggleFuelDistribution();
+    isElevationDisplayed = true;
+    toggleElevationDistribution(); 
+
+    if (isWeatherDisplayed){
+        loadWeather();
+    }
+    weatherLayerGroup = null;
+
+    
+}
 //Create the route
 var routing = L.Routing.control({
     
@@ -710,7 +726,11 @@ function isochroneMinutes(type, value, units){
         for (var i = 0; i < points.length; i++){
             let request = new XMLHttpRequest();
 
-            request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
+            let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
+            if (transportationMode == "foot"){
+                src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
+            }
+            request.open('POST', src);
 
             request.responseType = "json";
 
@@ -779,7 +799,7 @@ function getNeededPoints(itinerary, value, units){
         distValue = value*1000*0.7;
     } else {
         if (transportationMode == "foot"){
-            
+            distValue = Math.floor(((value*1000*5)/36)/2); //Considering km/h walking speed
         } else {
             distValue = Math.floor(((value*1000*110)/36)/2); //Considering 110km/h car speed
         }
@@ -790,13 +810,14 @@ function getNeededPoints(itinerary, value, units){
     var polygons = [];
     var polygon = [itinerary[0]]; //the 1st point is the 1st point of the route (so the marker open)
     var prevPoint = itinerary[0];
+    // L.circle(itinerary[0], {radius:50, color:"red"}).addTo(map);
 
     for (var i = 1; i < itinerary.length - 1 ; i++){
         dist = itinerary[i].distanceTo(prevPoint);
         if (dist > distValue){
             polygon.push(itinerary[i]);
             prevPoint = itinerary[i];
-            L.circle(itinerary[i], {radius:50, color:"red"}).addTo(map);
+            // L.circle(itinerary[i], {radius:50, color:"red"}).addTo(map);
             //Query limit of 5 points so we split the points into arrays with length 5
             if (polygon.length > 4){
                 var poly = [];
@@ -809,6 +830,7 @@ function getNeededPoints(itinerary, value, units){
         }
     }
     polygon.push(itinerary[itinerary.length-1]); //the last point is the last point of the rout (so the marker close)
+    // L.circle(itinerary[itinerary.length-1], {radius:50, color:"red"}).addTo(map);
     polygons.push(polygon); 
     
     // console.log(poly);
@@ -824,14 +846,11 @@ function getNeededPoints(itinerary, value, units){
  */
 function makeIsoQuery(points, value, units){
     var queryString = '{"locations":[[';
-    let profile = '"driving-car"';
-    if (transportationMode == "foot"){
-        profile = '"foot-walking"';
-    }
+    
     for (var i = 0; i < points.length-1; i++){
         queryString+= points[i].lng + ',' + points[i].lat + '],['; //Add each point
     }
-    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],"profile":' + profile + ',"range":[';
+    queryString+= points[points.length-1].lng + ',' + points[points.length-1].lat + ']],'+ '"range":[';
     
     //Unit conversions 
     if (units == "distance"){
@@ -1081,9 +1100,13 @@ function oplQuery(queryString){
         afterRequest: function()  {
             // console.log("afterRequest");
             //Replace pulsing queryZone with non pulsing one
-            var nZone = L.polygon(queryZone.getLatLngs(), {fillColor: '#1b1bff', fillOpacity: 0.4, opacity:0}).addTo(map);
-            map.removeLayer(queryZone);
-            queryZone = nZone;
+            // map.removeLayer(queryZone);
+            // var nZone = L.polygon(queryZone.getLatLngs(), {fillColor: '#1b1bff', fillOpacity: 0.4, opacity:0}).addTo(map);
+            
+            // queryZone = nZone;
+            // queryZone._path.removeClass("pulse");
+            L.DomUtil.removeClass(queryZone._path, "pulse");
+            queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
             state = "queryResults";
             
             polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
@@ -1135,18 +1158,22 @@ function clearQueryResults(){
     markers.length = 0;
 
     //Range markers become blue again and re-enable interactions
-    circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
-    markerBracketOpen.setIcon(bracket);
-    markerBracketClose.setIcon(bracket);
-    markerBracketOpen.dragging.enable();
-    markerBracketClose.dragging.enable(); 
+    if (circleZoneOfInterest != null){
+        circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
+        markerBracketOpen.setIcon(bracket);
+        markerBracketClose.setIcon(bracket);
+        markerBracketOpen.dragging.enable();
+        markerBracketClose.dragging.enable(); 
+        
 
     //Higlight polyline becomes visible again
     lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
     polylineBracket.setStyle({opacity:0.5});
+    }
 
+    if (queryZone != null){
     map.removeLayer(queryZone);//remove the query zone
-
+    }
     //Remove the clear button
     var button = document.getElementById("clearDiv");
     button.style.visibility = 'hidden';
@@ -1722,7 +1749,7 @@ function toggleElevationDistribution(){
     if(isElevationDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
         outlineHTML.setAttribute("stroke-opacity", "0.25");
-        isFuelDisplayed = false;
+        isElevationDisplayed = false;
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
     } else {
         outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
