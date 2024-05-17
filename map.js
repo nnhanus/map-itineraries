@@ -96,7 +96,7 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         var elevationLayer = document.getElementById("elevationLayer");
-        var redrawButton = document.getElementById("redrawButton");
+        var redrawButton = document.getElementById("supermarkerLayer");
         container.onpointerdown = function(e){
             clickOnLayer = true;
         }
@@ -135,7 +135,34 @@ L.control.layers = function(opts) {
     return new L.Control.Layers(opts);
 }
 
+L.Control.Mode = L.Control.extend({
+    options:{
+        position: 'topleft'
+    },
+    onAdd: function(map) {
+        var container = document.getElementById("changeMode");
+        let icon = document.getElementById("switchButton");
+        container.onclick = function(e){
+            console.log("switcharoo");
+            console.log(transportationMode);
+            // clickOnLayer = true;
+            if(transportationMode == "car"){
+                icon.setAttribute("src", "icons/walk.svg");
+            } else {
+                icon.setAttribute("src", "icons/drive.svg");
+            }
+            switchMode();
+        }
+        return container;
+    },
 
+    onRemove: function(map) {
+        // Nothing to do here
+    }
+});
+L.control.mode = function(opts){
+    return new L.Control.Mode(opts);
+}
 
 function forceRedraw(){
     // stroke._path.style.display = "none";
@@ -256,6 +283,7 @@ routing.on("routesfound", function (e){
     console.log("reroute");
 
     L.control.layers({}).addTo(map); //Add the layers menu to the map
+    L.control.mode({}).addTo(map);
 
     allPos = e.routes[0].coordinates; //Get the points of the intinerary
     distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
@@ -1162,8 +1190,10 @@ function clearQueryResults(){
         circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
         markerBracketOpen.setIcon(bracket);
         markerBracketClose.setIcon(bracket);
-        markerBracketOpen.dragging.enable();
-        markerBracketClose.dragging.enable(); 
+        if (map.hasLayer(markerBracketOpen) && map.hasLayer(markerBracketClose)){
+            markerBracketOpen.dragging.enable();
+            markerBracketClose.dragging.enable();     
+        }
         
 
     //Higlight polyline becomes visible again
@@ -1877,13 +1907,15 @@ function showFloatingTexts(){
  */
 function moveCursor(e){
     let ETAFloatingText = document.getElementById("cursorText");
-    let ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
-    let left = e.clientX-ETAFloatingTextSize[0]-20;
-    if (left < 5){
-        left = e.clientX + 20;
-    }
-    ETAFloatingText.style.left=left+'px';
-    ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px';    
+    if (ETAFloatingText != null){
+        let ETAFloatingTextSize=[ETAFloatingText.offsetWidth,ETAFloatingText.offsetHeight];
+        let left = e.clientX-ETAFloatingTextSize[0]-20;
+        if (left < 5){
+            left = e.clientX + 20;
+        }
+        ETAFloatingText.style.left=left+'px';
+        ETAFloatingText.style.top=e.clientY-ETAFloatingTextSize[1]-50+'px'; 
+    }   
 }
 
 /**
@@ -2101,6 +2133,8 @@ function updatePosTexts(text, element, isVert){
  * Update text from the close range marker
  */
 function updateBracketCloseText(){
+    let fix = 0;
+    if (transportationMode == "foot"){fix = 1;}
     var closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
     var pointsAbove = new Array();
@@ -2114,13 +2148,15 @@ function updateBracketCloseText(){
         distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
     }
     let bracketCloseText = document.getElementById("bracketCloseText");
-    bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(0) +" km";
+    bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(fix) +" km";
 }
 
 /**
  * Update text from the open range marker
  */
 function updateBracketOpenText(){
+    let fix = 0;
+    if (transportationMode == "foot"){fix = 1;}
     var closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
     var pointsAbove = new Array();
@@ -2136,7 +2172,7 @@ function updateBracketOpenText(){
     // console.log(" real dist: "+ Math.round(distCircleBracket/1000));
     // console.log(" leaflet dist: " +  Math.round(closestAbove.distanceTo(closestBelow)/1000));
     let bracketOpenText = document.getElementById("bracketText");
-    bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(0) +" km";
+    bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(fix) +" km";
 }
 
 /**
