@@ -28,6 +28,10 @@ body{
     padding: 2px 2px 2px 2px;
 }
 
+#clearDiv{
+    box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
+}
+
 .leaflet-routing-container-hide.leaflet-bar.leaflet-routing-container{
     box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
 }

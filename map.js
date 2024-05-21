@@ -161,8 +161,34 @@ L.Control.Mode = L.Control.extend({
         // Nothing to do here
     }
 });
+
+
+
 L.control.mode = function(opts){
     return new L.Control.Mode(opts);
+}
+
+L.Control.Clear = L.Control.extend({
+    options:{
+        position: 'topright'
+    },
+    onAdd: function(map) {
+        console.log("ADD0");
+        var container =  document.getElementById("clearDiv");
+        container.style.visibility = "visible";
+        container.onclick = function (e) {clearQueryResults()};
+        return container;
+    },
+
+    onRemove: function(map) {
+        var container =  document.getElementById("clearDiv");
+        container.setAttribute("visibility", "hidden");
+        // Nothing to do here
+    }
+});
+
+L.control.clear = function(opts) {
+    return new L.Control.Clear(opts);
 }
 
 function forceRedraw(){
@@ -469,7 +495,8 @@ function ORSRouting(){
         }
     };
 
-    const body = '{"coordinates":[[' + startRoute.lng + ',' + startRoute.lat +'],[' + endRoute.lng + ',' + endRoute.lat + ']], "instructions":"false"}';
+    // const body = '{"coordinates":[[' + startRoute.lng + ',' + startRoute.lat +'],[' + endRoute.lng + ',' + endRoute.lat + ']], "instructions":"false"}';
+    const body = routingWaypointsToQueryString();
 
     request.send(body);
 }
@@ -558,9 +585,23 @@ function routingToPolyline(routeJSON){
     outline.bringToFront();
     itinerary.bringToFront();
 
+    routingWaypoints.forEach((element) => L.marker(element).addTo(map));
+
     // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 
+}
+
+function routingWaypointsToQueryString(){
+    let queryString = '{"coordinates":[[';
+    for(let i = 0; i < routingWaypoints.length - 1; i++){
+        const element = routingWaypoints[i];
+        queryString += element.lng + ',' + element.lat +'],[';
+    }
+    const lastElem = routingWaypoints[routingWaypoints.length - 1];
+    queryString += lastElem.lng + ',' + lastElem.lat +']], "instructions":"false"}';
+    console.log(queryString);
+    return queryString;
 }
 
 /********************************************************************************
@@ -1251,11 +1292,11 @@ function polygonToLatLng(line){
  */
 function oplQuery(queryString){
     console.log("oplQuery");
-    console.log(queryString);
+    // console.log(queryString);
     var opl = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
-        endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
+        // endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
@@ -1307,7 +1348,9 @@ function oplQuery(queryString){
                 markers.push(marker); //Add marker to markers list
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
-                    routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
+                    // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
+                    routingWaypoints.splice(1, 0, marker.getLatLng());
+                    ORSRouting();
                     //Create new popup
                     const container =  L.DomUtil.create('div');
                     const okButton = createButton("Add to route", container);
@@ -1320,7 +1363,9 @@ function oplQuery(queryString){
                     const cancelButton = createButton("Cancel", container);
                     L.DomEvent.on(cancelButton, 'click', function() {
                         map.closePopup();
-                        routing.spliceWaypoints(1, 1); //Remove waypoint from the route and reroute
+                        // routing.spliceWaypoints(1, 1); //Remove waypoint from the route and reroute
+                        routingWaypoints.splice(1, 1);
+                        ORSRouting();
                         //replace popup with original
                         openedMarker.unbindPopup();
                         openedMarker.bindPopup(openedPopup);
@@ -1368,6 +1413,8 @@ function oplQuery(queryString){
             
             
             polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
+            console.log("SHOULD ADD HERE");
+            // L.control.clear({}).addTo(map);
             makeClearButton(); //Add button to clear  query result
         } 
         });
