@@ -162,34 +162,10 @@ L.Control.Mode = L.Control.extend({
     }
 });
 
-
-
 L.control.mode = function(opts){
     return new L.Control.Mode(opts);
 }
 
-L.Control.Clear = L.Control.extend({
-    options:{
-        position: 'topright'
-    },
-    onAdd: function(map) {
-        console.log("ADD0");
-        var container =  document.getElementById("clearDiv");
-        container.style.visibility = "visible";
-        container.onclick = function (e) {clearQueryResults()};
-        return container;
-    },
-
-    onRemove: function(map) {
-        var container =  document.getElementById("clearDiv");
-        container.setAttribute("visibility", "hidden");
-        // Nothing to do here
-    }
-});
-
-L.control.clear = function(opts) {
-    return new L.Control.Clear(opts);
-}
 
 function forceRedraw(){
     // stroke._path.style.display = "none";
@@ -321,7 +297,7 @@ function hideLayers(){
 
 //     let layerControl =  L.control.layers({}).addTo(map); //Add the layers menu to the map
 //     let modeControl =  L.control.mode({}).addTo(map);
-//     L.control.routing({}).addTo(map);
+//     // L.control.routing({}).addTo(map);
     
 
 //     // allPos = e.routes[0].coordinates; //Get the points of the intinerary
@@ -507,6 +483,9 @@ function routingToPolyline(routeJSON){
     L.control.mode({}).addTo(map); //Switch between foot and car
     time = routeJSON.summary.duration;
     distance = routeJSON.summary.distance;
+    let infoRoute = document.getElementById("routeInfo");
+    infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
+
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
     allPos = line.getLatLngs();
     var firstTime = true;
@@ -603,6 +582,7 @@ function routingWaypointsToQueryString(){
     console.log(queryString);
     return queryString;
 }
+
 
 /********************************************************************************
  *                    Initialize filters, gradients, & masks                    *
@@ -1053,31 +1033,6 @@ function isochroneMinutes(type, value, units){
         window.alert("Too many points do you really need 25 points???");
     }
 } 
-
-// `let request = new XMLHttpRequest();
-
-// request.open('POST', "https://api.openrouteservice.org/v2/isochrones/driving-car");
-
-// request.responseType = "json";
-
-// request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
-// request.setRequestHeader('Content-Type', 'application/json');
-// request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
-
-// request.onreadystatechange = function () {
-//     if (this.readyState === 4) {
-//         console.log('Status:', this.status);
-//         console.log('Headers:', this.getAllResponseHeaders());
-//         console.log('Body:', this.response);
-//     }
-// };
-
-// const body = '{"locations":[[1.06571,48.23889],[0.87957,48.20013],[0.70104,48.15214],[0.52317,48.09511],[0.3454,48.05335]],"profile":"driving-car","range":[20000],"range_type":"distance"}';
-// console.log(body);
-// request.send(body);`
-
-//{"locations":[[1.06571,48.23889],[0.87957,48.20013],[0.70104,48.15214],[0.52317,48.09511],[0.3454,48.05335]],"profile":"driving-car","range":[20000],"range_type":"distance"}
-
 /**
  * Calculates the points on which to query for isochrones based on the slider value
  * @param {L.LatLng[]} itinerary 

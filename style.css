@@ -4,13 +4,35 @@ body{
 
 #clearDiv{
     position:absolute;
-    background-color: white;
+    /* background-color: white; */
     /* height: 30px;
     width: 35px; */
+    /* border: solid blue 2px;
+    border-radius: 4px;*/
+} 
+#routingControl{
+    position:absolute;
+    background-color: white;
+    width: 320px;
+    padding-left: 10px;
+    padding-top: 5px;
+    padding-bottom: 5px;
     border: solid blue 2px;
     border-radius: 4px;
+    box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
 }
 
+#closeDiv{
+    /* align-items: right; */
+    /* background-color: aquamarine; */
+    padding-right: 15px;
+}
+
+
+.geocoder{
+    /* background-color: pink; */
+    width: 300px;
+}
 .layer{
     background-color: white;
     /* height: 30px;
@@ -28,9 +50,9 @@ body{
     padding: 2px 2px 2px 2px;
 }
 
-#clearDiv{
+/* #clearDiv{
     box-shadow: 2px 4px 4px rgba(0, 0, 0, 0.728);
-}
+} */
 
 .leaflet-routing-container-hide.leaflet-bar.leaflet-routing-container{
     box-shadow: 2px 4px 4px  rgba(0, 0, 0, 0.728);
@@ -172,7 +194,7 @@ datalist {
     0% {
         stroke: #1b1bffd6;
         fill-opacity: 0.25;
-		transform: scale(1);
+		/* transform: scale(1); */
 		/* box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.7); */
 	}
 
@@ -180,7 +202,7 @@ datalist {
         stroke: rgb(0, 0, 214);
         
         fill-opacity: 0.5;
-		transform: scale(1.01);
+		/* transform: scale(1.01); */
 		/* box-shadow: 0 0 0 10px rgba(0, 0, 0, 0); */
 	}
 
@@ -188,7 +210,7 @@ datalist {
         stroke: rgba(27, 27, 255, 0.838);
         
         fill-opacity: 0.25;
-		transform: scale(1);
+		/* transform: scale(1); */
 		/* box-shadow: 0 0 0 0 rgba(0, 0, 0, 0); */
 	}
   }
