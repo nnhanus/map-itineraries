@@ -78,6 +78,8 @@ var transportationMode = "car"; //"car" or "foot"
 var startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
 var endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
 
+var routingWaypoints = [startRoute, endRoute];
+
 const coordsCar = [L.latLng(48.70973285709232, 2.1626934894717214), L.latLng(47.206380448601664, -1.5645061284185262)];
 const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.605736609310455, 1.4460502897743588)];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
@@ -223,7 +225,11 @@ function switchMode(){
     console.log("WE ARE CHANGING THE STATE !!!");
     state = "itinerary";
     prevState = "itinerary";
-    routing.setWaypoints([startRoute, endRoute]);
+    // routing.setWaypoints([startRoute, endRoute]);
+    routingWaypoints.length = 0;
+    routingWaypoints.push(startRoute);
+    routingWaypoints.push(endRoute);
+    ORSRouting();
 
 }
 
@@ -404,7 +410,6 @@ function hideLayers(){
 //     // // console.log("end of routing");
 // })
 
-
 L.Control.ORSRouting = L.Control.extend({
     options:{
         position: 'topright'
@@ -471,8 +476,8 @@ function ORSRouting(){
 
 function routingToPolyline(routeJSON){
     console.log("routing");
-    let layerControl =  L.control.layers({}).addTo(map); //Add the layers menu to the map
-    let modeControl =  L.control.mode({}).addTo(map);
+    L.control.layers({}).addTo(map); //Add the layers menu to the map
+    L.control.mode({}).addTo(map); //Switch between foot and car
     time = routeJSON.summary.duration;
     distance = routeJSON.summary.distance;
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
@@ -1287,7 +1292,9 @@ function oplQuery(queryString){
                 const popupContent = this._getPoiPopupHTML(e.tags, e.id);
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
-                    routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
+                    // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
+                    routingWaypoints.splice(1, 0, marker.getLatLng());
+                    ORSRouting();
                     map.closePopup();
                 });
 
