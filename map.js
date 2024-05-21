@@ -1,5 +1,4 @@
 // import Openrouteservice from "./ors-js-client";
-
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -83,8 +82,7 @@ const coordsCar = [L.latLng(48.70973285709232, 2.1626934894717214), L.latLng(47.
 const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.605736609310455, 1.4460502897743588)];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-// const startRoute = L.latLng(43.59210153989353, 1.4447266282743285); //Walking in Toulouse
-// const endRoute = L.latLng(43.60558934874214, 1.445792850446871);
+const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -259,45 +257,226 @@ function hideLayers(){
     
 }
 //Create the route
-var routing = L.Routing.control({
+// var routing = L.Routing.control({
     
-    waypoints: [
-        // L.latLng(48.70973285709232, 2.1626934894717214), //660
-        // L.latLng(48.70577272850384, 2.185514438847031)
-        // L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
-        // L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
-        // L.latLng(43.32361856747493, -0.3548212423438274) // Pau
-        // L.latLng(47.206380448601664, -1.5645061284185262) //Nantes
-        startRoute, endRoute
-    ],
-    routeWhileDragging: false,
-    geocoder: L.Control.Geocoder.nominatim(),
-    showAlternatives: true,
-    lineOptions : {
-        style: [{color: 'black', opacity: 0.15, weight: 30}, {color: 'white', opacity: 0.8, weight: 20}, {color: 'red', opacity: 1, weight: 10}],
-        addWaypoints: false
+//     waypoints: [
+//         // L.latLng(48.70973285709232, 2.1626934894717214), //660
+//         // L.latLng(48.70577272850384, 2.185514438847031)
+//         // L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
+//         // L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
+//         // L.latLng(43.32361856747493, -0.3548212423438274) // Pau
+//         // L.latLng(47.206380448601664, -1.5645061284185262) //Nantes
+//         startRoute, endRoute
+//     ],
+//     routeWhileDragging: false,
+//     geocoder: L.Control.Geocoder.nominatim(),
+//     showAlternatives: true,
+//     lineOptions : {
+//         style: [{color: 'black', opacity: 0.15, weight: 30}, {color: 'white', opacity: 0.8, weight: 20}, {color: 'red', opacity: 1, weight: 10}],
+//         addWaypoints: false
         
+//     },
+//     routeLine: function(route, options) {
+//         routing_line = L.Routing.line(route, options);
+        
+//         return routing_line;
+//     }
+// }).addTo(map);
+
+// //Replace with itinerary and get the points, the time, and the distance
+// routing.on("routesfound", function (e){
+//     console.log("reroute");
+
+//     let layerControl =  L.control.layers({}).addTo(map); //Add the layers menu to the map
+//     let modeControl =  L.control.mode({}).addTo(map);
+//     L.control.routing({}).addTo(map);
+    
+
+//     // allPos = e.routes[0].coordinates; //Get the points of the intinerary
+//     // distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
+//     // time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
+//     // if (transportationMode == "foot"){
+//     //     time = time*2.5;
+//     // }
+//     // var firstTime = true;
+//     // if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
+//     //     map.removeLayer(itinerary);
+//     //     map.removeLayer(outline);
+//     //     map.removeLayer(stroke);
+//     //     firstTime = false;
+//     // }
+
+//     // stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
+    
+//     // outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
+//     // outlinePathHTML = outline._path;
+//     // outlinePathHTML.id = "strokeRoute";
+//     // outlinePathHTML.setAttribute("class", "willnotrender");
+
+//     // itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
+//     // itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
+
+//     // // let HTMLIti = itinerary._path; //add interaction to delete point
+//     // // HTMLIti.onclick = function(e){
+//     // //     if (state == "itinerary"){
+//     // //         itineraryToPointPlaced(e);
+//     // //     } else if (state == "pointPlaced"){
+//     // //         pointPlacedToItinerary();
+//     // //     }
+//     // // }
+
+//     // let strokeHTML = stroke._path;
+//     // // strokeHTML.onclick=function(e){ //add interaction to delete point
+//     // //     if (state == "itinerary"){
+//     // //         itineraryToPointPlaced(e);
+//     // //     } else if (state == "pointPlaced"){
+//     // //         pointPlacedToItinerary();
+//     // //     }
+//     // // }
+
+//     // // outlinePathHTML.onclick=function(e){ //add interaction to delete point
+//     // //     if (state == "itinerary"){
+//     // //         itineraryToPointPlaced(e);
+//     // //     } else if (state == "pointPlaced"){
+//     // //         pointPlacedToItinerary();
+//     // //     }
+//     // // }
+    
+//     // if (!firstTime){
+//     //     //Make sure the range markers are on the new itinerary
+//     //     if (circleZoneOfInterest != null){
+
+        
+//     //         var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
+//     //         circleZoneOfInterest.setLatLng(newLatLng);
+
+//     //         var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
+//     //         markerBracketClose.setLatLng(newLLClose);
+
+//     //         var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+//     //         markerBracketOpen.setLatLng(newLLOpen);
+//     //     }
+
+//     //     //Check if a layer is activated and if yes re-activate it
+//     //     if(isElevationDisplayed){
+//     //         isElevationDisplayed = false;
+//     //         toggleElevationDistribution();
+//     //     } else if (isFuelDisplayed){
+//     //         isFuelDisplayed = false;
+//     //         toggleFuelDistribution();
+//     //     } else if (isRestaurantDisplayed){
+//     //         isRestaurantDisplayed = false;
+//     //         toggleRestaurantDistribution()
+//     //     }
+//     // } else {
+//     //     //Create the ORS instance
+//     //     // const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
+//     //     orService = new Openrouteservice.Directions({api_key : APIKey});
+
+//     //     //Create the defs section to add the filters and mask
+//     //     let defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
+//     //     defs.id = "defs";
+//     //     var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
+//     //      svg[0].appendChild(defs);
+
+//     //     createFloatingTexts(); //Creatte the cursor text and the marker text
+//     // }
+    
+//     // //Add shadow and stroke to the itinerary
+//     // createFilterShadow();
+//     // createFilterStroke();
+//     // strokeHTML.setAttribute("filter", "url(#filterShadow)");
+//     // strokeHTML.setAttribute("mask", "url(#strokeMask)");
+
+//     // //Load the gradients
+//     // createGradientRestaurant();
+//     // createGradientFuel();
+//     // createGradientElevation();
+//     // createGradientSupermarket();
+
+//     // //Make sure the layers are in the right order
+//     // stroke.bringToFront();
+//     // outline.bringToFront();
+//     // itinerary.bringToFront();
+
+//     // // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
+//     // console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+//     // // console.log("end of routing");
+// })
+
+
+L.Control.ORSRouting = L.Control.extend({
+    options:{
+        position: 'topright'
     },
-    routeLine: function(route, options) {
-        routing_line = L.Routing.line(route, options);
-        
-        return routing_line;
+    onAdd: function(map){
+        let container = document.createElement("div");
+        container.id = "routing-div";
+        let input = document.createElement("input");
+        input.setAttribute("type", "image");
+        input.setAttribute("class", "layer");
+        input.setAttribute("id", "routing-input");
+        input.setAttribute("src", "icons/route.png");
+        input.setAttribute("width", "22");
+        input.setAttribute("height", "22");
+        container.append(input);
+        ORSRouting();
+        // body.append(container);
+        return container;
+    },onRemove: function(map) {
+        // Nothing to do here
     }
-}).addTo(map);
+});
+L.control.routing = function(opts){
+    return new L.Control.ORSRouting(opts);
+}
 
-//Replace with itinerary and get the points, the time, and the distance
-routing.on("routesfound", function (e){
-    console.log("reroute");
+let routing = L.control.routing({}).addTo(map);
 
-    L.control.layers({}).addTo(map); //Add the layers menu to the map
-    L.control.mode({}).addTo(map);
+function ORSRouting(){
+    // orService = new Openrouteservice.Directions({api_key : APIKey});
+    let request = new XMLHttpRequest();
 
-    allPos = e.routes[0].coordinates; //Get the points of the intinerary
-    distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
-    time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
-    if (transportationMode == "foot"){
-        time = time*2.5;
+    let link = "https://api.openrouteservice.org/v2/directions/";
+    if (transportationMode == "car"){
+        link += "driving-car";
+    } else {
+        link += "foot-walking";
     }
+    link += "/json";
+    request.open('POST', link);
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', APIKey);
+
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            console.log('Status:', this.status);
+            console.log('Headers:', this.getAllResponseHeaders());
+            // console.log(JSON.parse(this.response).routes[0].geometry);
+            let jsonResult = JSON.parse(this.response);
+            let route = jsonResult.routes[0];
+            //route.summary.distance
+            //route.summary.duration
+            console.log(L.Polyline.fromEncoded(route.geometry));
+            routingToPolyline(route);
+        }
+    };
+
+    const body = '{"coordinates":[[' + startRoute.lng + ',' + startRoute.lat +'],[' + endRoute.lng + ',' + endRoute.lat + ']], "instructions":"false"}';
+
+    request.send(body);
+}
+
+function routingToPolyline(routeJSON){
+    console.log("routing");
+    let layerControl =  L.control.layers({}).addTo(map); //Add the layers menu to the map
+    let modeControl =  L.control.mode({}).addTo(map);
+    time = routeJSON.summary.duration;
+    distance = routeJSON.summary.distance;
+    let line = L.Polyline.fromEncoded(routeJSON.geometry);
+    allPos = line.getLatLngs();
     var firstTime = true;
     if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
         map.removeLayer(itinerary);
@@ -307,7 +486,8 @@ routing.on("routesfound", function (e){
     }
 
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
-    
+    let strokeHTML = stroke._path;
+
     outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
     outlinePathHTML = outline._path;
     outlinePathHTML.id = "strokeRoute";
@@ -316,32 +496,8 @@ routing.on("routesfound", function (e){
     itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    // let HTMLIti = itinerary._path; //add interaction to delete point
-    // HTMLIti.onclick = function(e){
-    //     if (state == "itinerary"){
-    //         itineraryToPointPlaced(e);
-    //     } else if (state == "pointPlaced"){
-    //         pointPlacedToItinerary();
-    //     }
-    // }
+    map.fitBounds(stroke.getBounds());
 
-    let strokeHTML = stroke._path;
-    // strokeHTML.onclick=function(e){ //add interaction to delete point
-    //     if (state == "itinerary"){
-    //         itineraryToPointPlaced(e);
-    //     } else if (state == "pointPlaced"){
-    //         pointPlacedToItinerary();
-    //     }
-    // }
-
-    // outlinePathHTML.onclick=function(e){ //add interaction to delete point
-    //     if (state == "itinerary"){
-    //         itineraryToPointPlaced(e);
-    //     } else if (state == "pointPlaced"){
-    //         pointPlacedToItinerary();
-    //     }
-    // }
-    
     if (!firstTime){
         //Make sure the range markers are on the new itinerary
         if (circleZoneOfInterest != null){
@@ -370,8 +526,7 @@ routing.on("routesfound", function (e){
         }
     } else {
         //Create the ORS instance
-        const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
-        orService = new Openrouteservice.Directions({api_key : apiKey});
+        // const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
 
         //Create the defs section to add the filters and mask
         let defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
@@ -381,7 +536,6 @@ routing.on("routesfound", function (e){
 
         createFloatingTexts(); //Creatte the cursor text and the marker text
     }
-
     //Add shadow and stroke to the itinerary
     createFilterShadow();
     createFilterStroke();
@@ -401,9 +555,8 @@ routing.on("routesfound", function (e){
 
     // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-    // console.log("end of routing");
-})
 
+}
 
 /********************************************************************************
  *                    Initialize filters, gradients, & masks                    *
@@ -830,7 +983,7 @@ function isochroneMinutes(type, value, units){
 
             request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
             request.setRequestHeader('Content-Type', 'application/json');
-            request.setRequestHeader('Authorization', '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f');//API key
+            request.setRequestHeader('Authorization', APIKey);//API key
 
             request.onreadystatechange = function () {
                 if (this.readyState === 4) {
