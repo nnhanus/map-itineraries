@@ -599,18 +599,37 @@ function routingToPolyline(routeJSON){
     routingWaypoints.forEach((element) => L.marker(element).addTo(map));
 
     
-    let start = document.getElementById("startAddress");
-    let end = document.getElementById("endAddress");
+    // let start = document.getElementById("startAddress");
+    // let end = document.getElementById("endAddress");
     let infoRoute = document.getElementById("routeInfo");
     if (transportationMode == "car"){
-        start.setAttribute("value", addressCar[0]);
-        end.setAttribute("value", addressCar[1]);
+    //     start.setAttribute("value", addressCar[0]);
+    //     end.setAttribute("value", addressCar[1]);
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
     } else {
-        start.setAttribute("value", addressFoot[0]);
-        end.setAttribute("value", addressFoot[1]);
+    //     start.setAttribute("value", addressFoot[0]);
+    //     end.setAttribute("value", addressFoot[1]);
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
     }
+    const container = document.getElementById("geocoders");
+    let children = container.children;
+    console.log("children length: " + children.length);
+
+    if(children.length < routingAddresses.length){
+        let geocoder = document.createElement("input");
+        geocoder.setAttribute("class", "geocoder");
+        container.append(geocoder);
+        children = container.children;
+    } else if (children.length > routingAddresses.length){
+        //REMOVE A DIV
+    }
+
+    for (let i = 0; i < children.length; i++){
+        console.log(children[i]);
+        console.log(routingAddresses[i]);
+        children[i].setAttribute("value", routingAddresses[i]);
+    }
+
     
     // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
@@ -1336,8 +1355,8 @@ function oplQuery(queryString){
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
-                    routingWaypoints.splice(1, 0, marker.getLatLng());
-                    ORSRouting();
+                    geocoding(marker.getLatLng());
+                    
                     map.closePopup();
                 });
 
@@ -1351,6 +1370,7 @@ function oplQuery(queryString){
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
+                    
                     routingWaypoints.splice(1, 0, marker.getLatLng());
                     ORSRouting();
                     //Create new popup
@@ -1358,6 +1378,7 @@ function oplQuery(queryString){
                     const okButton = createButton("Add to route", container);
                     L.DomEvent.on(okButton, 'click', function() {
                         //Reaplce popup with original one
+                        geocoding(marker.getLatLng());
                         openedMarker.unbindPopup();
                         openedMarker.bindPopup(openedPopup);
                         map.closePopup();
@@ -1438,6 +1459,38 @@ function arrayToQuery(itinerary, type){
     queryString += itinerary[itinerary.length-1].lat + " " + itinerary[itinerary.length-1].lng + "\")[" + type + "];out;";
     return queryString;
     
+}
+
+function geocoding(latlng){
+    var request = new XMLHttpRequest();
+    let body = 'https://api.openrouteservice.org/geocode/reverse?api_key=5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f&point.lon=' + latlng.lng + '&point.lat='+ latlng.lat + '&layers=venue&boundary.country=FR'
+
+    request.open('GET', body);
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+
+    request.onreadystatechange = function () {
+    if (this.readyState === 4) {
+        console.log('Status:', this.status);
+        console.log('Headers:', this.getAllResponseHeaders());
+        // console.log('Body:', this.responseText);
+        decodeGeocodingResults(this.response);
+        routingWaypoints.splice(1, 0, latlng);
+        ORSRouting();
+    }
+    };
+
+    request.send();
+
+}
+
+function decodeGeocodingResults(result){
+    console.log(JSON.parse(result));
+    let jsonRes = JSON.parse(result);
+    let features = jsonRes.features;
+    let adress = features[0].properties.label;
+    console.log(adress);
+    routingAddresses.splice(1,0,adress);  
 }
 
 /********************************************************************************
