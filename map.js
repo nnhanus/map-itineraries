@@ -13,7 +13,6 @@ var itinerary;
 var outline;
 var stroke;
 
-var routing_line;
 var isPointerDown = false;
 var isMovingMarker = false;
 var isMovingBrackets = false;
@@ -72,22 +71,29 @@ var clickOnLayer = false;
 var openedMarker;
 var openedPopup;
 
+var infoRouteTop = 545;
+
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
-
-var startRoute = L.latLng(48.711967757928974, 2.166628674285006);
-var endRoute = L.latLng(47.20617749880269, -1.564392769503869);
 
 const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
 const addressCar = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
 const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.60560890094277, 1.4458011280603213)];
-const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 36 Rue d'Alsace Lorraine, 31000 Toulouse"];
+const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-var routingWaypoints = [startRoute, endRoute];
+var routingWaypoints = coordsCar;
 var routingAddresses = addressCar;
 
 const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
+
+var openCircleDist = 0;
+var closeCircleDist = 0;
+var previousCirclePosition;
+
+/********************************************************************************
+ *                                   Controls                                   *
+ ********************************************************************************/
 
 L.Control.Layers = L.Control.extend({
     options:{
@@ -148,7 +154,7 @@ L.Control.Mode = L.Control.extend({
         var container = document.getElementById("changeMode");
         let icon = document.getElementById("switchButton");
         container.onclick = function(e){
-            console.log(transportationMode);
+            // console.log(transportationMode);
             // clickOnLayer = true;
             if(transportationMode == "car"){
                 icon.setAttribute("src", "icons/walk.svg");
@@ -168,252 +174,6 @@ L.Control.Mode = L.Control.extend({
 L.control.mode = function(opts){
     return new L.Control.Mode(opts);
 }
-
-
-function forceRedraw(){
-    // stroke._path.style.display = "none";
-    // // outlinePathHTML.style.display = "none";
-    // stroke._path.style.display = "block";
-    // outlinePathHTML.style.display = "block";
-    // createFilterShadow();
-    // createFilterStroke();
-    // let strokeHTML = stroke._path;
-    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
-    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
-    // itinerary.bringToFront();
-    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
-    
-    // let oldPath = document.getElementById("maskStrokePath");
-    // let path = lineMask._path;
-    // path.id = "maskStrokePath";
-    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", "0");
-    rect.setAttribute("y", "0");
-    rect.setAttribute("width", "1000px");
-    rect.setAttribute("height", "1000px");
-    rect.setAttribute("fill", "white");
-    let mask = document.getElementById("strokeMask");
-    // // oldPath.remove();
-    // path.setAttribute("stroke", "black");
-    // path.setAttribute("stroke-opacity", "1");
-    mask.replaceChild(rect, mask.childNodes[0]);
-    // mask.append(path);
-
-    // mask.setAttribute("maskUnits", "objectBoundingBox");
-
-}
-
-function switchMode(){
-    
-    let fuel = document.getElementById("gasstation");
-    let fuelLayer = document.getElementById("gasstationLayer");
-    hideLayers();
-    
-    switch (transportationMode){
-        case "foot":
-            defaultBracketRange = 1200;
-            startRoute = coordsCar[0];
-            endRoute = coordsCar[1];
-            transportationMode = "car";
-            fuel.setAttribute("src", "icons/fuelIcon.svg");
-            fuelLayer.setAttribute("src", "icons/fuelIcon.svg");
-           break; 
-        case "car":
-            defaultBracketRange = 300;
-            startRoute = coordsFoot[0];
-            endRoute = coordsFoot[1];
-            transportationMode = "foot";
-            fuel.setAttribute("src", "icons/bakery.svg");
-            fuelLayer.setAttribute("src", "icons/bakery.svg");
-           break; 
-    }
-    console.log("WE ARE CHANGING THE STATE !!!");
-    state = "itinerary";
-    prevState = "itinerary";
-    // routing.setWaypoints([startRoute, endRoute]);
-    routingWaypoints.length = 0;
-    routingWaypoints.push(startRoute);
-    routingWaypoints.push(endRoute);
-    ORSRouting();
-
-}
-
-function hideLayers(){
-
-    clearQueryResults();
-
-    if (circleZoneOfInterest != null){
-        map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketOpen);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(polylineBracket);
-        hideFloatingTexts();
-        
-    }
-
-    isRestaurantDisplayed = true;
-    toggleRestaurantDistribution();
-    isFuelDisplayed = true;
-    toggleFuelDistribution();
-    isElevationDisplayed = true;
-    toggleElevationDistribution(); 
-    isSupermarketDisplayed = true;
-    toggleSupermarketDistribution();
-
-    if (isWeatherDisplayed){
-        loadWeather();
-    }
-    weatherLayerGroup = null;
-
-    
-}
-//Create the route
-// var routing = L.Routing.control({
-    
-//     waypoints: [
-//         // L.latLng(48.70973285709232, 2.1626934894717214), //660
-//         // L.latLng(48.70577272850384, 2.185514438847031)
-//         // L.latLng(43.089068907903574, 2.6198013248458296) //Le Bastion Lagrasse
-//         // L.latLng(53.55562497332884, 7.9839136794782375) //Ammerländer Strasse
-//         // L.latLng(43.32361856747493, -0.3548212423438274) // Pau
-//         // L.latLng(47.206380448601664, -1.5645061284185262) //Nantes
-//         startRoute, endRoute
-//     ],
-//     routeWhileDragging: false,
-//     geocoder: L.Control.Geocoder.nominatim(),
-//     showAlternatives: true,
-//     lineOptions : {
-//         style: [{color: 'black', opacity: 0.15, weight: 30}, {color: 'white', opacity: 0.8, weight: 20}, {color: 'red', opacity: 1, weight: 10}],
-//         addWaypoints: false
-        
-//     },
-//     routeLine: function(route, options) {
-//         routing_line = L.Routing.line(route, options);
-        
-//         return routing_line;
-//     }
-// }).addTo(map);
-
-// //Replace with itinerary and get the points, the time, and the distance
-// routing.on("routesfound", function (e){
-//     console.log("reroute");
-
-//     let layerControl =  L.control.layers({}).addTo(map); //Add the layers menu to the map
-//     let modeControl =  L.control.mode({}).addTo(map);
-//     // L.control.routing({}).addTo(map);
-    
-
-//     // allPos = e.routes[0].coordinates; //Get the points of the intinerary
-//     // distance = e.routes[0].summary.totalDistance; //Get the distance of the itinerary (in meters)
-//     // time = e.routes[0].summary.totalTime; //Get the time of the itinerary (in seconds)
-//     // if (transportationMode == "foot"){
-//     //     time = time*2.5;
-//     // }
-//     // var firstTime = true;
-//     // if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
-//     //     map.removeLayer(itinerary);
-//     //     map.removeLayer(outline);
-//     //     map.removeLayer(stroke);
-//     //     firstTime = false;
-//     // }
-
-//     // stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
-    
-//     // outline = L.polyline(allPos, {color: 'blue', weight: 48, opacity: 0.25,className: "route willnotrender"}).addTo(map); // Draw the interaction zone
-//     // outlinePathHTML = outline._path;
-//     // outlinePathHTML.id = "strokeRoute";
-//     // outlinePathHTML.setAttribute("class", "willnotrender");
-
-//     // itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
-//     // itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
-
-//     // // let HTMLIti = itinerary._path; //add interaction to delete point
-//     // // HTMLIti.onclick = function(e){
-//     // //     if (state == "itinerary"){
-//     // //         itineraryToPointPlaced(e);
-//     // //     } else if (state == "pointPlaced"){
-//     // //         pointPlacedToItinerary();
-//     // //     }
-//     // // }
-
-//     // let strokeHTML = stroke._path;
-//     // // strokeHTML.onclick=function(e){ //add interaction to delete point
-//     // //     if (state == "itinerary"){
-//     // //         itineraryToPointPlaced(e);
-//     // //     } else if (state == "pointPlaced"){
-//     // //         pointPlacedToItinerary();
-//     // //     }
-//     // // }
-
-//     // // outlinePathHTML.onclick=function(e){ //add interaction to delete point
-//     // //     if (state == "itinerary"){
-//     // //         itineraryToPointPlaced(e);
-//     // //     } else if (state == "pointPlaced"){
-//     // //         pointPlacedToItinerary();
-//     // //     }
-//     // // }
-    
-//     // if (!firstTime){
-//     //     //Make sure the range markers are on the new itinerary
-//     //     if (circleZoneOfInterest != null){
-
-        
-//     //         var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
-//     //         circleZoneOfInterest.setLatLng(newLatLng);
-
-//     //         var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
-//     //         markerBracketClose.setLatLng(newLLClose);
-
-//     //         var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-//     //         markerBracketOpen.setLatLng(newLLOpen);
-//     //     }
-
-//     //     //Check if a layer is activated and if yes re-activate it
-//     //     if(isElevationDisplayed){
-//     //         isElevationDisplayed = false;
-//     //         toggleElevationDistribution();
-//     //     } else if (isFuelDisplayed){
-//     //         isFuelDisplayed = false;
-//     //         toggleFuelDistribution();
-//     //     } else if (isRestaurantDisplayed){
-//     //         isRestaurantDisplayed = false;
-//     //         toggleRestaurantDistribution()
-//     //     }
-//     // } else {
-//     //     //Create the ORS instance
-//     //     // const apiKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
-//     //     orService = new Openrouteservice.Directions({api_key : APIKey});
-
-//     //     //Create the defs section to add the filters and mask
-//     //     let defs = document.createElementNS("http://www.w3.org/2000/svg",'defs');
-//     //     defs.id = "defs";
-//     //     var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
-//     //      svg[0].appendChild(defs);
-
-//     //     createFloatingTexts(); //Creatte the cursor text and the marker text
-//     // }
-    
-//     // //Add shadow and stroke to the itinerary
-//     // createFilterShadow();
-//     // createFilterStroke();
-//     // strokeHTML.setAttribute("filter", "url(#filterShadow)");
-//     // strokeHTML.setAttribute("mask", "url(#strokeMask)");
-
-//     // //Load the gradients
-//     // createGradientRestaurant();
-//     // createGradientFuel();
-//     // createGradientElevation();
-//     // createGradientSupermarket();
-
-//     // //Make sure the layers are in the right order
-//     // stroke.bringToFront();
-//     // outline.bringToFront();
-//     // itinerary.bringToFront();
-
-//     // // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
-//     // console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-//     // // console.log("end of routing");
-// })
 
 L.Control.ORSRouting = L.Control.extend({
     options:{
@@ -442,21 +202,15 @@ L.Control.ORSRouting = L.Control.extend({
         // Nothing to do here
     }
 });
+
 L.control.routing = function(opts){
     return new L.Control.ORSRouting(opts);
 }
 
-/**
- * Toggles the visibility of the route info panel
- */
-function toggleRouteInfoVisibility(){
-    let container = document.getElementById("routingControl");
-    if(container.style.visibility == 'visible'){
-        container.style.visibility = "hidden";
-    } else {
-        container.style.visibility = "visible";
-    }
-}
+/********************************************************************************
+ *                                   Routing                                    *
+ ********************************************************************************/
+
 let routing = L.control.routing({}).addTo(map);
 
 /**
@@ -488,12 +242,11 @@ function ORSRouting(){
             let route = jsonResult.routes[0];
             //route.summary.distance
             //route.summary.duration
-            console.log(L.Polyline.fromEncoded(route.geometry));
+            // console.log(L.Polyline.fromEncoded(route.geometry));
             routingToPolyline(route);
         }
     };
 
-    // const body = '{"coordinates":[[' + startRoute.lng + ',' + startRoute.lat +'],[' + endRoute.lng + ',' + endRoute.lat + ']], "instructions":"false"}';
     const body = routingWaypointsToQueryString();
 
     request.send(body);
@@ -598,35 +351,31 @@ function routingToPolyline(routeJSON){
 
     routingWaypoints.forEach((element) => L.marker(element).addTo(map));
 
-    
-    // let start = document.getElementById("startAddress");
-    // let end = document.getElementById("endAddress");
     let infoRoute = document.getElementById("routeInfo");
     if (transportationMode == "car"){
-    //     start.setAttribute("value", addressCar[0]);
-    //     end.setAttribute("value", addressCar[1]);
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
     } else {
-    //     start.setAttribute("value", addressFoot[0]);
-    //     end.setAttribute("value", addressFoot[1]);
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
     }
     const container = document.getElementById("geocoders");
     let children = container.children;
-    console.log("children length: " + children.length);
+    // console.log("children length: " + children.length);
 
     if(children.length < routingAddresses.length){
         let geocoder = document.createElement("input");
         geocoder.setAttribute("class", "geocoder");
         container.append(geocoder);
         children = container.children;
+        infoRouteTop -= 24;
+        const infoBox = document.getElementById("routingControl");
+        infoBox.style.top = infoRouteTop+'px';
     } else if (children.length > routingAddresses.length){
         //REMOVE A DIV
     }
 
     for (let i = 0; i < children.length; i++){
-        console.log(children[i]);
-        console.log(routingAddresses[i]);
+        // console.log(children[i]);
+        // console.log(routingAddresses[i]);
         children[i].setAttribute("value", routingAddresses[i]);
     }
 
@@ -636,6 +385,10 @@ function routingToPolyline(routeJSON){
 
 }
 
+/**
+ * Builds the query string from the waypoints and transportation mode
+ * @returns {string}
+ */
 function routingWaypointsToQueryString(){
     let queryString = '{"coordinates":[[';
     for(let i = 0; i < routingWaypoints.length - 1; i++){
@@ -644,10 +397,9 @@ function routingWaypointsToQueryString(){
     }
     const lastElem = routingWaypoints[routingWaypoints.length - 1];
     queryString += lastElem.lng + ',' + lastElem.lat +']], "instructions":"false"}';
-    console.log(queryString);
+    // console.log(queryString);
     return queryString;
 }
-
 
 /********************************************************************************
  *                    Initialize filters, gradients, & masks                    *
@@ -881,7 +633,6 @@ function createGradientFuel(){
     defs.appendChild(gradient);
 }
 
-
 /**
  * Create a gradient for the outline of the itinerary
  */
@@ -1080,7 +831,7 @@ function isochroneMinutes(type, value, units){
                 if (this.readyState === 4) {
                     console.log('Status:', this.status);
                     console.log('Headers:', this.getAllResponseHeaders());
-                    console.log('Body:', this.response);
+                    // console.log('Body:', this.response);
                     resIso.push(this.response.features);
                     // console.log("i : " + i + ", length : " + points.length);
                     // console.log(resIso);
@@ -1090,10 +841,10 @@ function isochroneMinutes(type, value, units){
             };
 
             const body = makeIsoQuery(points[i], value, units);
-            console.log(body);
+            // console.log(body);
             request.send(body);
         }
-        console.log(resIso); 
+        // console.log(resIso); 
     } else {
         window.alert("Too many points do you really need 25 points???");
     }
@@ -1118,7 +869,7 @@ function getNeededPoints(itinerary, value, units){
         }
         
     }
-    console.log(distValue);
+    // console.log(distValue);
 
     var polygons = [];
     var polygon = [itinerary[0]]; //the 1st point is the 1st point of the route (so the marker open)
@@ -1172,7 +923,7 @@ function makeIsoQuery(points, value, units){
         queryString+= value*60;
     }
     queryString+= '],"range_type":"' + units + '"}';
-    console.log(queryString);
+    // console.log(queryString);
     return queryString;
 }
 
@@ -1184,7 +935,7 @@ function makeIsoQuery(points, value, units){
  * Called after each request so when there are diff requests for one (because more than 5 points), we need to know the expected length
  */
 function isochroneToPolygon(body, type, length){
-    console.log(body);
+    // console.log(body);
     if (body.length == length){ //Check if it is the right length
         // console.log("long enough");
         disableCircle();
@@ -1197,7 +948,7 @@ function isochroneToPolygon(body, type, length){
                 coords.forEach(element =>{
                     latLngs.push(L.latLng(element[1], element[0])); //Leaflet uses LatLng and OSR uses LngLat
                 });
-                console.log(latLngs);
+                // console.log(latLngs);
                 
                 //Create a polygon with the latlng and add it to the list
                 var qZone = L.polygon(latLngs, {color:'green'}).addTo(map);
@@ -1237,7 +988,7 @@ function isochroneToPolygon(body, type, length){
 
         //LatLng
         var polyLatLngs = polygonToLatLng(union.geometry.coordinates[0]);
-        console.log("polygon length before simplify: " + polyLatLngs.length);
+        // console.log("polygon length before simplify: " + polyLatLngs.length);
 
         //Simplify : Overpass Request have a size limit
         //Simplify takes point in pixels so conversion
@@ -1250,7 +1001,7 @@ function isochroneToPolygon(body, type, length){
             simpMult++;
         }
         var polygon = pointToLatLng(polygonXY); //Put it back in LatLng
-        console.log("polygon length after simplify: " + polygon.length);
+        // console.log("polygon length after simplify: " + polygon.length);
 
         //polygon
         var realZone = L.polygon(polygon, {color: 'blue', className:"pulse"}).addTo(map);
@@ -1288,7 +1039,7 @@ function isochroneToPolygon(body, type, length){
 
     // console.log(polyLatLngs);
     } else {
-        console.log("not long enough");
+        // console.log("not long enough");
     }
 }
 
@@ -1321,7 +1072,7 @@ function oplQuery(queryString){
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
-            console.log("ON SUCCESS");
+            // console.log("ON SUCCESS");
             // console.log(data);
             for (let i = 0; i < data.elements.length; i++) {
                 let pos;
@@ -1417,7 +1168,7 @@ function oplQuery(queryString){
                 this._markers.addLayer(marker); //Add to map
                 
             }
-            console.log("WE ARE SETTING THE STATE TO RESULTS");
+            // console.log("WE ARE SETTING THE STATE TO RESULTS");
             state = "queryResults";
         },
         onError: function(xhr){
@@ -1436,7 +1187,7 @@ function oplQuery(queryString){
             
             
             polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
-            console.log("SHOULD ADD HERE");
+            // console.log("SHOULD ADD HERE");
             // L.control.clear({}).addTo(map);
             makeClearButton(); //Add button to clear  query result
         } 
@@ -1485,11 +1236,11 @@ function geocoding(latlng){
 }
 
 function decodeGeocodingResults(result){
-    console.log(JSON.parse(result));
+    // console.log(JSON.parse(result));
     let jsonRes = JSON.parse(result);
     let features = jsonRes.features;
     let adress = features[0].properties.label;
-    console.log(adress);
+    // console.log(adress);
     routingAddresses.splice(1,0,adress);  
 }
 
@@ -1570,7 +1321,7 @@ function pointPlacedToItinerary(latlng, point){
     if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
         let distFromHighlight = getDistanceInCM(latlng, point, polylineBracket.getLatLngs());
         if (distFromHighlight > 0.3 || distFromHighlight > 10 && closestPixel.y < point.y){
-        console.log("iti click");
+        // console.log("iti click");
         state = "itinerary";
         prevState = "itinerary";
 
@@ -1608,10 +1359,10 @@ function pointPlacedToItinerary(latlng, point){
  * @param {L.Point} point 
  */
 function itineraryToPointPlaced(latlng, point){
-    console.log("iti");
+    // console.log("iti");
     // let latlng = e.latlng;
     // let point = toPixels(latlng);
-    console.log("pointer down : " + isPointerDown + ", !movingbrackets: " + !isMovingBrackets + ", !movemarker: " + !isMovingMarker + ", !clickLayer: " + !clickOnLayer);
+    // console.log("pointer down : " + isPointerDown + ", !movingbrackets: " + !isMovingBrackets + ", !movemarker: " + !isMovingMarker + ", !clickLayer: " + !clickOnLayer);
     if (isPointerDown  && !isMovingMarker && !isMovingBrackets && !clickOnLayer){
         let ETAFloatingText = document.getElementById("cursorText");
         ETAFloatingText.style.visibility='hidden'; //no more text to tell the time and dist
@@ -1648,13 +1399,14 @@ function itineraryToPointPlaced(latlng, point){
             // circleCreated = false;
             
             circleZoneOfInterest = circle; 
-            circleZoneOfInterest.bringToFront();   
+            circleZoneOfInterest.bringToFront();  
+            previousCirclePosition = closest; 
             // circleClosest.bringToFront();
             createBrackets(latlng);
             // circleZoneOfInterest.dragging.enable()
 
             var circleHTML = circleZoneOfInterest._path;
-            circleHTML.onclick = function(e){openMenu()};
+            circleHTML.onclick= function(e){openMenu()};
             circleHTML.onpointerdown = function(e){clickOnCircle = true};
             if (queryZone != null){
                 map.removeLayer(queryZone);
@@ -1677,7 +1429,7 @@ function itineraryToPointPlaced(latlng, point){
  * @param {PointerEvent} event 
  */
 function openMenu(event){
-    console.log(state);
+    // console.log(state);
     if (state == "pointPlaced"){
         state = "menu";
         var menuDiv = document.getElementById("menu");
@@ -1815,16 +1567,16 @@ function setSliderMinMax(isKiloMeter, slider){
         }
         slider.setAttribute("min", min);
         slider.setAttribute("max", value);
-        console.log(value/10);
-        console.log(value/3);
+        // console.log(value/10);
+        // console.log(value/3);
     } else {
-        console.log("value" + value);
+        // console.log("value" + value);
         var percent = (100*value)/(distance/1000);
-        console.log("percent" + percent);
+        // console.log("percent" + percent);
         var percTime = (percent*time )/100;
-        console.log("% time" + percTime);
+        // console.log("% time" + percTime);
         var inMinutes = Math.round(percTime/60);
-        console.log("minutes" + inMinutes);
+        // console.log("minutes" + inMinutes);
         // console.log(time);
         // console.log(percent);
         // console.log(percTime);
@@ -1836,8 +1588,8 @@ function setSliderMinMax(isKiloMeter, slider){
         }
         slider.setAttribute("min", min);
         slider.setAttribute("max", max);
-        console.log(Math.round(inMinutes/5));
-        console.log(Math.round(inMinutes));
+        // console.log(Math.round(inMinutes/5));
+        // console.log(Math.round(inMinutes));
 
     }
 }
@@ -1852,7 +1604,7 @@ function getDistPolyLine(route){
     for (var i = 0; i < route.length - 1; i++){
         dist += route[i].distanceTo(route[i+1]);
     }
-    console.log(Math.round(dist/1000));
+    // console.log(Math.round(dist/1000));
     return Math.round(dist/1000);
 
 }
@@ -1881,7 +1633,7 @@ function clickGoButton(type){
  */
 function getSliderValue(){
     var value = document.getElementById("range").value;
-    console.log(value);
+    // console.log(value);
     return value;
 }
 
@@ -2111,7 +1863,6 @@ function toggleFuelDistribution(){
  * Toggle Elevation gradient
  */
 function toggleElevationDistribution(){
-    console.log("elevation");
     var outlineHTML = document.getElementById("strokeRoute");
     if(isElevationDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
@@ -2135,7 +1886,6 @@ function toggleElevationDistribution(){
  * Toggle Supermarket gradient
  */
 function toggleSupermarketDistribution(){
-    console.log("elevation");
     var outlineHTML = document.getElementById("strokeRoute");
     if(isSupermarketDisplayed){
         outlineHTML.setAttribute("stroke", "blue");
@@ -2335,8 +2085,8 @@ function createBrackets(event){
     let distBelow = (percentBelow*distance)/100;
     
     //Create Marker Open
-    console.log(itineraryJSON);
-    console.log(distAbove/1000);
+    // console.log(itineraryJSON);
+    // console.log(distAbove/1000);
     let pointAbove = turf.along(itineraryJSON, distAbove/1000).geometry.coordinates;
     let latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
     markerBracketOpen = L.marker(latlngAbove, {icon: bracket, rotationOrigin: 'center center'}).addTo(map);
@@ -2512,6 +2262,7 @@ function updateBracketCloseText(){
     }
     let bracketCloseText = document.getElementById("bracketCloseText");
     bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(fix) +" km";
+    closeCircleDist = distCircleBracket;
 }
 
 /**
@@ -2536,6 +2287,7 @@ function updateBracketOpenText(){
     // console.log(" leaflet dist: " +  Math.round(closestAbove.distanceTo(closestBelow)/1000));
     let bracketOpenText = document.getElementById("bracketText");
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(fix) +" km";
+    openCircleDist = distCircleBracket;
 }
 
 /**
@@ -2543,111 +2295,65 @@ function updateBracketOpenText(){
  * @param {L.LatLng} latlng 
  */
 function moveMarkers(latlng){
-    console.log("movemarkers");
-    console.log(state);
+    // console.log("movemarkers");
+    // console.log(state);
     if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
-        // console.log("dist before open: " + markerBracketOpen.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()) + ", close : " + + markerBracketClose.getLatLng().distanceTo(circleZoneOfInterest.getLatLng()));
-        
         let prevCirclePose = circleZoneOfInterest.getLatLng(); //store the previous circle pos
 
         //Set the middle range marker position
-        let closest = L.GeometryUtil.closest(map, allPos, latlng);
-        circleZoneOfInterest.setLatLng(closest);
+        let currentCirclePos = L.GeometryUtil.closest(map, allPos, latlng);
+        circleZoneOfInterest.setLatLng(currentCirclePos);
 
-        let diff = prevCirclePose.distanceTo(closest); //Distance between previous circle pos and new circle pos
-
-        let distPrev = prevCirclePose.distanceTo(allPos[0]); //Distance from prev pos to first point
-        let distAct = closest.distanceTo(allPos[0]); //Distance fromm new pos to first pos
-    
-        //Get the sign of the difference (if we're moving closer to the start -> minus; else -> plus)
-        let diffSign;
-
-        var distCircleBracket = 0;
-
-        if (distPrev < distAct){ //Marker moved away from start
-            diffSign = diff;
-
-            var closestAbove = L.GeometryUtil.closest(map, allPos, prevCirclePose);
-            isPointOnLine(closestAbove, allPos, 0.5);
-            var pointsAbove = new Array();
-            points.forEach(element => {pointsAbove.push(element)});
-
-            var closestBelow = closest;
-            isPointOnLine(closestBelow, allPos, 0.5);
-
-            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
-            }
-        } else {
-            diffSign = -diff;
-
-            var closestAbove = closest;
-            isPointOnLine(closestAbove, allPos, 0.5);
-            var pointsAbove = new Array();
-            points.forEach(element => {pointsAbove.push(element)});
-
-            var closestBelow = L.GeometryUtil.closest(map, allPos, prevCirclePose);
-            isPointOnLine(closestBelow, allPos, 0.5);
-
-            var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-            for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-                distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
+        const prevCirclePixels = toPixels(previousCirclePosition);
+        const curentCirclePixel = toPixels(currentCirclePos);
+        let distPixels = prevCirclePixels.distanceTo(curentCirclePixel)*2.54/(ppi/window.devicePixelRatio);
+        console.log(distPixels);
+        if (distPixels > 0.05 ){
+            previousCirclePosition = currentCirclePos;
+            let distPrev = 0;
+            isPointOnLine(prevCirclePose, allPos, 0.5);
+            for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
+                distPrev += points[i].distanceTo(points[i+1]);
             }
 
-            distCircleBracket = -distCircleBracket;
-        }
+            let distAct = 0;
+            isPointOnLine(currentCirclePos, allPos, 0.5);
+            for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
+                distAct += points[i].distanceTo(points[i+1]);
+            }
 
-        //Set the open bracket position
-        var openClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-        isPointOnLine(openClosestAbove, allPos, 0.5);
-        var openPointsAbove = new Array();
-        points.forEach(element => {openPointsAbove.push(element)});
-        
-        var openDistCircleBracket = 0;
-        for (var i = 0; i < openPointsAbove.length - 1; i++){ //calculate the distance from the start to this point
-            openDistCircleBracket += openPointsAbove[i].distanceTo(openPointsAbove[i+1]);
-        }
-        console.log("dist bracket : " + Math.round(openDistCircleBracket/1000));
-        openDistCircleBracket += distCircleBracket;
-        var pointAbove = turf.along(itineraryJSON, openDistCircleBracket/1000).geometry.coordinates;
-        var latlngAbove =  L.latLng(pointAbove[1], pointAbove[0]);
-        markerBracketOpen.setLatLng(latlngAbove);
-        console.log("LatLng above : " + latlngAbove);
+            let distActPrevCircle = distAct-distPrev; //distance between actual and previous positions along the line 
 
-        //Set the close bracket position
-        var closeClosestAbove = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
-        isPointOnLine(closeClosestAbove, allPos, 0.5);
-        var closePointsAbove = new Array();
-        points.forEach(element => {closePointsAbove.push(element)});
-        var closeDistCircleBracket = 0;
-        for (var i = 0; i < closePointsAbove.length - 1; i++){ //calculate the distance from the start to this point
-            closeDistCircleBracket += closePointsAbove[i].distanceTo(closePointsAbove[i+1]);
-        }
-        closeDistCircleBracket += distCircleBracket;
-        var pointBelow = turf.along(itineraryJSON, closeDistCircleBracket/1000).geometry.coordinates;
-        var latlngBelow = L.latLng(pointBelow[1], pointBelow[0]);
-        markerBracketClose.setLatLng(latlngBelow);
-        
+            let openFirstDist = distAct - openCircleDist;
+            let newOpenCircleDist = openFirstDist + distActPrevCircle;
 
-        
-        //Update line highlight and texts and texts positions
-        lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-        updateMarkerTextPos();
-        updateBracketCloseText();
-        updateBracketOpenText();
-        
-        isPointOnLine(closest, allPos, 5);
-        points.push(closest);
-        var dist = 0;
-        for (var i = 0; i < points.length - 1; i++){
-            dist += points[i].distanceTo(points[i+1]);
-        }
-        let circleMarkerText = document.getElementById("circleText");
-        circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
-        // state = "circleMove";
-        // console.log("stateChanged");
-    } 
+            let closeFirstDist = distAct + closeCircleDist;
+            let newCloseCircleDist = closeFirstDist + distActPrevCircle;
+
+            let pointOpen = turf.along(itineraryJSON, newOpenCircleDist/1000).geometry.coordinates;
+            let pointClose = turf.along(itineraryJSON, newCloseCircleDist/1000).geometry.coordinates;
+
+            let latLngOpen = L.latLng(pointOpen[1], pointOpen[0]);
+            let latLngClose = L.latLng(pointClose[1], pointClose[0]);
+
+            markerBracketOpen.setLatLng(latLngOpen);
+            markerBracketClose.setLatLng(latLngClose);
+
+            //Update line highlight and texts and texts positions
+            // lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+            // updateMarkerTextPos();
+            
+            // isPointOnLine(currentCirclePos, allPos, 5);
+            // points.push(currentCirclePos);
+            // var dist = 0;
+            // for (var i = 0; i < points.length - 1; i++){
+            //     dist += points[i].distanceTo(points[i+1]);
+            // }
+            // let circleMarkerText = document.getElementById("circleText");
+            // circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
+            // state = "circleMove";
+        } 
+    }
 }
 
 /**
@@ -2963,11 +2669,115 @@ function createButton(label, container) {
     return btn;
 }
 
+function forceRedraw(){
+    // stroke._path.style.display = "none";
+    // // outlinePathHTML.style.display = "none";
+    // stroke._path.style.display = "block";
+    // outlinePathHTML.style.display = "block";
+    // createFilterShadow();
+    // createFilterStroke();
+    // let strokeHTML = stroke._path;
+    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
+    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
+    // itinerary.bringToFront();
+    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
+    
+    // let oldPath = document.getElementById("maskStrokePath");
+    // let path = lineMask._path;
+    // path.id = "maskStrokePath";
+    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+    rect.setAttribute("x", "0");
+    rect.setAttribute("y", "0");
+    rect.setAttribute("width", "1000px");
+    rect.setAttribute("height", "1000px");
+    rect.setAttribute("fill", "white");
+    let mask = document.getElementById("strokeMask");
+    // // oldPath.remove();
+    // path.setAttribute("stroke", "black");
+    // path.setAttribute("stroke-opacity", "1");
+    mask.replaceChild(rect, mask.childNodes[0]);
+    // mask.append(path);
+
+    // mask.setAttribute("maskUnits", "objectBoundingBox");
+
+}
+
+function switchMode(){
+    
+    let fuel = document.getElementById("gasstation");
+    let fuelLayer = document.getElementById("gasstationLayer");
+    hideLayers();
+    
+    switch (transportationMode){
+        case "foot":
+            routingAddresses = addressCar;
+            routingWaypoints = coordsCar;
+            defaultBracketRange = 1200;
+            transportationMode = "car";
+            fuel.setAttribute("src", "icons/fuelIcon.svg");
+            fuelLayer.setAttribute("src", "icons/fuelIcon.svg");
+           break; 
+        case "car":
+            routingAddresses = addressFoot;
+            routingWaypoints = coordsFoot;
+            defaultBracketRange = 300;
+            transportationMode = "foot";
+            fuel.setAttribute("src", "icons/bakery.svg");
+            fuelLayer.setAttribute("src", "icons/bakery.svg");
+           break; 
+    }
+    // console.log("WE ARE CHANGING THE STATE !!!");
+    state = "itinerary";
+    prevState = "itinerary";
+    ORSRouting();
+
+}
+
+function hideLayers(){
+
+    clearQueryResults();
+
+    if (circleZoneOfInterest != null){
+        map.removeLayer(circleZoneOfInterest);
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        hideFloatingTexts();
+        
+    }
+
+    isRestaurantDisplayed = true;
+    toggleRestaurantDistribution();
+    isFuelDisplayed = true;
+    toggleFuelDistribution();
+    isElevationDisplayed = true;
+    toggleElevationDistribution(); 
+    isSupermarketDisplayed = true;
+    toggleSupermarketDistribution();
+
+    if (isWeatherDisplayed){
+        loadWeather();
+    }
+    weatherLayerGroup = null;
+
+    
+}
+
+/**
+ * Toggles the visibility of the route info panel
+ */
+function toggleRouteInfoVisibility(){
+    let container = document.getElementById("routingControl");
+    if(container.style.visibility == 'visible'){
+        container.style.visibility = "hidden";
+    } else {
+        container.style.visibility = "visible";
+    }
+}
+
 /********************************************************************************
  *                                Event Handlers                                *
  ********************************************************************************/
-
-
 map.on("zoomanim", function(e){
     if(markerBracketClose != null){
         let bracketOpenText = document.getElementById("bracketText");
@@ -3060,14 +2870,14 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    console.log(state);
+    // console.log(state);
     // console.log(event.target);
     // Get the pointer coords
     let ETAFloatingText = document.getElementById("cursorText");
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
+    // console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
     if (state == "menu" && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
@@ -3085,7 +2895,7 @@ onpointerup = (event) => {
     } else if (state == "pointPlaced"){
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
-        console.log(latlng);
+        // console.log(latlng);
         itineraryToPointPlaced(latlng,point);
     } 
     if (state != "itinerary"){
@@ -3150,5 +2960,3 @@ onpointerup = (event) => {
     // document.getElementsByTagName('body')[0].focus();
     
 }
-
-
