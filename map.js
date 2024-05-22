@@ -75,14 +75,17 @@ var openedPopup;
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
 
-var startRoute = L.latLng(48.70973285709232, 2.1626934894717214);
-var endRoute = L.latLng(47.206380448601664, -1.5645061284185262);
+var startRoute = L.latLng(48.711967757928974, 2.166628674285006);
+var endRoute = L.latLng(47.20617749880269, -1.564392769503869);
+
+const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
+const addressCar = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
+const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.60560890094277, 1.4458011280603213)];
+const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 36 Rue d'Alsace Lorraine, 31000 Toulouse"];
+const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
 var routingWaypoints = [startRoute, endRoute];
-
-const coordsCar = [L.latLng(48.70973285709232, 2.1626934894717214), L.latLng(47.206380448601664, -1.5645061284185262)];
-const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.605736609310455, 1.4460502897743588)];
-const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
+var routingAddresses = addressCar;
 
 const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
 
@@ -423,10 +426,15 @@ L.Control.ORSRouting = L.Control.extend({
         input.setAttribute("type", "image");
         input.setAttribute("class", "layer");
         input.setAttribute("id", "routing-input");
-        input.setAttribute("src", "icons/route.png");
+        input.setAttribute("src", "icons/routing.svg");
         input.setAttribute("width", "22");
         input.setAttribute("height", "22");
         container.append(input);
+
+        
+        container.onpointerup = function(e){
+            toggleRouteInfoVisibility();
+        }
         ORSRouting();
         // body.append(container);
         return container;
@@ -438,8 +446,22 @@ L.control.routing = function(opts){
     return new L.Control.ORSRouting(opts);
 }
 
+/**
+ * Toggles the visibility of the route info panel
+ */
+function toggleRouteInfoVisibility(){
+    let container = document.getElementById("routingControl");
+    if(container.style.visibility == 'visible'){
+        container.style.visibility = "hidden";
+    } else {
+        container.style.visibility = "visible";
+    }
+}
 let routing = L.control.routing({}).addTo(map);
 
+/**
+ * Sends the routing request to OSR
+ */
 function ORSRouting(){
     // orService = new Openrouteservice.Directions({api_key : APIKey});
     let request = new XMLHttpRequest();
@@ -477,14 +499,21 @@ function ORSRouting(){
     request.send(body);
 }
 
+/**
+ * Handles drawing the line and all other things depending on the routing
+ * @param {JSON} routeJSON 
+ */
 function routingToPolyline(routeJSON){
     console.log("routing");
-    L.control.layers({}).addTo(map); //Add the layers menu to the map
-    L.control.mode({}).addTo(map); //Switch between foot and car
+    
     time = routeJSON.summary.duration;
     distance = routeJSON.summary.distance;
-    let infoRoute = document.getElementById("routeInfo");
-    infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
+    
+    let closeButton = document.getElementById("closeDiv");
+    closeButton.onpointerup = function(e){
+        let container = document.getElementById("routingControl");
+        container.style.visibility = "hidden";
+    }
 
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
     allPos = line.getLatLngs();
@@ -545,6 +574,9 @@ function routingToPolyline(routeJSON){
         var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
          svg[0].appendChild(defs);
 
+        L.control.layers({}).addTo(map); //Add the layers menu to the map
+        L.control.mode({}).addTo(map); //Switch between foot and car
+
         createFloatingTexts(); //Creatte the cursor text and the marker text
     }
     //Add shadow and stroke to the itinerary
@@ -566,6 +598,20 @@ function routingToPolyline(routeJSON){
 
     routingWaypoints.forEach((element) => L.marker(element).addTo(map));
 
+    
+    let start = document.getElementById("startAddress");
+    let end = document.getElementById("endAddress");
+    let infoRoute = document.getElementById("routeInfo");
+    if (transportationMode == "car"){
+        start.setAttribute("value", addressCar[0]);
+        end.setAttribute("value", addressCar[1]);
+        infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
+    } else {
+        start.setAttribute("value", addressFoot[0]);
+        end.setAttribute("value", addressFoot[1]);
+        infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
+    }
+    
     // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
     console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
 
@@ -1122,6 +1168,7 @@ function isochroneToPolygon(body, type, length){
     console.log(body);
     if (body.length == length){ //Check if it is the right length
         // console.log("long enough");
+        disableCircle();
         L.DomUtil.removeClass(circleZoneOfInterest._path, "pulse");
         var polygons = []; //list of all the polygons from the results
         body.forEach(layerOne => { //each element has its own polygon
@@ -1764,7 +1811,6 @@ function getDistPolyLine(route){
 function clickGoButton(type){
     state = "loadingQuery";
     var sliderDiv = document.getElementById("slider");
-    disableCircle();
     sliderDiv.style.visibility = "hidden";
     clickOnSlider = false;
     if (isInKM){
@@ -2068,6 +2114,7 @@ function createFloatingTexts(){
     let ETAFloatingText=document.createElement('div');
     ETAFloatingText.style.zIndex = 500;
     ETAFloatingText.style.visibility='hidden';
+    ETAFloatingText.setAttribute("class", "floatingText");
 
     ETAFloatingText.id="cursorText"; 
 
@@ -2077,18 +2124,21 @@ function createFloatingTexts(){
     bracketOpenText.style.zIndex = 400;
     bracketOpenText.style.visibility='hidden';
     bracketOpenText.id="bracketText";
+    bracketOpenText.setAttribute("class", "floatingText");
     document.body.appendChild(bracketOpenText);
 
     let bracketCloseText=document.createElement('div');
     bracketCloseText.style.zIndex = 400;
     bracketCloseText.style.visibility='hidden';
     bracketCloseText.id="bracketCloseText";
+    bracketCloseText.setAttribute("class", "floatingText");
     document.body.appendChild(bracketCloseText);
 
     let circleMarkerText=document.createElement('div');
     circleMarkerText.style.zIndex = 400;
     circleMarkerText.style.visibility='hidden';
     circleMarkerText.id="circleText";
+    circleMarkerText.setAttribute("class", "floatingText");
     document.body.appendChild(circleMarkerText);
 }
 
