@@ -2306,6 +2306,7 @@ function moveMarkers(latlng){
 
         const prevCirclePixels = toPixels(previousCirclePosition);
         const curentCirclePixel = toPixels(currentCirclePos);
+        console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
         let distPixels = prevCirclePixels.distanceTo(curentCirclePixel)*2.54/(ppi/window.devicePixelRatio);
         console.log(distPixels);
         if (distPixels > 0.05 ){
@@ -2340,18 +2341,18 @@ function moveMarkers(latlng){
             markerBracketClose.setLatLng(latLngClose);
 
             //Update line highlight and texts and texts positions
-            // lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+            lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
             // updateMarkerTextPos();
             
-            // isPointOnLine(currentCirclePos, allPos, 5);
-            // points.push(currentCirclePos);
-            // var dist = 0;
-            // for (var i = 0; i < points.length - 1; i++){
-            //     dist += points[i].distanceTo(points[i+1]);
-            // }
-            // let circleMarkerText = document.getElementById("circleText");
-            // circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
-            // state = "circleMove";
+            isPointOnLine(currentCirclePos, allPos, 5);
+            points.push(currentCirclePos);
+            var dist = 0;
+            for (var i = 0; i < points.length - 1; i++){
+                dist += points[i].distanceTo(points[i+1]);
+            }
+            let circleMarkerText = document.getElementById("circleText");
+            circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
+            state = "circleMove";
         } 
     }
 }
