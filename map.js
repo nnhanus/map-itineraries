@@ -1408,6 +1408,7 @@ function itineraryToPointPlaced(latlng, point){
             
             circleZoneOfInterest = circle; 
             circleZoneOfInterest.bringToFront();  
+            console.log("WE ARE CHANGING THE POS");
             previousCirclePosition = closest; 
             // circleClosest.bringToFront();
             createBrackets(latlng);
@@ -2258,20 +2259,22 @@ function updatePosTexts(text, element, isVert){
 function updateBracketCloseText(){
     let fix = 0;
     if (transportationMode == "foot"){fix = 1;}
-    var closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
+
+    let closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
-    var pointsAbove = new Array();
+    let pointsAbove = new Array();
     points.forEach(element => {pointsAbove.push(element)});
-    var closestBelow = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
+    let closestBelow = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
     isPointOnLine(closestBelow, allPos, 0.5);
     
-    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    var distCircleBracket = 0;
-    for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+    let pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+    let distCircleBracket = 0;
+    for (let i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
         distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
     }
     let bracketCloseText = document.getElementById("bracketCloseText");
     bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(fix) +" km";
+
     closeCircleDist = distCircleBracket;
 }
 
@@ -2281,22 +2284,22 @@ function updateBracketCloseText(){
 function updateBracketOpenText(){
     let fix = 0;
     if (transportationMode == "foot"){fix = 1;}
-    var closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+    let closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
-    var pointsAbove = new Array();
+    let pointsAbove = new Array();
     points.forEach(element => {pointsAbove.push(element)});
-    var closestBelow = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
+    let closestBelow = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
     isPointOnLine(closestBelow, allPos, 0.5);
     
-    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    var distCircleBracket = 0;
-    for (var i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
+    let pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+    let distCircleBracket = 0;
+    for (let i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
         distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
     }
-    // console.log(" real dist: "+ Math.round(distCircleBracket/1000));
-    // console.log(" leaflet dist: " +  Math.round(closestAbove.distanceTo(closestBelow)/1000));
+    
     let bracketOpenText = document.getElementById("bracketText");
     bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(fix) +" km";
+
     openCircleDist = distCircleBracket;
 }
 
@@ -2308,32 +2311,52 @@ function moveMarkers(latlng){
     // console.log("movemarkers");
     // console.log(state);
     if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
+
+        let limit = 0.05;
+        if (map.getZoom() > 10){
+            limit = 0.02;
+        }
+        
+        state = "circleMove";
+        console.log("stateChanged");
         let prevCirclePose = circleZoneOfInterest.getLatLng(); //store the previous circle pos
 
         //Set the middle range marker position
         let currentCirclePos = L.GeometryUtil.closest(map, allPos, latlng);
         circleZoneOfInterest.setLatLng(currentCirclePos);
 
-        const prevCirclePixels = toPixels(previousCirclePosition);
+        // console.log(previousCirclePosition);
+        const prevCirclePixels = toPixels(prevCirclePose);
         const curentCirclePixel = toPixels(currentCirclePos);
-        console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
-        let distPixels = prevCirclePixels.distanceTo(curentCirclePixel)*2.54/(ppi/window.devicePixelRatio);
-        console.log(distPixels);
-        if (distPixels > 0.05 ){
-            previousCirclePosition = currentCirclePos;
+        // console.log(prevCirclePixels);
+        // console.log(curentCirclePixel);
+        // console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
+        let distPixels = ((prevCirclePixels.distanceTo(curentCirclePixel))*2.54)/(ppi/window.devicePixelRatio);
+       
+        if (distPixels > limit){
+            // console.log(distPixels);
             let distPrev = 0;
             isPointOnLine(prevCirclePose, allPos, 0.5);
             for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
                 distPrev += points[i].distanceTo(points[i+1]);
             }
+            distPrev += points[points.length-1].distanceTo(prevCirclePose);
+            
 
             let distAct = 0;
             isPointOnLine(currentCirclePos, allPos, 0.5);
             for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
                 distAct += points[i].distanceTo(points[i+1]);
             }
+            distAct += points[points.length-1].distanceTo(currentCirclePos);
 
             let distActPrevCircle = distAct-distPrev; //distance between actual and previous positions along the line 
+            
+            // if (distActPrevCircle != 0){
+            //     console.log("distPrev: " + distPrev);
+            //     console.log("distAct: " +  distAct);
+            //     console.log("distActPrev: " +  distActPrevCircle);
+            // }
 
             let openFirstDist = distAct - openCircleDist;
             let newOpenCircleDist = openFirstDist + distActPrevCircle;
@@ -2353,6 +2376,8 @@ function moveMarkers(latlng){
             //Update line highlight and texts and texts positions
             lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
             // updateMarkerTextPos();
+            // updateBracketCloseText();
+            // updateBracketOpenText();
             
             isPointOnLine(currentCirclePos, allPos, 5);
             points.push(currentCirclePos);
@@ -2363,6 +2388,8 @@ function moveMarkers(latlng){
             let circleMarkerText = document.getElementById("circleText");
             circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
             state = "circleMove";
+            // console.log("WE ARE CHANGING THE POS");
+            previousCirclePosition = currentCirclePos;
         } 
     }
 }
