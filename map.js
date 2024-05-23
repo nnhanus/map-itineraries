@@ -1212,6 +1212,10 @@ function arrayToQuery(itinerary, type){
     
 }
 
+/**
+ * Sends a reverse geocoding request to ORS
+ * @param {L.LatLng} latlng 
+ */
 function geocoding(latlng){
     var request = new XMLHttpRequest();
     let body = 'https://api.openrouteservice.org/geocode/reverse?api_key=5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f&point.lon=' + latlng.lng + '&point.lat='+ latlng.lat + '&layers=venue&boundary.country=FR'
@@ -1235,6 +1239,10 @@ function geocoding(latlng){
 
 }
 
+/**
+ * Takes the results of the reverse geocoding and selects the one to keep
+ * @param {JSON} result 
+ */
 function decodeGeocodingResults(result){
     // console.log(JSON.parse(result));
     let jsonRes = JSON.parse(result);
@@ -1485,38 +1493,38 @@ function closeMenu(){
  */
 function openSlider(type){  
     if (state == "menu"){
-    state = "slider";
-    closeMenu();
-    var sliderDiv = document.getElementById("slider");
-    var value = document.getElementById("value");
-    var range = document.getElementById("range");            
-    setSliderMinMax(true, range);
-    // getDistPolyLine(polylineBracket.getLatLngs());
-    sliderDiv.addEventListener("input", (event) => {
-        value.textContent = event.target.value;
-      });
-    sliderDiv.onpointerdown = function(e){clickOnSlider = true};
-    range.onclick = function(e){console.log("onPointerUp"); clickOnSlider = false};
-    // sliderDiv.onpointerup = function(e){clickOnSlider = false};
-    sliderDiv.style.visibility = "visible";
-    var circlePos = toPixels(circleZoneOfInterest.getLatLng());
-    var top = circlePos.y - 150;
-    if (top < 5){
-        top+=200;
+        state = "slider";
+        closeMenu();
+        var sliderDiv = document.getElementById("slider");
+        var value = document.getElementById("value");
+        var range = document.getElementById("range");            
+        setSliderMinMax(isInKM, range);
+        // getDistPolyLine(polylineBracket.getLatLngs());
+        sliderDiv.addEventListener("input", (event) => {
+            value.textContent = event.target.value;
+        });
+        sliderDiv.onpointerdown = function(e){clickOnSlider = true};
+        range.onclick = function(e){console.log("onPointerUp"); clickOnSlider = false};
+        // sliderDiv.onpointerup = function(e){clickOnSlider = false};
+        sliderDiv.style.visibility = "visible";
+        var circlePos = toPixels(circleZoneOfInterest.getLatLng());
+        var top = circlePos.y - 150;
+        if (top < 5){
+            top+=200;
+        }
+        sliderDiv.style.left=circlePos.x - 65 + 'px';
+        sliderDiv.style.top=top +  'px';
+        var kmButton = document.getElementById("km");
+        var minButton = document.getElementById("min");
+        kmButton.onclick = function(e){toggleMinKM(true)};
+        minButton.onclick = function(e){toggleMinKM(false)};
+        //recup la valeur du slider
+        //recup le bouton clicked du menu d'avant
+        var goButton = document.getElementById("go");
+        goButton.onclick = function(e){clickGoButton(type)};
+    }else if (state == "circleMove" || state == "openMove" || state == "closeMove"){
+        state = prevState;
     }
-    sliderDiv.style.left=circlePos.x - 65 + 'px';
-    sliderDiv.style.top=top +  'px';
-    var kmButton = document.getElementById("km");
-    var minButton = document.getElementById("min");
-    kmButton.onclick = function(e){toggleMinKM(true)};
-    minButton.onclick = function(e){toggleMinKM(false)};
-    //recup la valeur du slider
-    //recup le bouton clicked du menu d'avant
-    var goButton = document.getElementById("go");
-    goButton.onclick = function(e){clickGoButton(type)};
-}else if (state == "circleMove" || state == "openMove" || state == "closeMove"){
-    state = prevState;
-}
     
 }
 
@@ -1567,19 +1575,19 @@ function setSliderMinMax(isKiloMeter, slider){
         }
         slider.setAttribute("min", min);
         slider.setAttribute("max", value);
-        // console.log(value/10);
-        // console.log(value/3);
+        let mid = (min + (value-min)/2);
+        slider.value = mid;
+        let text = document.getElementById("value");
+        text.innerHTML = mid;
     } else {
-        // console.log("value" + value);
-        var percent = (100*value)/(distance/1000);
-        // console.log("percent" + percent);
+        var percent = Math.round(((100*value)/(distance/1000))*100)/100;
         var percTime = (percent*time )/100;
-        // console.log("% time" + percTime);
+        console.log("% time" + percTime);
         var inMinutes = Math.round(percTime/60);
-        // console.log("minutes" + inMinutes);
-        // console.log(time);
-        // console.log(percent);
-        // console.log(percTime);
+        console.log("minutes" + inMinutes);
+        console.log(time);
+        console.log(percent);
+        console.log(percTime);
         var min = Math.round(inMinutes/5);
         var max = Math.round(inMinutes);
         if (max > 60){
@@ -1588,8 +1596,10 @@ function setSliderMinMax(isKiloMeter, slider){
         }
         slider.setAttribute("min", min);
         slider.setAttribute("max", max);
-        // console.log(Math.round(inMinutes/5));
-        // console.log(Math.round(inMinutes));
+        let mid = (min + (max-min)/2);
+        slider.value = mid;
+        let text = document.getElementById("value");
+        text.innerHTML = mid;
 
     }
 }
@@ -2671,35 +2681,6 @@ function createButton(label, container) {
 }
 
 function forceRedraw(){
-    // stroke._path.style.display = "none";
-    // // outlinePathHTML.style.display = "none";
-    // stroke._path.style.display = "block";
-    // outlinePathHTML.style.display = "block";
-    // createFilterShadow();
-    // createFilterStroke();
-    // let strokeHTML = stroke._path;
-    // strokeHTML.setAttribute("filter", "url(#filterShadow)");
-    // strokeHTML.setAttribute("mask", "url(#strokeMask)");
-    // itinerary.bringToFront();
-    // let lineMask = L.polyline(allPos, {color: 'black', weight: 48, opacity: 1}).addTo(map); 
-    
-    // let oldPath = document.getElementById("maskStrokePath");
-    // let path = lineMask._path;
-    // path.id = "maskStrokePath";
-    let rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-    rect.setAttribute("x", "0");
-    rect.setAttribute("y", "0");
-    rect.setAttribute("width", "1000px");
-    rect.setAttribute("height", "1000px");
-    rect.setAttribute("fill", "white");
-    let mask = document.getElementById("strokeMask");
-    // // oldPath.remove();
-    // path.setAttribute("stroke", "black");
-    // path.setAttribute("stroke-opacity", "1");
-    mask.replaceChild(rect, mask.childNodes[0]);
-    // mask.append(path);
-
-    // mask.setAttribute("maskUnits", "objectBoundingBox");
 
 }
 
