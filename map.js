@@ -84,6 +84,7 @@ const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", 
 
 var routingWaypoints = coordsCar;
 var routingAddresses = addressCar;
+var routingMarkers = [];
 
 const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
 
@@ -94,6 +95,9 @@ var previousCirclePosition;
 var tempMarkerOpen;
 var tempMarkerClose;
 let needRedraw = false;
+
+var interval = false;
+var intervalID;
 
 /********************************************************************************
  *                                   Controls                                   *
@@ -211,6 +215,37 @@ L.control.routing = function(opts){
     return new L.Control.ORSRouting(opts);
 }
 
+L.Control.Redraw = L.Control.extend({
+    options:{
+        position: 'topleft'
+    },
+    onAdd: function(map) {
+        var container = document.getElementById("redraw");
+        container.onclick = function(e){
+            if (interval){
+                clearInterval(intervalID);
+                document.getElementById("redrawButton").classList.remove('selectedLayer');
+            } else {
+                document.getElementById("redrawButton").classList.add('selectedLayer');
+                intervalID = setInterval(function() {
+                    console.log("interval");
+                    forceRedraw();
+                }, 2000);
+            }
+            interval = !interval;
+            
+        }
+        return container;
+    },
+
+    onRemove: function(map) {
+        // Nothing to do here
+    }
+});
+
+L.control.redraw = function(opts){
+    return new L.Control.Redraw(opts);
+}
 /********************************************************************************
  *                                   Routing                                    *
  ********************************************************************************/
@@ -291,6 +326,9 @@ function reroute(){
         map.removeLayer(outline);
         map.removeLayer(stroke);
         firstTime = false;
+        routingMarkers.forEach( (element) => {
+            map.removeLayer(element);
+        })
     }
 
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
@@ -321,6 +359,8 @@ function reroute(){
             markerBracketOpen.setLatLng(newLLOpen);
         }
 
+        weatherLayerGroup = null;
+        weatherLayerGroupLines = null;
         //Check if a layer is activated and if yes re-activate it
         if(isElevationDisplayed){
             isElevationDisplayed = false;
@@ -344,6 +384,7 @@ function reroute(){
 
         L.control.layers({}).addTo(map); //Add the layers menu to the map
         L.control.mode({}).addTo(map); //Switch between foot and car
+        L.control.redraw({}).addTo(map);
 
         createFloatingTexts(); //Creatte the cursor text and the marker text
     }
@@ -364,7 +405,7 @@ function reroute(){
     outline.bringToFront();
     itinerary.bringToFront();
 
-    routingWaypoints.forEach((element) => L.marker(element).addTo(map));
+    routingWaypoints.forEach((element) => routingMarkers.push(L.marker(element).addTo(map)));
 
     let infoRoute = document.getElementById("routeInfo");
     if (transportationMode == "car"){
@@ -1768,24 +1809,35 @@ function loadWeather(){
 
     //Create the layer for the first time
     if (weatherLayerGroup == null){
-        var length = allPos.length;
+        let length = allPos.length;
+        if (transportationMode == "car"){
+            var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
+            var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(2/8))], 2), {icon: weatherCloudSun});
+            var marker3 = L.marker(getWeatherPos(allPos[Math.floor(length*(3/8))], 3), {icon: weatherCloudy});
+            var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(6/8))], 6), {icon: weatherCloudSun});
+            // var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 7), {icon: weatherSunny});
 
-        var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
-        var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(2/8))], 2), {icon: weatherCloudSun});
-        var marker3 = L.marker(getWeatherPos(allPos[Math.floor(length*(3/8))], 3), {icon: weatherCloudy});
-        var marker4 = L.marker(getWeatherPos(allPos[Math.floor(length*(6/8))], 6), {icon: weatherCloudSun});
-        var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 7), {icon: weatherSunny});
+            var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
+            var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(2/8))]], {color:"black", weigth:1}).addTo(map);
+            var line3 = L.polyline([marker3.getLatLng(), allPos[Math.floor(length*(3/8))]], {color:"black", weigth:1}).addTo(map);
+            var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(6/8))]], {color:"black", weigth:1}).addTo(map);
+            // var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
 
-        var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
-        var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(2/8))]], {color:"black", weigth:1}).addTo(map);
-        var line3 = L.polyline([marker3.getLatLng(), allPos[Math.floor(length*(3/8))]], {color:"black", weigth:1}).addTo(map);
-        var line4 = L.polyline([marker4.getLatLng(), allPos[Math.floor(length*(6/8))]], {color:"black", weigth:1}).addTo(map);
-        var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
+            weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker6 ]).addTo(map);
+            weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line6]).addTo(map);
+        } else {
+            var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
+            var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 2), {icon: weatherCloudy});
 
-        weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker4, marker6 ]).addTo(map);
-        weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line4, line6]).addTo(map);
+            var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
+            var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
+
+            weatherLayerGroup = L.layerGroup([marker1, marker2]).addTo(map);
+            weatherLayerGroupLines = L.layerGroup([line1, line2]).addTo(map);
+        }
         isWeatherDisplayed = true;
         updatePositions();
+        document.getElementById("weatherLayer").classList.add('selectedLayer');
     } else if (!isWeatherDisplayed){ //Display
         weatherLayerGroup.addTo(map);
         weatherLayerGroupLines.addTo(map);
