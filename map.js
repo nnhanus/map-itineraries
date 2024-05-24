@@ -83,7 +83,7 @@ const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
 var routingWaypoints = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
-var routingAddresses = addressCar;
+var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
 var routingMarkers = [];
 
 const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
@@ -427,6 +427,8 @@ function reroute(){
         infoBox.style.top = infoRouteTop+'px';
     } else if (children.length > routingAddresses.length){
         //REMOVE A DIV
+        container.children[1].remove();
+        
     }
 
     for (let i = 0; i < children.length; i++){
@@ -2910,7 +2912,8 @@ function switchMode(){
     
     switch (transportationMode){
         case "foot":
-            routingAddresses = addressCar;
+            routingAddresses = [];
+            addressCar.forEach( (element) => {routingAddresses.push(element)});
             routingWaypoints.length = 0;
             coordsCar.forEach( (element) => {routingWaypoints.push(element)});
             // routingWaypoints = coordsCar;
@@ -2920,8 +2923,10 @@ function switchMode(){
             fuelLayer.setAttribute("src", "icons/fuelIcon.svg");
            break; 
         case "car":
-            routingAddresses = addressFoot;
+            // routingAddresses = addressFoot;
             // routingWaypoints = coordsFoot;
+            routingAddresses = [];
+            addressFoot.forEach( (element) => {routingAddresses.push(element)});
             routingWaypoints.length = 0;
             coordsFoot.forEach( (element) => {routingWaypoints.push(element)});
             defaultBracketRange = 300;
