@@ -91,6 +91,10 @@ var openCircleDist = 0;
 var closeCircleDist = 0;
 var previousCirclePosition;
 
+var tempMarkerOpen;
+var tempMarkerClose;
+let needRedraw = false;
+
 /********************************************************************************
  *                                   Controls                                   *
  ********************************************************************************/
@@ -124,7 +128,7 @@ L.Control.Layers = L.Control.extend({
             toggleElevationDistribution();
         }
         button.onclick =  function(e){
-            var menu = document.getElementById("hiddenLayers");
+            let menu = document.getElementById("hiddenLayers");
             visibilityToggle(menu);
         };
         redrawButton.onclick = function(e){
@@ -270,6 +274,17 @@ function routingToPolyline(routeJSON){
 
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
     allPos = line.getLatLngs();
+    
+    reroute();
+    map.fitBounds(stroke.getBounds());
+    
+    // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
+    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
+
+}
+
+function reroute(){
+    console.log("reroute");
     var firstTime = true;
     if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
         map.removeLayer(itinerary);
@@ -286,10 +301,10 @@ function routingToPolyline(routeJSON){
     outlinePathHTML.id = "strokeRoute";
     outlinePathHTML.setAttribute("class", "willnotrender");
 
-    itinerary = L.polyline(allPos, {color: 'blue', weight: 5, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
+    itinerary = L.polyline(allPos, {color: 'blue', weight: 8, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-    map.fitBounds(stroke.getBounds());
+   
 
     if (!firstTime){
         //Make sure the range markers are on the new itinerary
@@ -378,11 +393,6 @@ function routingToPolyline(routeJSON){
         // console.log(routingAddresses[i]);
         children[i].setAttribute("value", routingAddresses[i]);
     }
-
-    
-    // console.log("ele: " + isElevationDisplayed + ", fuel: " +  isFuelDisplayed + ", resto: " + isRestaurantDisplayed);
-    console.log("routesfound; dist = " + distance + " m; time = " + toMinutes(time));
-
 }
 
 /**
@@ -694,6 +704,9 @@ function createGradientElevation(){
     defs.appendChild(gradient);
 }
 
+/**
+ * Create a gradient for the outline of the itinerary
+ */
 function createGradientSupermarket(){
     //Delete the old gradient if it exists
     const oldFilter = document.getElementById("gradientMarket");
@@ -807,6 +820,7 @@ var bracketGreyed = L.icon({
  * @param {string} units 
  */
 function isochroneMinutes(type, value, units){
+    polylineBracket.setStyle({opacity:0.4});
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units); //Get all the points
     L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
     // console.log(points);
@@ -1279,8 +1293,16 @@ function clearQueryResults(){
     //Range markers become blue again and re-enable interactions
     if (circleZoneOfInterest != null){
         circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
-        markerBracketOpen.setIcon(bracket);
-        markerBracketClose.setIcon(bracket);
+        // markerBracketOpen.setIcon(bracket);
+        // markerBracketClose.setIcon(bracket);
+        if (state == "queryResults"){
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            markerBracketOpen = tempMarkerOpen;
+            markerBracketClose = tempMarkerClose;
+            markerBracketClose.addTo(map);
+            markerBracketOpen.addTo(map);
+        }
         if (map.hasLayer(markerBracketOpen) && map.hasLayer(markerBracketClose)){
             markerBracketOpen.dragging.enable();
             markerBracketClose.dragging.enable();     
@@ -1310,11 +1332,21 @@ function clearQueryResults(){
  */
 function disableCircle(){
     circleZoneOfInterest.setStyle({color: "#6D6D6D", fillColor: "#A9A9A9"});
-    markerBracketOpen.setIcon(bracketGreyed);
-    markerBracketClose.setIcon(bracketGreyed);
+    let rad = circleZoneOfInterest.getRadius()*0.8;
+    let open = markerBracketOpen.getLatLng();
+    var close = markerBracketClose.getLatLng();
+    map.removeLayer(markerBracketOpen);
+    map.removeLayer(markerBracketClose);
+    tempMarkerOpen = markerBracketOpen;
+    tempMarkerClose = markerBracketClose;
+    markerBracketOpen = L.circle(open, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
+    markerBracketClose = L.circle(close, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
 
-    markerBracketOpen.dragging.disable();
-    markerBracketClose.dragging.disable();
+    // markerBracketOpen.setIcon(bracketGreyed);
+    // markerBracketClose.setIcon(bracketGreyed);
+
+    // markerBracketOpen.dragging.disable();
+    // markerBracketClose.dragging.disable();
 }
 
 /**
@@ -1778,7 +1810,7 @@ function getWeatherPos(pos, index){
     var posXY = toPixels(pos);
     var length = allPos.length;
     var newPosXY;
-    if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[Math.floor(length*(index/8))]))){
+    if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[Math.floor(length*(index/8))]), 0.03)){
         newPosXY = L.point(posXY.x-60, posXY.y);
     } else {
         newPosXY = L.point(posXY.x, posXY.y+60);
@@ -1808,7 +1840,7 @@ function updatePositions(){
         var closestXY = toPixels(closest);
        
         var newXY;
-        if (isVertical(prevPoint, closestXY)){
+        if (isVertical(prevPoint, closestXY, 0.03)){
             newXY = L.point((closestXY.x-60), closestXY.y);
         } else {
             newXY = L.point(closestXY.x, (closestXY.y+60));
@@ -1987,6 +2019,8 @@ function distancePixelPoints(latlng, point){
             dist += points[i].distanceTo(points[i+1]);
         }
         var percent = dist*100/distance;
+        // console.log("percent: " + percent);
+        // console.log("% time: " + percent*time/100)
         ETAFloatingText.innerHTML=inHours(percent*time/100);
     }
     
@@ -2056,13 +2090,13 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
     isPointOnLine(closestBelow, allPos, 0.5);
     
     var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
+    pointsToKeep.splice(0, 0, latlngAbove);
+    pointsToKeep.push(latlngBelow);
     if (polylineBracket != null){
         map.removeLayer(polylineBracket);
     }
     
     polylineBracket = L.polyline(pointsToKeep, {color: 'blue', weight: 48, opacity: 0.5, lineCap: 'butt'}).addTo(map);
-
-    // console.log(isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng())));
 
     circleZoneOfInterest.bringToFront()
 }
@@ -2135,7 +2169,7 @@ function createBrackets(event){
                             markerBracketClose.setLatLng( L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
                             let bracketCloseText = document.getElementById("bracketCloseText");
-                            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+                            updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng()), 0.1));
                             updateBracketCloseText();
                             // updateMarkersRotation(markerBracketClose, false);
                         
@@ -2172,7 +2206,7 @@ function createBrackets(event){
                             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
                             let bracketOpenText = document.getElementById("bracketText");
-                            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
+                            updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng()), 0.1));
                             updateBracketOpenText();
                             var latLngs = polylineBracket.getLatLngs();
                             // updateMarkersRotation(markerBracketOpen, true);
@@ -2186,10 +2220,7 @@ function createBrackets(event){
 
     
     //Set floating texts
-    let bracketOpenText = document.getElementById("bracketText");
     updateBracketOpenText();
-
-    let bracketCloseText = document.getElementById("bracketCloseText");
     updateBracketCloseText();
 
     let circleMarkerText = document.getElementById("circleText");
@@ -2202,14 +2233,6 @@ function createBrackets(event){
 
     //Draw the highlight line
     lineBracketsHighlight(latlngAbove, latlngBelow);
-
-    //Rotation
-    // let circlePos = circleZoneOfInterest.getLatLng();
-    // previousOpenPos = circlePos;
-    // previousClosePos = circlePos;
-
-    // updateMarkersRotation(markerBracketOpen, true);
-    // updateMarkersRotation(markerBracketClose, false);
 }
 
 /**
@@ -2222,22 +2245,23 @@ function updatePosTexts(text, element, isVert){
 
     if (element != null){
         if (isVert){
+            console.log("vert");
             var left = toPixels(element.getLatLng()).x+60;
             var top = toPixels(element.getLatLng()).y-5;
             var textSize=[text.offsetWidth,text.offsetHeight];
-            if (left + textSize[0] > width){
-                left = left - 160;
-            }
+            // if (left + textSize[0] > width){
+            //     left = left - 160;
+            // }
             text.style.left=left+'px';
             text.style.top=top+'px';
             
         } else{
-            var left = toPixels(element.getLatLng()).x-10;
+            var left = toPixels(element.getLatLng()).x;
             var top = toPixels(element.getLatLng()).y+50;
             var textSize=[text.offsetWidth,text.offsetHeight];
-            if (top + textSize[1] > height){
-                top = top - 100;
-            }
+            // if (top + textSize[1] > height){
+            //     top = top - 100;
+            // }
             text.style.left=left+'px';
             text.style.top=top+'px';
             
@@ -2403,9 +2427,10 @@ function updateMarkerTextPos(){
         let bracketCloseText = document.getElementById("bracketCloseText");
         let circleMarkerText = document.getElementById("circleText");
 
-        updatePosTexts(bracketCloseText, markerBracketClose, isVertical(toPixels(markerBracketClose.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-        updatePosTexts(bracketOpenText, markerBracketOpen, isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(circleZoneOfInterest.getLatLng())));
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, isVertical(toPixels(circleZoneOfInterest.getLatLng()), toPixels(markerBracketOpen.getLatLng())));
+        let vert = isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng()),0.5);
+        updatePosTexts(bracketCloseText, markerBracketClose, vert);
+        updatePosTexts(bracketOpenText, markerBracketOpen, vert);
+        updatePosTexts(circleMarkerText, circleZoneOfInterest, vert);
     }
 }
 
@@ -2554,12 +2579,13 @@ function visibilityToggle(element){
 }
 
 /**
- * 
- * @param {Point} pointA Point(x,y)
- * @param {Point} pointB Point(x,y)
- * @returns if the segment from pointA to pointB is vertical or not
+ * Checks if the segment between A and B is more vertical or horizontal
+ * @param {L.Point} pointA Point(x,y)
+ * @param {L.Point} pointB Point(x,y)
+ * @param {Number} precision
+ * @returns {boolean}
  */
-function isVertical(pointA, pointB){
+function isVertical(pointA, pointB, precision){
     if ((pointB.y - pointA.y) == 0){
         // L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
         return false;
@@ -2574,7 +2600,8 @@ function isVertical(pointA, pointB){
         // } else {
         //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
         // }
-        return coeff > 0.3;
+        console.log(coeff);
+        return coeff > precision;
     }
 }
 
@@ -2673,23 +2700,26 @@ function toHour(time){
  * @returns {s}
  */ 
 function inHours(time){
-    var now = new Date();
-    var now_hour = now.getHours();
-    var now_min = now.getMinutes();
-    var time_mins = Math.floor(time/60);
-    var time_hours = Math.floor(time_mins/60);
-    var rest = Math.floor(time_mins - (60*time_hours));
-    var add = 0;
-    var in_minutes = now_min + rest;
+    // var now = new Date();
+    // var now_hour = now.getHours();
+    // var now_min = now.getMinutes();
+    // console.log("now hour: " + now_hour + "now min: " + now_min);
+    const now_hour = 10;
+    const now_min = 30;
+    const time_mins = Math.floor(time/60);
+    const time_hours = Math.floor(time_mins/60);
+    const rest = Math.floor(time_mins - (60*time_hours));
+    let add = 0;
+    let in_minutes = now_min + rest;
     while(in_minutes >= 60) {
         in_minutes = in_minutes - 60;
         add ++;
     }
-    var in_hours = now_hour + time_hours + add;
+    let in_hours = now_hour + time_hours + add;
     if (in_hours >= 24){
         in_hours = in_hours - 24;
     }
-    return (in_hours + " h " + in_minutes + " min");
+    return (in_hours + "h" + in_minutes);
 
 
 }
@@ -2708,11 +2738,26 @@ function createButton(label, container) {
 }
 
 function forceRedraw(){
-
+    if(needRedraw){        
+        console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
+        const bounds = map.getBounds();
+        map.fitBounds(L.latLngBounds(L.latLng(48.590756909214655, 7.747010956870397), L.latLng(48.58378657265675, 7.759858058721171)));
+        reroute();
+        map.fitBounds(bounds);
+        needRedraw = false;
+    }
 }
 
+// setInterval(function() {
+//     console.log("interval");
+//     forceRedraw();
+//   }, 2000);
+
+  
+/**
+ * Switch between the transporation modes (car/foot)
+ */
 function switchMode(){
-    
     let fuel = document.getElementById("gasstation");
     let fuelLayer = document.getElementById("gasstationLayer");
     hideLayers();
@@ -2742,6 +2787,9 @@ function switchMode(){
 
 }
 
+/**
+ * Hids all the layers for a reroute
+ */
 function hideLayers(){
 
     clearQueryResults();
@@ -2804,6 +2852,8 @@ map.on("zoomanim", function(e){
         // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
     var zoom = map.getZoom();
+    needRedraw = true;
+    console.log("zoomed");
     
     // if (zoom > 14){
     //     itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
@@ -2932,8 +2982,8 @@ onpointerup = (event) => {
     
     var zoom = map.getZoom();
     // console.log("   zoom level   " + zoom);
-    if (zoom > 14){
-        itinerary.setStyle({weight : 8*(zoom-13)}); //keep the itinerary always bigger than road 
+    if (zoom > 17){
+        itinerary.setStyle({weight : 8*(zoom-16)}); //keep the itinerary always bigger than road 
     } else {
         itinerary.setStyle({weight : 8});
     }
@@ -2955,6 +3005,10 @@ onpointerup = (event) => {
         }
         menuDiv.style.left=circlePos.x - 50 + 'px';
         menuDiv.style.top=top +  'px';
+    }
+
+    if (prevZoom != map.getZoom()){
+        needRedraw = true;
     }
 
     if(markerBracketClose != null && markerBracketOpen != null){
