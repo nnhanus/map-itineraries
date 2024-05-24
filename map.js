@@ -1380,14 +1380,16 @@ function chooseHalf(firstRoute, secondRoute, latlng, adress){
     let secondTime = secondRoute.summary.duration;
     console.log("first: " + firstTime + "s, second: " +  secondTime);
     if(firstTime < secondTime){
-        routingWaypoints.splice(1, 0, latlng);
+        // routingWaypoints.splice(1, 0, latlng);
         routingAddresses.splice(1,0,adress);
+        routingToPolyline(firstRoute);
     } else {
         let index = routingWaypoints.length - 1;
-        routingWaypoints.splice(index, 0, latlng);
+        // routingWaypoints.splice(index, 0, latlng);
         routingAddresses.splice(index,0,adress);
+        routingToPolyline(secondRoute);
     }
-    ORSRouting();
+    
 
 }
 
