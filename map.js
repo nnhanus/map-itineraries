@@ -82,7 +82,7 @@ const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43
 const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-var routingWaypoints = coordsCar;
+var routingWaypoints = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
 var routingAddresses = addressCar;
 var routingMarkers = [];
 
@@ -222,17 +222,17 @@ L.Control.Redraw = L.Control.extend({
     onAdd: function(map) {
         var container = document.getElementById("redraw");
         container.onclick = function(e){
-            if (interval){
-                clearInterval(intervalID);
-                document.getElementById("redrawButton").classList.remove('selectedLayer');
-            } else {
-                document.getElementById("redrawButton").classList.add('selectedLayer');
-                intervalID = setInterval(function() {
-                    console.log("interval");
+            // if (interval){
+            //     clearInterval(intervalID);
+            //     document.getElementById("redrawButton").classList.remove('selectedLayer');
+            // } else {
+            //     document.getElementById("redrawButton").classList.add('selectedLayer');
+            //     intervalID = setInterval(function() {
+            //         console.log("interval");
                     forceRedraw();
-                }, 2000);
-            }
-            interval = !interval;
+                // }, 2000);
+            // }
+            // interval = !interval;
             
         }
         return container;
@@ -286,7 +286,7 @@ function ORSRouting(){
         }
     };
 
-    const body = routingWaypointsToQueryString();
+    const body = routingWaypointsToQueryString(routingWaypoints);
 
     request.send(body);
 }
@@ -440,13 +440,14 @@ function reroute(){
  * Builds the query string from the waypoints and transportation mode
  * @returns {string}
  */
-function routingWaypointsToQueryString(){
+function routingWaypointsToQueryString(waypoints){
+    console.log(waypoints.length);
     let queryString = '{"coordinates":[[';
-    for(let i = 0; i < routingWaypoints.length - 1; i++){
-        const element = routingWaypoints[i];
+    for(let i = 0; i < waypoints.length - 1; i++){
+        const element = waypoints[i];
         queryString += element.lng + ',' + element.lat +'],[';
     }
-    const lastElem = routingWaypoints[routingWaypoints.length - 1];
+    const lastElem = waypoints[waypoints.length - 1];
     queryString += lastElem.lng + ',' + lastElem.lat +']], "instructions":"false"}';
     // console.log(queryString);
     return queryString;
@@ -1020,25 +1021,6 @@ function isochroneToPolygon(body, type, length){
         }
         var polyUnion = L.polygon(polygonToLatLng(union.geometry.coordinates[0]), {color: 'red'}).addTo(map);
         
-        //For a clean stop at the range limit
-        // var circleClose = L.circle(markerBracketClose.getLatLng(), {radius: 200000}).addTo(map);
-        // var boundsClose = circleClose.getBounds();
-        // map.removeLayer(circleClose);
-        // var westClose = boundsClose.getWest();
-        // var boundsRectClose = L.latLngBounds(L.latLng(markerBracketClose.getLatLng().lat, westClose), boundsClose.getSouthEast());
-        // var rectangleClose = L.rectangle(boundsRectClose).addTo(map);
-
-        // var rectCloseJSON = rectangleClose.toGeoJSON();
-        // var diffClose = turf.difference(union, rectCloseJSON);
-
-        // var circleOpen = L.circle(markerBracketOpen.getLatLng(), {radius: 200000}).addTo(map);
-        // var boundsOpen = circleOpen.getBounds();
-        // map.removeLayer(circleOpen);
-        // var eastOpen = boundsOpen.getEast();
-        // var boundsRectOpen = L.latLngBounds(boundsOpen.getNorthWest(), L.latLng(markerBracketOpen.getLatLng().lat, eastOpen));
-        // var rectangleOpen = L.rectangle(boundsRectOpen).addTo(map);
-
-        // var rectOpenJSON = rectangleOpen.toGeoJSON();
         // var diff = turf.difference(diffClose, rectOpenJSON);
 
         //LatLng
@@ -1062,9 +1044,7 @@ function isochroneToPolygon(body, type, length){
         var realZone = L.polygon(polygon, {color: 'blue', className:"pulse"}).addTo(map);
         queryZone = realZone; 
 
-        
-        // map.removeLayer(rectangleClose);
-        // map.removeLayer(rectangleOpen);
+        updateSizeMarkers();
         map.removeLayer(polyUnion); //remove uneeded layers
 
         if (polygon.length > 3){
@@ -1176,9 +1156,12 @@ function oplQuery(queryString){
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
-                    
-                    routingWaypoints.splice(1, 0, marker.getLatLng());
-                    ORSRouting();
+                    if (routingWaypoints < 3){
+                        routingWaypoints.splice(1, 0, marker.getLatLng());
+                        ORSRouting();
+                    } else {
+                        firstRequest(marker.getLatLng());
+                    }
                     //Create new popup
                     const container =  L.DomUtil.create('div');
                     const okButton = createButton("Add to route", container);
@@ -1285,8 +1268,15 @@ function geocoding(latlng){
         console.log('Headers:', this.getAllResponseHeaders());
         // console.log('Body:', this.responseText);
         decodeGeocodingResults(this.response);
-        routingWaypoints.splice(1, 0, latlng);
-        ORSRouting();
+        // console.log()
+        if (routingWaypoints.length < 3){
+            routingWaypoints.splice(1, 0, latlng);
+            ORSRouting();
+        } else {
+            firstRequest(latlng);
+        }
+        // routingWaypoints.splice(1, 0, latlng);
+        // ORSRouting();
     }
     };
 
@@ -1305,6 +1295,94 @@ function decodeGeocodingResults(result){
     let adress = features[0].properties.label;
     // console.log(adress);
     routingAddresses.splice(1,0,adress);  
+}
+
+function firstRequest(latlng){
+    let firstHalf = [];
+    routingWaypoints.forEach( (element) => {
+        firstHalf.push(element);
+    });
+    firstHalf.splice(1, 0, latlng);
+    console.log("waypoints: ", routingWaypoints);
+    console.log("first half: ", firstHalf);
+    let request = new XMLHttpRequest();
+
+    let link = "https://api.openrouteservice.org/v2/directions/";
+    if (transportationMode == "car"){
+        link += "driving-car";
+    } else {
+        link += "foot-walking";
+    }
+    link += "/json";
+    request.open('POST', link);
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', APIKey);
+
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            let jsonResult = JSON.parse(this.response);
+            let route = jsonResult.routes[0];
+            secondRequest(latlng, route);
+        }
+    };
+
+    const body = routingWaypointsToQueryString(firstHalf);
+
+    request.send(body);
+}
+
+function secondRequest(latlng, firstRoute){
+    let secondHalf = [];
+    routingWaypoints.forEach( (element) => {
+        secondHalf.push(element);
+    });
+    secondHalf.splice(2,0,latlng);
+
+    console.log("waypoints: ", routingWaypoints);
+    console.log("second half: ", secondHalf);
+
+    let request = new XMLHttpRequest();
+
+    let link = "https://api.openrouteservice.org/v2/directions/";
+    if (transportationMode == "car"){
+        link += "driving-car";
+    } else {
+        link += "foot-walking";
+    }
+    link += "/json";
+    request.open('POST', link);
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', APIKey);
+
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            let jsonResult = JSON.parse(this.response);
+            let route = jsonResult.routes[0];
+            chooseHalf(firstRoute, route, latlng);
+        }
+    };
+
+    const body = routingWaypointsToQueryString(secondHalf);
+
+    request.send(body);
+}
+
+function chooseHalf(firstRoute, secondRoute, latlng){
+    console.log("choose");
+    let firstTime = firstRoute.summary.duration;
+    let secondTime = secondRoute.summary.duration;
+    console.log("first: " + firstTime + "s, second: " +  secondTime);
+    if(firstTime < secondTime){
+        routingWaypoints.splice(1, 0, latlng);
+    } else {
+        routingWaypoints.splice(2, 0, latlng);
+    }
+    ORSRouting();
+
 }
 
 /********************************************************************************
@@ -1382,6 +1460,8 @@ function disableCircle(){
     tempMarkerClose = markerBracketClose;
     markerBracketOpen = L.circle(open, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
     markerBracketClose = L.circle(close, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
+
+    
 
     // markerBracketOpen.setIcon(bracketGreyed);
     // markerBracketClose.setIcon(bracketGreyed);
@@ -2486,6 +2566,26 @@ function updateMarkerTextPos(){
     }
 }
 
+function updateSizeMarkers(){
+    let zoneBounds = queryZone.getBounds();
+    let distanceEW = zoneBounds.getSouthWest().distanceTo(zoneBounds.getSouthEast());
+    let distanceNS = zoneBounds.getSouthWest().distanceTo(zoneBounds.getNorthWest());
+    // L.marker(zoneBounds.getSouthWest()).addTo(map);
+    // L.marker(zoneBounds.getNorthWest()).addTo(map);
+    // console.log()
+    let radius;
+    if (distanceEW < distanceNS){
+        radius = distanceEW/2;
+    } else {
+        radius = distanceNS/2;
+    }
+    console.log("Radius: " + radius);
+    if (radius < circleZoneOfInterest.getRadius){
+        circleZoneOfInterest.setRadius(radius);
+        markerBracketClose.setRadius(radius*0.8);
+        markerBracketOpen.setRadius(radius*0.8);
+    }
+}
 /********************************************************************************
  *                              Brackets Rotations                              *
  ********************************************************************************/
@@ -2790,21 +2890,15 @@ function createButton(label, container) {
 }
 
 function forceRedraw(){
-    if(needRedraw){        
+    // if(needRedraw){        
         console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
         const bounds = map.getBounds();
         map.fitBounds(L.latLngBounds(L.latLng(48.590756909214655, 7.747010956870397), L.latLng(48.58378657265675, 7.759858058721171)));
         reroute();
         map.fitBounds(bounds);
-        needRedraw = false;
-    }
+        // needRedraw = false;
+    // }
 }
-
-// setInterval(function() {
-//     console.log("interval");
-//     forceRedraw();
-//   }, 2000);
-
   
 /**
  * Switch between the transporation modes (car/foot)
@@ -2817,7 +2911,9 @@ function switchMode(){
     switch (transportationMode){
         case "foot":
             routingAddresses = addressCar;
-            routingWaypoints = coordsCar;
+            routingWaypoints.length = 0;
+            coordsCar.forEach( (element) => {routingWaypoints.push(element)});
+            // routingWaypoints = coordsCar;
             defaultBracketRange = 1200;
             transportationMode = "car";
             fuel.setAttribute("src", "icons/fuelIcon.svg");
@@ -2825,7 +2921,9 @@ function switchMode(){
            break; 
         case "car":
             routingAddresses = addressFoot;
-            routingWaypoints = coordsFoot;
+            // routingWaypoints = coordsFoot;
+            routingWaypoints.length = 0;
+            coordsFoot.forEach( (element) => {routingWaypoints.push(element)});
             defaultBracketRange = 300;
             transportationMode = "foot";
             fuel.setAttribute("src", "icons/bakery.svg");
@@ -2914,9 +3012,15 @@ map.on("zoomanim", function(e){
     // }
     // outline.setStyle({weight:48});
 
-    if (circleZoneOfInterest != null){
+    if (circleZoneOfInterest != null /*&& (state == "pointPlaced" || state == "menu" || state == "slider")*/){
         zoomMult = 1280000/(Math.pow(2,zoom));
         circleZoneOfInterest.setRadius(zoomMult);
+        if (state == "queryResults" || state == "loadingQuery"){
+            
+            markerBracketOpen.setRadius(zoomMult*0.8);
+            markerBracketClose.setRadius(zoomMult*0.8);
+            updateSizeMarkers();
+        }
         // console.log("zoom level: " + zoom + ", circle radius: " + circleZoneOfInterest.getRadius());
 
     }
@@ -3039,9 +3143,16 @@ onpointerup = (event) => {
     } else {
         itinerary.setStyle({weight : 8});
     }
-    if (circleZoneOfInterest != null){
+    if (circleZoneOfInterest != null /*&& (state == "pointPlaced" || state == "menu" || state == "slider")*/){
         var zoomMult = Math.floor(2200000/(Math.pow(2,zoom)));
         circleZoneOfInterest.setRadius(zoomMult);
+        if (state == "queryResults" || state == "loadingQuery"){
+            
+            markerBracketOpen.setRadius(zoomMult*0.8);
+            markerBracketClose.setRadius(zoomMult*0.8);
+            updateSizeMarkers();
+        }
+        
 
     }
     if(isWeatherDisplayed){
@@ -3064,7 +3175,7 @@ onpointerup = (event) => {
     }
 
     if(markerBracketClose != null && markerBracketOpen != null){
-        if (map.hasLayer(markerBracketClose)){
+        if (map.hasLayer(markerBracketClose) && state == "pointPlaced"){
             markerBracketOpen.dragging.enable();
             markerBracketClose.dragging.enable();            
         }
