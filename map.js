@@ -1143,7 +1143,7 @@ function oplQuery(queryString){
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
-                    geocoding(marker.getLatLng());
+                    geocoding(pos);
                     
                     map.closePopup();
                 });
@@ -1270,6 +1270,7 @@ function geocoding(latlng){
         console.log('Headers:', this.getAllResponseHeaders());
         // console.log('Body:', this.responseText);
         let adress = decodeGeocodingResults(this.response);
+        console.log(adress);
         // console.log()
         if (routingWaypoints.length < 3){
             routingWaypoints.splice(1, 0, latlng);
@@ -1376,6 +1377,7 @@ function secondRequest(latlng, firstRoute, adress){
 
 function chooseHalf(firstRoute, secondRoute, latlng, adress){
     console.log("choose");
+    console.log(adress);
     let firstTime = firstRoute.summary.duration;
     let secondTime = secondRoute.summary.duration;
     console.log("first: " + firstTime + "s, second: " +  secondTime);
@@ -1389,6 +1391,7 @@ function chooseHalf(firstRoute, secondRoute, latlng, adress){
         routingAddresses.splice(index,0,adress);
         routingToPolyline(secondRoute);
     }
+    // ORSRouting();
     
 
 }
