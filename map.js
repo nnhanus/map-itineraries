@@ -1269,13 +1269,14 @@ function geocoding(latlng){
         console.log('Status:', this.status);
         console.log('Headers:', this.getAllResponseHeaders());
         // console.log('Body:', this.responseText);
-        decodeGeocodingResults(this.response);
+        let adress = decodeGeocodingResults(this.response);
         // console.log()
         if (routingWaypoints.length < 3){
             routingWaypoints.splice(1, 0, latlng);
+            routingAddresses.splice(1,0,adress);
             ORSRouting();
         } else {
-            firstRequest(latlng);
+            firstRequest(latlng, adress);
         }
         // routingWaypoints.splice(1, 0, latlng);
         // ORSRouting();
@@ -1294,12 +1295,12 @@ function decodeGeocodingResults(result){
     // console.log(JSON.parse(result));
     let jsonRes = JSON.parse(result);
     let features = jsonRes.features;
-    let adress = features[0].properties.label;
+    return features[0].properties.label;
     // console.log(adress);
-    routingAddresses.splice(1,0,adress);  
+      
 }
 
-function firstRequest(latlng){
+function firstRequest(latlng, adress){
     let firstHalf = [];
     routingWaypoints.forEach( (element) => {
         firstHalf.push(element);
@@ -1326,7 +1327,7 @@ function firstRequest(latlng){
         if (this.readyState === 4) {
             let jsonResult = JSON.parse(this.response);
             let route = jsonResult.routes[0];
-            secondRequest(latlng, route);
+            secondRequest(latlng, route, adress);
         }
     };
 
@@ -1335,7 +1336,7 @@ function firstRequest(latlng){
     request.send(body);
 }
 
-function secondRequest(latlng, firstRoute){
+function secondRequest(latlng, firstRoute, adress){
     let secondHalf = [];
     routingWaypoints.forEach( (element) => {
         secondHalf.push(element);
@@ -1364,7 +1365,7 @@ function secondRequest(latlng, firstRoute){
         if (this.readyState === 4) {
             let jsonResult = JSON.parse(this.response);
             let route = jsonResult.routes[0];
-            chooseHalf(firstRoute, route, latlng);
+            chooseHalf(firstRoute, route, latlng, adress);
         }
     };
 
@@ -1373,15 +1374,18 @@ function secondRequest(latlng, firstRoute){
     request.send(body);
 }
 
-function chooseHalf(firstRoute, secondRoute, latlng){
+function chooseHalf(firstRoute, secondRoute, latlng, adress){
     console.log("choose");
     let firstTime = firstRoute.summary.duration;
     let secondTime = secondRoute.summary.duration;
     console.log("first: " + firstTime + "s, second: " +  secondTime);
     if(firstTime < secondTime){
         routingWaypoints.splice(1, 0, latlng);
+        routingAddresses.splice(1,0,adress);
     } else {
-        routingWaypoints.splice(2, 0, latlng);
+        let index = routingWaypoints.length - 1;
+        routingWaypoints.splice(index, 0, latlng);
+        routingAddresses.splice(index,0,adress);
     }
     ORSRouting();
 
