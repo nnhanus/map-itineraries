@@ -73,7 +73,7 @@ var clickOnLayer = false;
 var openedMarker;
 var openedPopup;
 
-var infoRouteTop = 545;
+var infoRouteTop = 605;
 
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
@@ -1796,32 +1796,56 @@ function toggleMinKM(isKiloMeter){
  */
 function setSliderMinMax(isKiloMeter, slider){
     // var value = getDistPolyLine(polylineBracket.getLatLngs());
-    let value = distance/3;
+    // let value = distance/3;
     slider.setAttribute("step", 1);
     if (isKiloMeter){
+        let value = distance/1000;
+        value = value/3;
+        
         if (transportationMode == "foot"){
             slider.setAttribute("step", 0.1);
+            var min = Math.round((value/5)*10)/10;
+            value = Math.round(value*10)/10;
+            if (value > 5){
+                value = 5;
+                min = 0.1;
+            }
+            console.log("value: " + value);
+            console.log("min: " + min);
+            console.log("max: " + value);
+            let mid = Math.round((min + (value-min)/2)*10)/10;
+            console.log("mid: " + mid);
+            slider.value = mid;
+            slider.setAttribute("min", min);
+            slider.setAttribute("max", value);
+            let text = document.getElementById("value");
+            text.innerHTML = mid;
+        } else {
+            var min = Math.round(value/5);
+            if (value > 50){
+                value = 50;
+                min = 20;
+            }
+            let mid = (min + (value-min)/2);
+            slider.value = mid;
+            slider.setAttribute("min", min);
+            slider.setAttribute("max", value);
+            let text = document.getElementById("value");
+            text.innerHTML = mid;
         }
-        var min = Math.round(value/5);
-        if (value > 50){
-            value = 50;
-            min = 20;
-        }
-        slider.setAttribute("min", min);
-        slider.setAttribute("max", value);
-        let mid = (min + (value-min)/2);
-        slider.value = mid;
-        let text = document.getElementById("value");
-        text.innerHTML = mid;
+        
+        
     } else {
-        var percent = Math.round(((100*value)/(distance/1000))*100)/100;
-        var percTime = (percent*time )/100;
-        console.log("% time" + percTime);
-        var inMinutes = Math.round(percTime/60);
+        let value = time/3;
+        let inMinutes = Math.round(value/60);
+        // var percent = Math.round(((100*value)/(distance/1000))*100)/100;
+        // var percTime = (percent*time )/100;
+        // console.log("% time" + percTime);
+        // var inMinutes = Math.round(percTime/60);
         console.log("minutes" + inMinutes);
-        console.log(time);
-        console.log(percent);
-        console.log(percTime);
+        // console.log(time);
+        // console.log(percent);
+        // console.log(percTime);
         var min = Math.round(inMinutes/5);
         var max = Math.round(inMinutes);
         if (max > 60){
@@ -2235,7 +2259,13 @@ function distancePixelPoints(latlng, point){
         var percent = dist*100/distance;
         // console.log("percent: " + percent);
         // console.log("% time: " + percent*time/100)
-        ETAFloatingText.innerHTML=inHours(percent*time/100);
+        let body = inHours(percent*time/100) + "<br>";
+        if (transportationMode == "car"){
+            body+= Math.round(dist/1000) +"km";
+        } else {
+            body+= (Math.round(dist/100)/10) +"km";
+        }
+        ETAFloatingText.innerHTML=body;
     }
     
     } else
