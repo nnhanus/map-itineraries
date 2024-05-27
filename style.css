@@ -12,7 +12,7 @@ body{
 #routingControl{
     position:absolute;
     background-color: white;
-    width: 320px;
+    width: 365px;
     padding-left: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
@@ -30,7 +30,7 @@ body{
 }
 
 .geocoder{
-    width: 300px;
+    width: 345px;
     margin-bottom: 2px;
 }
 .layer{

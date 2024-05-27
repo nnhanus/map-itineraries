@@ -1,3 +1,4 @@
+
 // import Openrouteservice from "./ors-js-client";
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
@@ -51,7 +52,8 @@ var prevZoom;
 const width = 350;
 const height = 650; 
 
-const ppi = 269;
+const ppi = 410;
+//Oppo A9: 269; Samsung Note 10: 401 ou 410
 
 var requestMade = false;
 var state = "itinerary";
@@ -76,13 +78,19 @@ var infoRouteTop = 545;
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
 
-const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
+
+const startCar = L.latLng(48.711967757928974, 2.166628674285006);
+const endCar = L.latLng(47.20617749880269, -1.564392769503869);
+const coordsCar = [startCar, endCar];
+// const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(48.69519492350087, 2.1760177471346864)];
 const addressCar = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
-const coordsFoot = [L.latLng(43.59210153989353, 1.4447266282743285), L.latLng(43.60560890094277, 1.4458011280603213)];
+const startFoot = L.latLng(43.59210153989353, 1.4447266282743285);
+const endFoot = L.latLng(43.60560890094277, 1.4458011280603213);
+const coordsFoot = [startFoot, endFoot];
 const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-var routingWaypoints = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(47.20617749880269, -1.564392769503869)];
+var routingWaypoints = [startCar, endCar];
 var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
 var routingMarkers = [];
 
@@ -98,6 +106,9 @@ let needRedraw = false;
 
 var interval = false;
 var intervalID;
+
+var isFloatingTextKM = false;
+var areBracketsOn = false;
 
 /********************************************************************************
  *                                   Controls                                   *
@@ -260,6 +271,7 @@ function ORSRouting(){
     let request = new XMLHttpRequest();
 
     let link = "https://api.openrouteservice.org/v2/directions/";
+    // let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/driving-car";
     if (transportationMode == "car"){
         link += "driving-car";
     } else {
@@ -287,6 +299,7 @@ function ORSRouting(){
     };
 
     const body = routingWaypointsToQueryString(routingWaypoints);
+    console.log(body);
 
     request.send(body);
 }
@@ -310,6 +323,7 @@ function routingToPolyline(routeJSON){
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
     allPos = line.getLatLngs();
     
+    // getResolution();
     reroute();
     map.fitBounds(stroke.getBounds());
     
@@ -351,12 +365,16 @@ function reroute(){
         
             var newLatLng = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
             circleZoneOfInterest.setLatLng(newLatLng);
+            circleZoneOfInterest.bringToFront()
 
-            var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
-            markerBracketClose.setLatLng(newLLClose);
+            if (areBracketsOn){
+                var newLLClose = L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng());
+                markerBracketClose.setLatLng(newLLClose);
 
-            var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-            markerBracketOpen.setLatLng(newLLOpen);
+                var newLLOpen = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
+                markerBracketOpen.setLatLng(newLLOpen);
+            
+            }
         }
 
         weatherLayerGroup = null;
@@ -401,9 +419,9 @@ function reroute(){
     createGradientSupermarket();
 
     //Make sure the layers are in the right order
-    stroke.bringToFront();
-    outline.bringToFront();
-    itinerary.bringToFront();
+    // stroke.bringToFront();
+    // outline.bringToFront();
+    // itinerary.bringToFront();
 
     routingWaypoints.forEach((element) => routingMarkers.push(L.marker(element).addTo(map)));
 
@@ -863,8 +881,11 @@ var bracketGreyed = L.icon({
  * @param {number} value 
  * @param {string} units 
  */
-function isochroneMinutes(type, value, units){
-    polylineBracket.setStyle({opacity:0.4});
+function isochroneGlobal(type, value, units){
+    if (areBracketsOn){
+        polylineBracket.setStyle({opacity:0.4});
+    }
+    
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units); //Get all the points
     L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
     // console.log(points);
@@ -874,6 +895,7 @@ function isochroneMinutes(type, value, units){
             let request = new XMLHttpRequest();
 
             let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
+            // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
             if (transportationMode == "foot"){
                 src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
             }
@@ -907,6 +929,49 @@ function isochroneMinutes(type, value, units){
         window.alert("Too many points do you really need 25 points???");
     }
 } 
+
+function isochronesLocal(type, value, units){
+    L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
+    // console.log(points);
+    let request = new XMLHttpRequest();
+
+    let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
+    // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
+    if (transportationMode == "foot"){
+        src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
+    }
+    request.open('POST', src);
+
+    request.responseType = "json";
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', APIKey);//API key
+
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            console.log('Status:', this.status);
+            console.log('Headers:', this.getAllResponseHeaders());
+            // console.log('Body:', this.response);
+            // console.log("i : " + i + ", length : " + points.length);
+            // console.log(resIso);
+            
+            isochroneToPolygon([this.response.features], type, 1); 
+        }
+    };
+
+    // const body = makeIsoQuery(circleZoneOfInterest.getLatLng(), value, units);
+    const point = circleZoneOfInterest.getLatLng();
+    let body = '{"locations":[[' + point.lng + ',' + point.lat + ']],"range":[';
+    if (units == "distance"){
+        body+= value*1000;
+    } else {
+        body+= value*60;
+    }
+    body+= '],"range_type":"' + units + '"}';
+    // console.log(body);
+    request.send(body);
+}
 /**
  * Calculates the points on which to query for isochrones based on the slider value
  * @param {L.LatLng[]} itinerary 
@@ -1225,8 +1290,10 @@ function oplQuery(queryString){
             L.DomUtil.removeClass(queryZone._path, "pulse");
             queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
             
+            if(areBracketsOn){
+                polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
+            }
             
-            polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
             // console.log("SHOULD ADD HERE");
             // L.control.clear({}).addTo(map);
             makeClearButton(); //Add button to clear  query result
@@ -1425,7 +1492,7 @@ function clearQueryResults(){
         circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
         // markerBracketOpen.setIcon(bracket);
         // markerBracketClose.setIcon(bracket);
-        if (state == "queryResults"){
+        if (state == "queryResults" && areBracketsOn){
             map.removeLayer(markerBracketOpen);
             map.removeLayer(markerBracketClose);
             markerBracketOpen = tempMarkerOpen;
@@ -1433,15 +1500,16 @@ function clearQueryResults(){
             markerBracketClose.addTo(map);
             markerBracketOpen.addTo(map);
         }
-        if (map.hasLayer(markerBracketOpen) && map.hasLayer(markerBracketClose)){
+        if (areBracketsOn){
             markerBracketOpen.dragging.enable();
-            markerBracketClose.dragging.enable();     
+            markerBracketClose.dragging.enable(); 
+            //Higlight polyline becomes visible again
+    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+    polylineBracket.setStyle({opacity:0.5});    
         }
         
 
-    //Higlight polyline becomes visible again
-    lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-    polylineBracket.setStyle({opacity:0.5});
+    
     }
 
     if (queryZone != null){
@@ -1462,15 +1530,15 @@ function clearQueryResults(){
  */
 function disableCircle(){
     circleZoneOfInterest.setStyle({color: "#6D6D6D", fillColor: "#A9A9A9"});
-    let rad = circleZoneOfInterest.getRadius()*0.8;
-    let open = markerBracketOpen.getLatLng();
-    var close = markerBracketClose.getLatLng();
-    map.removeLayer(markerBracketOpen);
-    map.removeLayer(markerBracketClose);
-    tempMarkerOpen = markerBracketOpen;
-    tempMarkerClose = markerBracketClose;
-    markerBracketOpen = L.circle(open, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
-    markerBracketClose = L.circle(close, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
+    // let rad = circleZoneOfInterest.getRadius()*0.8;
+    // let open = markerBracketOpen.getLatLng();
+    // var close = markerBracketClose.getLatLng();
+    // map.removeLayer(markerBracketOpen);
+    // map.removeLayer(markerBracketClose);
+    // tempMarkerOpen = markerBracketOpen;
+    // tempMarkerClose = markerBracketClose;
+    // markerBracketOpen = L.circle(open, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
+    // markerBracketClose = L.circle(close, {radius:rad, color: "#6D6D6D", fillOpacity: 1, fillColor: "#A9A9A9"}).addTo(map);
 
     
 
@@ -1490,38 +1558,38 @@ function pointPlacedToItinerary(latlng, point){
     var distFromLine = getDistanceInCM(latlng, point, allPos);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
-    if (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ){
+    if ((distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ) && areBracketsOn){
         let distFromHighlight = getDistanceInCM(latlng, point, polylineBracket.getLatLngs());
         if (distFromHighlight > 0.3 || distFromHighlight > 10 && closestPixel.y < point.y){
-        // console.log("iti click");
-        state = "itinerary";
-        prevState = "itinerary";
+            // console.log("iti click");
+            state = "itinerary";
+            prevState = "itinerary";
 
-        //Remove markers, highlight polyline, & markers' texts
-        map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketOpen);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(polylineBracket);
-        hideFloatingTexts();
+            //Remove markers, highlight polyline, & markers' texts
+            map.removeLayer(circleZoneOfInterest);
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);
+            hideFloatingTexts();
 
-        //Change back to colored itinerary
-        itinerary.setStyle({color:"blue"});
-        stroke.setStyle({color:"blue"});
-        outline.setStyle({color:"blue"});
+            //Change back to colored itinerary
+            itinerary.setStyle({color:"blue"});
+            stroke.setStyle({color:"blue"});
+            outline.setStyle({color:"blue"});
 
-        //If a layer was applied, re-apply it
-        if(isElevationDisplayed){
-            isElevationDisplayed = false;
-            toggleElevationDistribution();
-        } else if (isFuelDisplayed){
-            isFuelDisplayed = false;
-            toggleFuelDistribution();
-        } else if (isRestaurantDisplayed){
-            isRestaurantDisplayed = false;
-            toggleRestaurantDistribution()
-        
+            //If a layer was applied, re-apply it
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                toggleElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                toggleFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                toggleRestaurantDistribution()
+            
+            }
         }
-    }
     }
 }
 
@@ -1575,7 +1643,7 @@ function itineraryToPointPlaced(latlng, point){
             console.log("WE ARE CHANGING THE POS");
             previousCirclePosition = closest; 
             // circleClosest.bringToFront();
-            createBrackets(latlng);
+            // createsBrackets(latlng);
             // circleZoneOfInterest.dragging.enable()
 
             var circleHTML = circleZoneOfInterest._path;
@@ -1727,7 +1795,8 @@ function toggleMinKM(isKiloMeter){
  * @param {HTMLElement} slider 
  */
 function setSliderMinMax(isKiloMeter, slider){
-    var value = getDistPolyLine(polylineBracket.getLatLngs());
+    // var value = getDistPolyLine(polylineBracket.getLatLngs());
+    let value = distance/3;
     slider.setAttribute("step", 1);
     if (isKiloMeter){
         if (transportationMode == "foot"){
@@ -1795,9 +1864,11 @@ function clickGoButton(type){
     clickOnSlider = false;
     if (isInKM){
         // makeQuery(type, getSliderValue());
-        isochroneMinutes(type, getSliderValue(), "distance");
+        // isochroneGlobal(type, getSliderValue(), "distance");
+        isochronesLocal(type, getSliderValue(), "distance");
     } else {
-        isochroneMinutes(type, getSliderValue(), "time");
+        // isochroneGlobal(type, getSliderValue(), "time");
+        isochronesLocal(type, getSliderValue(), "time");
     }
 
 }
@@ -2292,7 +2363,7 @@ function createBrackets(event){
                 .on("dragend", function(e){
                     if (state == "pointPlaced" || state == "closeMove"){
                         updateBracketCloseText();
-                        updateMarkersRotation(markerBracketClose, false);
+                        // updateMarkersRotation(markerBracketClose, false);
                     }
                 })
                 .on("dragstart", function(e){
@@ -2329,7 +2400,7 @@ function createBrackets(event){
                 .on("dragend", function(e){
                     if (state == "pointPlaced" || state == "openMove"){
                         updateBracketOpenText();
-                        updateMarkersRotation(markerBracketOpen, true);
+                        // updateMarkersRotation(markerBracketOpen, true);
                     }
                 })
                 .on("dragstart", function(e){
@@ -2388,7 +2459,7 @@ function updatePosTexts(text, element, isVert){
 
     if (element != null){
         if (isVert){
-            console.log("vert");
+            // console.log("vert");
             var left = toPixels(element.getLatLng()).x+60;
             var top = toPixels(element.getLatLng()).y-5;
             var textSize=[text.offsetWidth,text.offsetHeight];
@@ -2485,12 +2556,16 @@ function moveMarkers(latlng){
         }
         
         state = "circleMove";
-        console.log("stateChanged");
+        // console.log("stateChanged");
         let prevCirclePose = circleZoneOfInterest.getLatLng(); //store the previous circle pos
 
         //Set the middle range marker position
         let currentCirclePos = L.GeometryUtil.closest(map, allPos, latlng);
         circleZoneOfInterest.setLatLng(currentCirclePos);
+
+       
+
+        
 
         // console.log(previousCirclePosition);
         const prevCirclePixels = toPixels(prevCirclePose);
@@ -2500,7 +2575,7 @@ function moveMarkers(latlng){
         // console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
         let distPixels = ((prevCirclePixels.distanceTo(curentCirclePixel))*2.54)/(ppi/window.devicePixelRatio);
        
-        if (distPixels > limit){
+        if (distPixels > limit && areBracketsOn){
             // console.log(distPixels);
             let distPrev = 0;
             isPointOnLine(prevCirclePose, allPos, 0.5);
@@ -2545,8 +2620,11 @@ function moveMarkers(latlng){
             // updateMarkerTextPos();
             // updateBracketCloseText();
             // updateBracketOpenText();
+        
             
-            isPointOnLine(currentCirclePos, allPos, 5);
+            
+        } 
+        isPointOnLine(currentCirclePos, allPos, 5);
             points.push(currentCirclePos);
             var dist = 0;
             for (var i = 0; i < points.length - 1; i++){
@@ -2557,7 +2635,6 @@ function moveMarkers(latlng){
             state = "circleMove";
             // console.log("WE ARE CHANGING THE POS");
             previousCirclePosition = currentCirclePos;
-        } 
     }
 }
 
@@ -2597,99 +2674,7 @@ function updateSizeMarkers(){
         markerBracketOpen.setRadius(radius*0.8);
     }
 }
-/********************************************************************************
- *                              Brackets Rotations                              *
- ********************************************************************************/
 
-/**
- * Updates the rotation of the marker so it is perpendicular to the itinerary
- * @param {L.Marker} marker 
- * @param {boolean} isOpen 
- */
-function updateMarkersRotation(marker, isOpen){
-    var dist = getDistMarkers(marker.getLatLng(), isOpen);
-    if (dist > 0.3 || previousClosePos == circleZoneOfInterest.getLatLng() || previousOpenPos == circleZoneOfInterest.getLatLng()){   
-        var vect;
-        if (isOpen){
-            vect = normalVector(toPixels(marker.getLatLng()), toPixels(previousOpenPos));
-        } else {
-            vect = normalVector(toPixels(previousClosePos), toPixels(marker.getLatLng()));
-        }
-        var angle = getAngle(vect);
-        // console.log(angle);
-        marker.setRotationAngle(angle);
-        if (isOpen){
-            previousOpenPos = marker.getLatLng();
-        } else {
-            previousClosePos = marker.getLatLng();
-        }
-    } 
-}
-
-/**
- * Get the distance between the marker and its previous position
- * @param {L.LatLng} pos 
- * @param {true} isOpen 
- * @returns {number}
- */
-function getDistMarkers(pos, isOpen){
-    var posPixel = toPixels(pos);
-    var lastPixels;
-    if (isOpen){
-        lastPixels = toPixels(previousOpenPos); 
-    } else {
-        lastPixels = toPixels(previousClosePos); 
-    }
-    return ((posPixel.distanceTo(lastPixels)*2.54/(ppi/window.devicePixelRatio))); 
-}
-
-/**
- * Returns the angle in degrees
- * @param {number} radians 
- * @returns {number}
- */
-function radToDeg(radians){
-  return radians * (180/Math.PI);
-}
-
-/**
- * Returns the angle in radians
- * @param {number} degrees 
- * @returns {number}
- */
-function degToRad(degrees)
-{
-  // Store the value of pi.
-  var pi = Math.PI;
-  // Multiply radians by 180 divided by pi to convert to degrees.
-  return degrees * (pi/180);
-}
-
-/**
- * Returns the ange by which to rotate a marker
- * @param {number} coeff 
- * @returns {number}
- */
-function getAngle(coeff){
-    var norm = Math.sqrt(coeff[0]*coeff[0] + coeff[1]*coeff[1]);
-    var dot = coeff[0]/norm;
-    var angle = Math.acos(dot);
-    // console.log(angle);
-    return 360-radToDeg(angle);
-}
-
-/**
- * Returns the normal vector of the line formed by pointA and pointB
- * @param {L.Point} pointA 
- * @param {L.Point} pointB 
- * @returns {L.Point[]}
- */
-function normalVector(pointA, pointB){
-    // console.log(pointA);
-    // console.log(pointB);
-    var coeffDirecteur =  (pointB.y-pointA.y)/(pointB.x-pointA.x);
-    return [coeffDirecteur, -1];
-}
 
 /********************************************************************************
  *                                  Utilities                                   *
@@ -2763,7 +2748,7 @@ function isVertical(pointA, pointB, precision){
         // } else {
         //     L.polyline([map.containerPointToLatLng(pointA), map.containerPointToLatLng(pointB)], {color:'green', weight:3}).addTo(map);
         // }
-        console.log(coeff);
+        // console.log(coeff);
         return coeff > precision;
     }
 }
@@ -2902,10 +2887,11 @@ function createButton(label, container) {
 
 function forceRedraw(){
     // if(needRedraw){        
-        console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
+        // console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
         const bounds = map.getBounds();
-        map.fitBounds(L.latLngBounds(L.latLng(48.590756909214655, 7.747010956870397), L.latLng(48.58378657265675, 7.759858058721171)));
+        map.fitBounds(bounds.pad(-0.5));
         reroute();
+        console.log("HELLO WE ARE SETTING THE VOUNDS AGAIN I AM TRYING TO MAKE THIS VERY LONG SO I CAN INSTANTLY SPOT IT THANK YOU");
         map.fitBounds(bounds);
         // needRedraw = false;
     // }
@@ -3029,7 +3015,7 @@ map.on("zoomanim", function(e){
     if (circleZoneOfInterest != null /*&& (state == "pointPlaced" || state == "menu" || state == "slider")*/){
         zoomMult = 1280000/(Math.pow(2,zoom));
         circleZoneOfInterest.setRadius(zoomMult);
-        if (state == "queryResults" || state == "loadingQuery"){
+        if ((state == "queryResults" || state == "loadingQuery") && areBracketsOn){
             
             markerBracketOpen.setRadius(zoomMult*0.8);
             markerBracketClose.setRadius(zoomMult*0.8);
@@ -3044,7 +3030,7 @@ onpointerdown = (event) => {
     startTime = Date.now();
     isPointerDown = true;
     prevZoom = map.getZoom();
-    if (state == "menu" || state == "slider"){
+    if ((state == "menu" || state == "slider") && areBracketsOn){
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
     }
@@ -3111,8 +3097,11 @@ onpointerup = (event) => {
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
         state = "pointPlaced";
-        markerBracketClose.dragging.enable();
-        markerBracketOpen.dragging.enable();
+        if (areBracketsOn){
+            markerBracketClose.dragging.enable();
+            markerBracketOpen.dragging.enable();
+        
+        }
         clickOnMenu = false;
     } else if (state == "slider" && !clickOnSlider && !isMovingMap  && (prevZoom == map.getZoom())){
         var sliderDiv = document.getElementById("slider");
@@ -3125,7 +3114,10 @@ onpointerup = (event) => {
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
         // console.log(latlng);
-        itineraryToPointPlaced(latlng,point);
+        const millis = Date.now() - startTime;
+        if ((millis / 1000) < 0.3){
+            itineraryToPointPlaced(latlng,point);
+        }
     } 
     if (state != "itinerary"){
         updateMarkerTextPos();
@@ -3160,7 +3152,7 @@ onpointerup = (event) => {
     if (circleZoneOfInterest != null /*&& (state == "pointPlaced" || state == "menu" || state == "slider")*/){
         var zoomMult = Math.floor(2200000/(Math.pow(2,zoom)));
         circleZoneOfInterest.setRadius(zoomMult);
-        if (state == "queryResults" || state == "loadingQuery"){
+        if ((state == "queryResults" || state == "loadingQuery") && areBracketsOn){
             
             markerBracketOpen.setRadius(zoomMult*0.8);
             markerBracketClose.setRadius(zoomMult*0.8);
