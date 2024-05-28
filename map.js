@@ -107,7 +107,7 @@ let needRedraw = false;
 var interval = false;
 var intervalID;
 
-var isFloatingTextKM = false;
+var isFloatingTextKM = true;
 var areBracketsOn = false;
 
 /********************************************************************************
@@ -305,7 +305,7 @@ function ORSRouting(){
 }
 
 /**
- * Handles drawing the line and all other things depending on the routing
+ * Sets the points of the itinerary from the query results
  * @param {JSON} routeJSON 
  */
 function routingToPolyline(routeJSON){
@@ -332,6 +332,9 @@ function routingToPolyline(routeJSON){
 
 }
 
+/**
+ * Handles drawing the itinerary from allPos
+ */
 function reroute(){
     console.log("reroute");
     var firstTime = true;
@@ -1590,6 +1593,32 @@ function pointPlacedToItinerary(latlng, point){
             
             }
         }
+    } else {
+        if (!clickOnCircle && (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x )){
+            state = "itinerary";
+            prevState = "itinerary";
+            map.removeLayer(circleZoneOfInterest);
+            hideFloatingTexts();
+
+            //Change back to colored itinerary
+            itinerary.setStyle({color:"blue"});
+            stroke.setStyle({color:"blue"});
+            outline.setStyle({color:"blue"});
+
+            //If a layer was applied, re-apply it
+            if(isElevationDisplayed){
+                isElevationDisplayed = false;
+                toggleElevationDistribution();
+            } else if (isFuelDisplayed){
+                isFuelDisplayed = false;
+                toggleFuelDistribution();
+            } else if (isRestaurantDisplayed){
+                isRestaurantDisplayed = false;
+                toggleRestaurantDistribution()
+            
+            }
+
+        }
     }
 }
 
@@ -1642,6 +1671,7 @@ function itineraryToPointPlaced(latlng, point){
             circleZoneOfInterest.bringToFront();  
             console.log("WE ARE CHANGING THE POS");
             previousCirclePosition = closest; 
+            showFloatingTexts();
             // circleClosest.bringToFront();
             // createsBrackets(latlng);
             // circleZoneOfInterest.dragging.enable()
@@ -2187,6 +2217,72 @@ function toggleSupermarketDistribution(){
     }
 }
 
+function weatheIconMove(latlng){
+    let bounds = map.getBounds();
+    let center = bounds.getCenter();
+    let SW = bounds.getSouthWest();
+    let SE = bounds.getSouthEast();
+    let NW = bounds.getNorthWest();
+    let NE = bounds.getNorthEast();
+    let SWP = toPixels(SW);
+    let SEP = toPixels(SE);
+    let NWP = toPixels(NW);
+    let NEP = toPixels(NE);
+    let posPixels = toPixels(latlng);
+
+    if (posPixels.x < SWP.x){
+        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+        let lineWest = turf.lineString([[SW.lng, SW.lat], [NW.lng, NW.lat]]);
+        let intersects = turf.lineIntersect(lineCenter, lineWest);   
+        if (posPixels.y < NWP.y){
+            if (intersects.length == 0){
+                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+                let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
+                let intersects = turf.lineIntersect(lineCenter, lineNorth);
+            }
+        } else if (posPixels.y > SWP.y){
+            if (intersects.length == 0){
+                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+                let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
+                let intersects = turf.lineIntersect(lineCenter, lineSouth);
+            }
+
+        } else {
+             
+        }
+    } else if (posPixels.x > SEP.x){
+        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+        let lineEast = turf.lineString([[SE.lng, SE.lat], [NE.lng, NE.lat]]);
+        let intersects = turf.lineIntersect(lineCenter, lineEast);
+        if (posPixels.y < NWP.y){
+            if (intersects.length == 0){
+                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+                let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
+                let intersects = turf.lineIntersect(lineCenter, lineNorth);
+            }
+        } else if (posPixels.y > SWP.y){
+            if (intersects.length == 0){
+                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+                let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
+                let intersects = turf.lineIntersect(lineCenter, lineSouth);
+            }
+
+        } else {
+             
+        }
+    } else if (posPixels.y < NWP.y){
+        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+        let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
+        let intersects = turf.lineIntersect(lineCenter, lineNorth);
+
+    } else if (posPixels.y > SWP.y){
+        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+        let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
+        let intersects = turf.lineIntersect(lineCenter, lineSouth);
+
+    }
+}
+
 /********************************************************************************
  *                                   Brackets                                   *
  ********************************************************************************/
@@ -2195,6 +2291,7 @@ function toggleSupermarketDistribution(){
  * Create the HTML Floating texts elements
  */
 function createFloatingTexts(){
+    console.log("create floating texts");
     let ETAFloatingText=document.createElement('div');
     ETAFloatingText.style.zIndex = 500;
     ETAFloatingText.style.visibility='hidden';
@@ -2223,7 +2320,57 @@ function createFloatingTexts(){
     circleMarkerText.style.visibility='hidden';
     circleMarkerText.id="circleText";
     circleMarkerText.setAttribute("class", "floatingText");
+    circleMarkerText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(circleMarkerText);
+}
+
+function toggleFloatingTextsUnits(){
+    console.log("toggle; isKM: ", isFloatingTextKM);
+    let circleMarkerText = document.getElementById("circleText");
+    if (isFloatingTextKM){ //change to time
+        
+        circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+        if(areBracketsOn){
+            markerBracketOpen.innerHTML = getTimeFromDistance(markerBracketOpen.getLatLng());
+            markerBracketClose.innerHTML = getTimeFromDistance(markerBracketClose.getLatLng());
+        }
+        isFloatingTextKM = false;
+    } else { //change to distance
+        circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), false);
+        isFloatingTextKM = true;
+    }
+}
+
+function getTimeFromDistance(latlng){
+    let dist = getDistanceFromStartLine(latlng, allPos);
+    let percent = dist*100/distance;
+    // if (transportationMode == "car"){
+        console.log(inHours(percent*time/100));
+    return inHours(percent*time/100);
+    // } else {
+    //     Math.round(dist/100)/10;
+    // }
+}
+
+function getDistanceFromStartLine(latlng, line){
+    isPointOnLine(latlng, line, 5)  
+    points.push(latlng);
+
+    let dist = 0;
+    for (let i = 0; i < points.length - 1; i++){
+        dist += points[i].distanceTo(points[i+1]);
+    }
+
+    return dist;
+}
+
+function distToString(dist, rounded){
+    if (rounded){
+         return (Math.round(dist/100)/10+"km") 
+    } else {
+        return (Math.round(dist/1000)+"km");
+    }
+    
 }
 
 /**
@@ -2294,6 +2441,7 @@ function hideFloatingTexts(){
  * Shows the floating texts
  */
 function showFloatingTexts(){
+    console.log("show floating texts");
     let bracketOpenText = document.getElementById("bracketText");
     let bracketCloseText = document.getElementById("bracketCloseText");
     let circleMarkerText = document.getElementById("circleText");
@@ -2301,6 +2449,8 @@ function showFloatingTexts(){
     bracketOpenText.style.visibility = 'visible';
     bracketCloseText.style.visibility = 'visible';
     circleMarkerText.style.visibility = 'visible';
+
+    updateMarkerTextPos();
 }
 
 /**
@@ -2486,26 +2636,28 @@ function createBrackets(event){
  * @param {boolean} isVert 
  */
 function updatePosTexts(text, element, isVert){
-
+    
     if (element != null){
+        console.log("UPSDATE");
+        console.log(element.getLatLng());
         if (isVert){
             // console.log("vert");
-            var left = toPixels(element.getLatLng()).x+60;
+            var left = toPixels(element.getLatLng()).x-80;
             var top = toPixels(element.getLatLng()).y-5;
             var textSize=[text.offsetWidth,text.offsetHeight];
-            // if (left + textSize[0] > width){
-            //     left = left - 160;
-            // }
+            if (left + textSize[0] < 0){
+                left = left + 160;
+            }
             text.style.left=left+'px';
             text.style.top=top+'px';
             
         } else{
             var left = toPixels(element.getLatLng()).x;
-            var top = toPixels(element.getLatLng()).y+50;
+            var top = toPixels(element.getLatLng()).y-50;
             var textSize=[text.offsetWidth,text.offsetHeight];
-            // if (top + textSize[1] > height){
-            //     top = top - 100;
-            // }
+            if (top + textSize[1] < 0){
+                top = top + 100;
+            }
             text.style.left=left+'px';
             text.style.top=top+'px';
             
@@ -2580,16 +2732,16 @@ function moveMarkers(latlng){
     // console.log(state);
     if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
 
-        let limit = 0.05;
-        if (map.getZoom() > 10){
-            limit = 0.02;
-        }
+        // let limit = 0.05;
+        // if (map.getZoom() > 10){
+        //     limit = 0.02;
+        // }
         
-        state = "circleMove";
-        // console.log("stateChanged");
+        // state = "circleMove";
+        // // console.log("stateChanged");
         let prevCirclePose = circleZoneOfInterest.getLatLng(); //store the previous circle pos
 
-        //Set the middle range marker position
+        // //Set the middle range marker position
         let currentCirclePos = L.GeometryUtil.closest(map, allPos, latlng);
         circleZoneOfInterest.setLatLng(currentCirclePos);
 
@@ -2597,63 +2749,63 @@ function moveMarkers(latlng){
 
         
 
-        // console.log(previousCirclePosition);
-        const prevCirclePixels = toPixels(prevCirclePose);
-        const curentCirclePixel = toPixels(currentCirclePos);
-        // console.log(prevCirclePixels);
-        // console.log(curentCirclePixel);
-        // console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
-        let distPixels = ((prevCirclePixels.distanceTo(curentCirclePixel))*2.54)/(ppi/window.devicePixelRatio);
+        // // console.log(previousCirclePosition);
+        // const prevCirclePixels = toPixels(prevCirclePose);
+        // const curentCirclePixel = toPixels(currentCirclePos);
+        // // console.log(prevCirclePixels);
+        // // console.log(curentCirclePixel);
+        // // console.log("dist in pixels: " + prevCirclePixels.distanceTo(curentCirclePixel));
+        // let distPixels = ((prevCirclePixels.distanceTo(curentCirclePixel))*2.54)/(ppi/window.devicePixelRatio);
        
-        if (distPixels > limit && areBracketsOn){
-            // console.log(distPixels);
-            let distPrev = 0;
-            isPointOnLine(prevCirclePose, allPos, 0.5);
-            for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
-                distPrev += points[i].distanceTo(points[i+1]);
-            }
-            distPrev += points[points.length-1].distanceTo(prevCirclePose);
+        // if (distPixels > limit && areBracketsOn){
+        //     // console.log(distPixels);
+        //     let distPrev = 0;
+        //     isPointOnLine(prevCirclePose, allPos, 0.5);
+        //     for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
+        //         distPrev += points[i].distanceTo(points[i+1]);
+        //     }
+        //     distPrev += points[points.length-1].distanceTo(prevCirclePose);
             
 
-            let distAct = 0;
-            isPointOnLine(currentCirclePos, allPos, 0.5);
-            for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
-                distAct += points[i].distanceTo(points[i+1]);
-            }
-            distAct += points[points.length-1].distanceTo(currentCirclePos);
+        //     let distAct = 0;
+        //     isPointOnLine(currentCirclePos, allPos, 0.5);
+        //     for (let i = 0; i < points.length - 1; i++){ //calculate the distance from the start to this point
+        //         distAct += points[i].distanceTo(points[i+1]);
+        //     }
+        //     distAct += points[points.length-1].distanceTo(currentCirclePos);
 
-            let distActPrevCircle = distAct-distPrev; //distance between actual and previous positions along the line 
+        //     let distActPrevCircle = distAct-distPrev; //distance between actual and previous positions along the line 
             
-            // if (distActPrevCircle != 0){
-            //     console.log("distPrev: " + distPrev);
-            //     console.log("distAct: " +  distAct);
-            //     console.log("distActPrev: " +  distActPrevCircle);
-            // }
+        //     // if (distActPrevCircle != 0){
+        //     //     console.log("distPrev: " + distPrev);
+        //     //     console.log("distAct: " +  distAct);
+        //     //     console.log("distActPrev: " +  distActPrevCircle);
+        //     // }
 
-            let openFirstDist = distAct - openCircleDist;
-            let newOpenCircleDist = openFirstDist + distActPrevCircle;
+        //     let openFirstDist = distAct - openCircleDist;
+        //     let newOpenCircleDist = openFirstDist + distActPrevCircle;
 
-            let closeFirstDist = distAct + closeCircleDist;
-            let newCloseCircleDist = closeFirstDist + distActPrevCircle;
+        //     let closeFirstDist = distAct + closeCircleDist;
+        //     let newCloseCircleDist = closeFirstDist + distActPrevCircle;
 
-            let pointOpen = turf.along(itineraryJSON, newOpenCircleDist/1000).geometry.coordinates;
-            let pointClose = turf.along(itineraryJSON, newCloseCircleDist/1000).geometry.coordinates;
+        //     let pointOpen = turf.along(itineraryJSON, newOpenCircleDist/1000).geometry.coordinates;
+        //     let pointClose = turf.along(itineraryJSON, newCloseCircleDist/1000).geometry.coordinates;
 
-            let latLngOpen = L.latLng(pointOpen[1], pointOpen[0]);
-            let latLngClose = L.latLng(pointClose[1], pointClose[0]);
+        //     let latLngOpen = L.latLng(pointOpen[1], pointOpen[0]);
+        //     let latLngClose = L.latLng(pointClose[1], pointClose[0]);
 
-            markerBracketOpen.setLatLng(latLngOpen);
-            markerBracketClose.setLatLng(latLngClose);
+        //     markerBracketOpen.setLatLng(latLngOpen);
+        //     markerBracketClose.setLatLng(latLngClose);
 
-            //Update line highlight and texts and texts positions
-            lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
-            // updateMarkerTextPos();
-            // updateBracketCloseText();
-            // updateBracketOpenText();
+        //     //Update line highlight and texts and texts positions
+        //     lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
+            updateMarkerTextPos();
+        //     // updateBracketCloseText();
+        //     // updateBracketOpenText();
         
             
             
-        } 
+        // } 
         isPointOnLine(currentCirclePos, allPos, 5);
             points.push(currentCirclePos);
             var dist = 0;
@@ -2672,15 +2824,17 @@ function moveMarkers(latlng){
  * Update the range markers positions
  */
 function updateMarkerTextPos(){
+    let circleMarkerText = document.getElementById("circleText");
+    updatePosTexts(circleMarkerText, circleZoneOfInterest, true);
     if (markerBracketClose != null){
         let bracketOpenText = document.getElementById("bracketText");
         let bracketCloseText = document.getElementById("bracketCloseText");
-        let circleMarkerText = document.getElementById("circleText");
+        
 
         let vert = isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng()),0.5);
         updatePosTexts(bracketCloseText, markerBracketClose, vert);
         updatePosTexts(bracketOpenText, markerBracketOpen, vert);
-        updatePosTexts(circleMarkerText, circleZoneOfInterest, vert);
+        
     }
 }
 
@@ -2976,9 +3130,11 @@ function hideLayers(){
 
     if (circleZoneOfInterest != null){
         map.removeLayer(circleZoneOfInterest);
-        map.removeLayer(markerBracketOpen);
-        map.removeLayer(markerBracketClose);
-        map.removeLayer(polylineBracket);
+        if(areBracketsOn){
+            map.removeLayer(markerBracketOpen);
+            map.removeLayer(markerBracketClose);
+            map.removeLayer(polylineBracket);    
+        }
         hideFloatingTexts();
         
     }
@@ -3137,8 +3293,10 @@ onpointerup = (event) => {
         var sliderDiv = document.getElementById("slider");
         sliderDiv.style.visibility = "hidden";
         state = "pointPlaced";
-        markerBracketClose.dragging.enable();
-        markerBracketOpen.dragging.enable();
+        if (areBracketsOn){
+            markerBracketClose.dragging.enable();
+            markerBracketOpen.dragging.enable();
+        }
         clickOnSlider = false;
     } else if (state == "pointPlaced"){
         pointPlacedToItinerary(latlng, point);
