@@ -322,6 +322,9 @@ function routingToPolyline(routeJSON){
 
     let line = L.Polyline.fromEncoded(routeJSON.geometry);
     allPos = line.getLatLngs();
+
+    weatherLayerGroup = null;
+    weatherLayerGroupLines = null;
     
     // getResolution();
     reroute();
@@ -380,8 +383,7 @@ function reroute(){
             }
         }
 
-        weatherLayerGroup = null;
-        weatherLayerGroupLines = null;
+        
         //Check if a layer is activated and if yes re-activate it
         if(isElevationDisplayed){
             isElevationDisplayed = false;
@@ -2027,16 +2029,26 @@ function loadWeather(){
     if (weatherLayerGroup == null){
         let length = allPos.length;
         if (transportationMode == "car"){
-            var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
-            var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(2/8))], 2), {icon: weatherCloudSun});
-            var marker3 = L.marker(getWeatherPos(allPos[Math.floor(length*(3/8))], 3), {icon: weatherCloudy});
-            var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(6/8))], 6), {icon: weatherCloudSun});
-            // var marker6 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 7), {icon: weatherSunny});
 
-            var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
-            var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(2/8))]], {color:"black", weigth:1}).addTo(map);
-            var line3 = L.polyline([marker3.getLatLng(), allPos[Math.floor(length*(3/8))]], {color:"black", weigth:1}).addTo(map);
-            var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(6/8))]], {color:"black", weigth:1}).addTo(map);
+            const pos1 = turf.along(itineraryJSON,0).geometry.coordinates;
+            const pos2 = turf.along(itineraryJSON,(distance*2/8)/1000).geometry.coordinates;
+            const pos3 = turf.along(itineraryJSON,(distance*3/8)/1000).geometry.coordinates;
+            const pos6 = turf.along(itineraryJSON,(distance*6/8)/1000).geometry.coordinates;
+
+            const latlng1 = L.latLng(pos1[1], pos1[0]);
+            const latlng2 = L.latLng(pos2[1], pos2[0]);
+            const latlng3 = L.latLng(pos3[1], pos3[0]);
+            const latlng6 = L.latLng(pos6[1], pos6[0]);
+
+            var marker1 = L.marker(getWeatherPos(latlng1, 1), {icon: weatherRainy});
+            var marker2 = L.marker(getWeatherPos(latlng2, 2), {icon: weatherCloudSun});
+            var marker3 = L.marker(getWeatherPos(latlng3, 3), {icon: weatherCloudy});
+            var marker6 = L.marker(getWeatherPos(latlng6, 6), {icon: weatherCloudSun});
+
+            var line1 = L.polyline([marker1.getLatLng(), latlng1], {color:"black", weigth:1}).addTo(map);
+            var line2 = L.polyline([marker2.getLatLng(), latlng2], {color:"black", weigth:1}).addTo(map);
+            var line3 = L.polyline([marker3.getLatLng(), latlng3], {color:"black", weigth:1}).addTo(map);
+            var line6 = L.polyline([marker6.getLatLng(), latlng6], {color:"black", weigth:1}).addTo(map);
             // var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
 
             weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker6 ]).addTo(map);
@@ -2108,16 +2120,17 @@ function updatePositions(){
         var closestXY = toPixels(closest);
        
         var newXY;
-        if (isVertical(prevPoint, closestXY, 0.03)){
-            newXY = L.point((closestXY.x-60), closestXY.y);
-        } else {
+        // if (isVertical(prevPoint, closestXY, 0.03)){
+            // newXY = L.point((closestXY.x-60), closestXY.y);
+        // } else {
             newXY = L.point(closestXY.x, (closestXY.y+60));
-        }
+        // }
         var newLatLng = map.containerPointToLatLng(newXY);
         layers[i].setLatLng(newLatLng);
         prevPoint = closestXY;
         lines[i].setLatLngs([newLatLng, closest]);
     }
+    closestWeatherIcon();
 
 
 }
@@ -2217,7 +2230,43 @@ function toggleSupermarketDistribution(){
     }
 }
 
-function weatheIconMove(latlng){
+function closestWeatherIcon(){
+    const bounds = map.getBounds();
+    const latlngCenter = L.latLng(bounds.getCenter().lat, bounds.getNorthEast().lng);
+    let fraction = L.GeometryUtil.locateOnLine(map, itinerary, L.GeometryUtil.closest(map, allPos, latlngCenter));
+    
+    
+    if (fraction > (6/8)){
+        console.log("SIX");
+        const pos6 = turf.along(itineraryJSON,(distance*6/8)/1000).geometry.coordinates;
+        const latlng6 = L.latLng(pos6[1], pos6[0]);
+        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"red"}).addTo(map);
+        weatherIconMove(weatherLayerGroup.getLayers()[3], weatherLayerGroupLines.getLayers()[3], latlng6);
+    } else if (fraction > (3/8)){
+        console.log("THREE");
+        const pos3 = turf.along(itineraryJSON,(distance*3/8)/1000).geometry.coordinates;
+        const latlng3 = L.latLng(pos3[1], pos3[0]);
+        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"green"}).addTo(map);
+        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], latlng3);
+
+    } else if (fraction > (2/8)){
+        console.log("TWO");
+        const pos2 = turf.along(itineraryJSON,(distance*2/8)/1000).geometry.coordinates;
+        const latlng2 = L.latLng(pos2[1], pos2[0]);
+        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"black"}).addTo(map);
+        weatherIconMove(weatherLayerGroup.getLayers()[1], weatherLayerGroupLines.getLayers()[1], latlng2);
+
+    } else{
+        console.log("ONE");
+        const pos1 = turf.along(itineraryJSON,0).geometry.coordinates;
+        const latlng1 = L.latLng(pos1[1], pos1[0]);
+        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110}).addTo(map);
+        weatherIconMove(weatherLayerGroup.getLayers()[0], weatherLayerGroupLines.getLayers()[0], latlng1);
+    }
+}
+
+function weatherIconMove(icon, line, latlng){
+    // let latlng = icon.getLatLng();
     let bounds = map.getBounds();
     let center = bounds.getCenter();
     let SW = bounds.getSouthWest();
@@ -2229,58 +2278,81 @@ function weatheIconMove(latlng){
     let NWP = toPixels(NW);
     let NEP = toPixels(NE);
     let posPixels = toPixels(latlng);
+    let oldLatlng = icon.getLatLng();
 
     if (posPixels.x < SWP.x){
         let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
         let lineWest = turf.lineString([[SW.lng, SW.lat], [NW.lng, NW.lat]]);
         let intersects = turf.lineIntersect(lineCenter, lineWest);   
-        if (posPixels.y < NWP.y){
-            if (intersects.length == 0){
-                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-                let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
-                let intersects = turf.lineIntersect(lineCenter, lineNorth);
+        if (intersects.length == 0){
+            if (posPixels.y < NWP.y){
+                let intPixels = getIntersection (center, latlng, NW, NE);
+                intPixels.y = intPixels.y+30;
+                updateLineAndPos(intPixels, line, oldLatlng, icon);
+            } else if (posPixels.y > SWP.y){
+                let intPixels = getIntersection (center, latlng, SW, SE);
+                intPixels.y = intPixels.y-30;
+                updateLineAndPos(intPixels, line, oldLatlng, icon);
             }
-        } else if (posPixels.y > SWP.y){
-            if (intersects.length == 0){
-                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-                let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
-                let intersects = turf.lineIntersect(lineCenter, lineSouth);
-            }
-
         } else {
-             
+            let intJSON = intersects.features[0].geometry.coordinates;
+            let intPixels = toPixels(L.latLng(intJSON[1], intJSON[0]));
+            intPixels.x = intPixels.x+15;
+            updateLineAndPos(intPixels, line, oldLatlng, icon);
         }
     } else if (posPixels.x > SEP.x){
         let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
         let lineEast = turf.lineString([[SE.lng, SE.lat], [NE.lng, NE.lat]]);
         let intersects = turf.lineIntersect(lineCenter, lineEast);
-        if (posPixels.y < NWP.y){
-            if (intersects.length == 0){
-                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-                let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
-                let intersects = turf.lineIntersect(lineCenter, lineNorth);
-            }
-        } else if (posPixels.y > SWP.y){
-            if (intersects.length == 0){
-                let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-                let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
-                let intersects = turf.lineIntersect(lineCenter, lineSouth);
+        if (intersects.length == 0){
+            if (posPixels.y < NWP.y){
+                let intPixels = getIntersection (center, latlng, NW, NE);
+                intPixels.y = intPixels.y+30;
+                updateLineAndPos(intPixels, line, oldLatlng, icon);
+            } else if (posPixels.y > SWP.y){
+                let intPixels = getIntersection (center, latlng, SW, SE);
+                intPixels.y = intPixels.y-30;
+                updateLineAndPos(intPixels, line, oldLatlng,icon);
             }
 
         } else {
-             
+            let intJSON = intersects.features[0].geometry.coordinates;
+            let intPixels = toPixels(L.latLng(intJSON[1], intJSON[0]));
+            intPixels.x = intPixels.x-30;
+            updateLineAndPos(intPixels, line, oldLatlng,icon);  
         }
     } else if (posPixels.y < NWP.y){
-        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-        let lineNorth = turf.lineString([[NW.lng, NW.lat], [NE.lng, NE.lat]]);
-        let intersects = turf.lineIntersect(lineCenter, lineNorth);
-
+        let intPixels = getIntersection (center, latlng, NW, NE);
+        intPixels.y = intPixels.y+30;
+        updateLineAndPos(intPixels, line, oldLatlng,icon);
     } else if (posPixels.y > SWP.y){
-        let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
-        let lineSouth = turf.lineString([[SW.lng, SW.lat], [SE.lng, SE.lat]]);
-        let intersects = turf.lineIntersect(lineCenter, lineSouth);
+        let intPixels = getIntersection (center, latlng, SW, SE);
+        lintPixels.y = intPixels.y-30;
+        updateLineAndPos(intPixels, line, oldLatlng, icon);
 
     }
+}
+
+function updateLineAndPos(intPixels, line, oldLatlng, icon){
+    const intLatLng = toLatLng(intPixels);
+    console.log("before", line.getLatLngs());
+    icon.setLatLng(intLatLng);
+    const lineCoords = line.getLatLngs();
+    if (lineCoords[0] == oldLatlng){
+        line.setLatLngs([intLatLng, lineCoords[1]]);
+    } else {
+        line.setLatLngs([intLatLng, lineCoords[0]]);
+    }
+    console.log("after", line.getLatLngs());
+}
+
+function getIntersection (center, latlng, coord1, coord2){
+    const lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
+    const lineNorth = turf.lineString([[coord1.lng, coord1.lat], [coord2.lng, coord2.lat]]);
+    const intersects = turf.lineIntersect(lineCenter, lineNorth);
+    const intJSON = intersects.features[0].geometry.coordinates;
+    return toPixels(L.latLng(intJSON[1], intJSON[0]));
+
 }
 
 /********************************************************************************
@@ -2806,23 +2878,11 @@ function moveMarkers(latlng){
             
             
         // } 
-        // isPointOnLine(currentCirclePos, allPos, 5);
-        // points.push(currentCirclePos);
-        // var dist = 0;
-        // for (var i = 0; i < points.length - 1; i++){
-        //     dist += points[i].distanceTo(points[i+1]);
-        // }
-        // let circleMarkerText = document.getElementById("circleText");
-        // if (transportationMode == "car"){
-        //     circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
-        // } else {
-        //     circleMarkerText.innerHTML=(Math.round(dist/100)/10) +"km";
-        // }
         updateCircleText();
             
-            state = "circleMove";
-            // console.log("WE ARE CHANGING THE POS");
-            previousCirclePosition = currentCirclePos;
+        state = "circleMove";
+        // console.log("WE ARE CHANGING THE POS");
+        previousCirclePosition = currentCirclePos;
     }
 }
 
@@ -2913,6 +2973,9 @@ function toPixels(latlng){
     return map.latLngToContainerPoint(latlng);
 }
 
+function toLatLng(point){
+    return map.containerPointToLatLng(point);
+}
 /**
  * Toggles visibility of an HTML element from visible to collapse
  * @param {HTMLElement} element 
@@ -3361,12 +3424,12 @@ onpointerup = (event) => {
             markerBracketClose.setRadius(zoomMult*0.8);
             updateSizeMarkers();
         }
-        
-
     }
+
     if(isWeatherDisplayed){
         updatePositions();
     }
+    
     if (isMenuOn){
         var menuDiv = document.getElementById("menu");
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
@@ -3389,9 +3452,4 @@ onpointerup = (event) => {
             markerBracketClose.dragging.enable();            
         }
     }
-    // stroke.bringToFront();
-    // outline.bringToFront();
-    // itinerary.bringToFront();
-    // document.getElementsByTagName('body')[0].focus();
-    
 }
