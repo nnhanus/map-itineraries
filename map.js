@@ -1232,7 +1232,8 @@ function oplQuery(queryString){
                         routingWaypoints.splice(1, 0, marker.getLatLng());
                         ORSRouting();
                     } else {
-                        firstRequest(marker.getLatLng());
+                        // firstRequest(marker.getLatLng());
+                        whichWayIsFaster(latlng, address)
                     }
                     //Create new popup
                     const container =  L.DomUtil.create('div');
@@ -1349,7 +1350,8 @@ function geocoding(latlng){
             routingAddresses.splice(1,0,adress);
             ORSRouting();
         } else {
-            firstRequest(latlng, adress);
+            // firstRequest(latlng, adress);
+            whichWayIsFaster(latlng, adress)
         }
         // routingWaypoints.splice(1, 0, latlng);
         // ORSRouting();
@@ -1466,6 +1468,45 @@ function chooseHalf(firstRoute, secondRoute, latlng, adress){
     // ORSRouting();
     
 
+}
+
+function whichWayIsFaster(latlng, address){
+    //find closest waypoints
+
+    let dist = latlng.distanceTo(routingWaypoints[0]) ;
+    let index = 0;
+    for(let i = 0; i < routingWaypoints.length; i++){
+        let currentDist = latlng.distanceTo(routingWaypoints[i]);
+        if (currentDist < dist){
+            dist = currentDist;
+            index = i;
+        }
+    }
+
+    let firstRoute = 0;
+    let secondRoute = 0;
+    for (let i = 0; i < routingWaypoints.length-1; i++){
+        if (i == index-1){
+            firstRoute += routingWaypoints[i].distanceTo(latlng);
+            firstRoute += latlng.distanceTo(routingWaypoints[i+1]);
+            secondRoute += routingWaypoints[i].distanceTo(routingWaypoints[i+1]);
+        } else if (i == index){
+            firstRoute += routingWaypoints[i].distanceTo(routingWaypoints[i+1]);
+            secondRoute += routingWaypoints[i].distanceTo(latlng);
+            secondRoute += latlng.distanceTo(routingWaypoints[i+1]);
+        } else {
+            firstRoute += routingWaypoints[i].distanceTo(routingWaypoints[i+1]);
+            secondRoute += routingWaypoints[i].distanceTo(routingWaypoints[i+1]);
+        }
+    } 
+    if (firstRoute < secondRoute){
+        routingAddresses.splice(index,0,address);
+        routingWaypoints.splice(index, 0, latlng);
+    } else {
+        routingAddresses.splice(index+1,0,address);
+        routingWaypoints.splice(index+1, 0, latlng);
+    }
+    ORSRouting();
 }
 
 /********************************************************************************
@@ -2947,7 +2988,7 @@ function pointToLatLng(line){
     var res = [];
     line.forEach(element => {
         res.push(map.containerPointToLatLng(element));
-    })
+    });
     return res;
 }
 
@@ -2960,7 +3001,7 @@ function latLngToPoint(line){
     var res = [];
     line.forEach(element => {
         res.push(toPixels(element));
-    })
+    });
     return res;
 }
 
