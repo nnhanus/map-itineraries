@@ -1288,20 +1288,12 @@ function oplQuery(queryString){
         afterRequest: function()  {
             console.log("afterRequest");
             //Replace pulsing queryZone with non pulsing one
-            // map.removeLayer(queryZone);
-            // var nZone = L.polygon(queryZone.getLatLngs(), {fillColor: '#1b1bff', fillOpacity: 0.4, opacity:0}).addTo(map);
-            
-            // queryZone = nZone;
-            // queryZone._path.removeClass("pulse");
             L.DomUtil.removeClass(queryZone._path, "pulse");
             queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
             
             if(areBracketsOn){
                 polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
             }
-            
-            // console.log("SHOULD ADD HERE");
-            // L.control.clear({}).addTo(map);
             makeClearButton(); //Add button to clear  query result
         } 
         });
@@ -1375,101 +1367,6 @@ function decodeGeocodingResults(result){
       
 }
 
-function firstRequest(latlng, adress){
-    let firstHalf = [];
-    routingWaypoints.forEach( (element) => {
-        firstHalf.push(element);
-    });
-    firstHalf.splice(1, 0, latlng);
-    console.log("waypoints: ", routingWaypoints);
-    console.log("first half: ", firstHalf);
-    let request = new XMLHttpRequest();
-
-    let link = "https://api.openrouteservice.org/v2/directions/";
-    if (transportationMode == "car"){
-        link += "driving-car";
-    } else {
-        link += "foot-walking";
-    }
-    link += "/json";
-    request.open('POST', link);
-
-    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
-    request.setRequestHeader('Content-Type', 'application/json');
-    request.setRequestHeader('Authorization', APIKey);
-
-    request.onreadystatechange = function () {
-        if (this.readyState === 4) {
-            let jsonResult = JSON.parse(this.response);
-            let route = jsonResult.routes[0];
-            secondRequest(latlng, route, adress);
-        }
-    };
-
-    const body = routingWaypointsToQueryString(firstHalf);
-
-    request.send(body);
-}
-
-function secondRequest(latlng, firstRoute, adress){
-    let secondHalf = [];
-    routingWaypoints.forEach( (element) => {
-        secondHalf.push(element);
-    });
-    secondHalf.splice(2,0,latlng);
-
-    console.log("waypoints: ", routingWaypoints);
-    console.log("second half: ", secondHalf);
-
-    let request = new XMLHttpRequest();
-
-    let link = "https://api.openrouteservice.org/v2/directions/";
-    if (transportationMode == "car"){
-        link += "driving-car";
-    } else {
-        link += "foot-walking";
-    }
-    link += "/json";
-    request.open('POST', link);
-
-    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
-    request.setRequestHeader('Content-Type', 'application/json');
-    request.setRequestHeader('Authorization', APIKey);
-
-    request.onreadystatechange = function () {
-        if (this.readyState === 4) {
-            let jsonResult = JSON.parse(this.response);
-            let route = jsonResult.routes[0];
-            chooseHalf(firstRoute, route, latlng, adress);
-        }
-    };
-
-    const body = routingWaypointsToQueryString(secondHalf);
-
-    request.send(body);
-}
-
-function chooseHalf(firstRoute, secondRoute, latlng, adress){
-    console.log("choose");
-    console.log(adress);
-    let firstTime = firstRoute.summary.duration;
-    let secondTime = secondRoute.summary.duration;
-    console.log("first: " + firstTime + "s, second: " +  secondTime);
-    if(firstTime < secondTime){
-        // routingWaypoints.splice(1, 0, latlng);
-        routingAddresses.splice(1,0,adress);
-        routingToPolyline(firstRoute);
-    } else {
-        let index = routingWaypoints.length - 1;
-        // routingWaypoints.splice(index, 0, latlng);
-        routingAddresses.splice(index,0,adress);
-        routingToPolyline(secondRoute);
-    }
-    // ORSRouting();
-    
-
-}
-
 function whichWayIsFaster(latlng, address){
     //find closest waypoints
 
@@ -1499,11 +1396,15 @@ function whichWayIsFaster(latlng, address){
             secondRoute += routingWaypoints[i].distanceTo(routingWaypoints[i+1]);
         }
     } 
-    if (firstRoute < secondRoute){
-        routingAddresses.splice(index,0,address);
+    console.log("index: ", index, ", firstroute: ", firstRoute, ", secondRoute: ", secondRoute);
+    if (index == 0){
+        routingAddresses.splice(1, 0, address);
+        routingWaypoints.splice(1, 0, latlng);
+    } else if (firstRoute < secondRoute || index == routingWaypoints.length-1){
+        routingAddresses.splice(index, 0, address);
         routingWaypoints.splice(index, 0, latlng);
     } else {
-        routingAddresses.splice(index+1,0,address);
+        routingAddresses.splice(index+1, 0, address);
         routingWaypoints.splice(index+1, 0, latlng);
     }
     ORSRouting();
