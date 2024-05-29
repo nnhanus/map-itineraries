@@ -1367,6 +1367,11 @@ function decodeGeocodingResults(result){
       
 }
 
+/**
+ * Places the new waypoint where it is supposed to go for the route to be faster
+ * @param {L.LatLng} latlng 
+ * @param {String} address 
+ */
 function whichWayIsFaster(latlng, address){
     //find closest waypoints
 
@@ -2172,6 +2177,9 @@ function toggleSupermarketDistribution(){
     }
 }
 
+/**
+ * Calculates on which portion of the itinerary we are accoridng to the weather
+ */
 function closestWeatherIcon(){
     const bounds = map.getBounds();
     const latlngCenter = L.latLng(bounds.getCenter().lat, bounds.getNorthEast().lng);
@@ -2207,6 +2215,12 @@ function closestWeatherIcon(){
     }
 }
 
+/**
+ * Fets the quadrant the icon is in and sets new positions
+ * @param {L.marker} icon 
+ * @param {L.Polyline} line 
+ * @param {L.LatLng} latlng 
+ */
 function weatherIconMove(icon, line, latlng){
     // let latlng = icon.getLatLng();
     let bounds = map.getBounds();
@@ -2275,6 +2289,13 @@ function weatherIconMove(icon, line, latlng){
     }
 }
 
+/**
+ * Updates the icon and line positions
+ * @param {L.Point} intPixels 
+ * @param {L.Polyline} line 
+ * @param {L.latLng} oldLatlng 
+ * @param {L.marker} icon 
+ */
 function updateLineAndPos(intPixels, line, oldLatlng, icon){
     const intLatLng = toLatLng(intPixels);
     console.log("before", line.getLatLngs());
@@ -2288,6 +2309,14 @@ function updateLineAndPos(intPixels, line, oldLatlng, icon){
     console.log("after", line.getLatLngs());
 }
 
+/**
+ * Returns the intersection between the line[center, latlng] and the line [coord1, coord2]
+ * @param {L.LatLng} center 
+ * @param {L.LatLng} latlng 
+ * @param {L.LatLng} coord1 
+ * @param {L.LatLng} coord2 
+ * @returns {L.Point}
+ */
 function getIntersection (center, latlng, coord1, coord2){
     const lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
     const lineNorth = turf.lineString([[coord1.lng, coord1.lat], [coord2.lng, coord2.lat]]);
@@ -2338,6 +2367,9 @@ function createFloatingTexts(){
     document.body.appendChild(circleMarkerText);
 }
 
+/**
+ * Toggles between distance and time for the floating texts
+ */
 function toggleFloatingTextsUnits(){
     console.log("toggle; isKM: ", isFloatingTextKM);
     let circleMarkerText = document.getElementById("circleText");
@@ -2355,6 +2387,11 @@ function toggleFloatingTextsUnits(){
     }
 }
 
+/**
+ * Calculates the time from the point to the start of the line according the the distance
+ * @param {L.LatLng} latlng 
+ * @returns {String}
+ */
 function getTimeFromDistance(latlng){
     let dist = getDistanceFromStartLine(latlng, allPos);
     let percent = dist*100/distance;
@@ -2366,6 +2403,12 @@ function getTimeFromDistance(latlng){
     // }
 }
 
+/**
+ * Calculates the distance between a point on the line and the start of the line
+ * @param {L.LatLng} latlng 
+ * @param {L.LatLng[]} line 
+ * @returns {Number}
+ */
 function getDistanceFromStartLine(latlng, line){
     isPointOnLine(latlng, line, 5)  
     points.push(latlng);
@@ -2378,6 +2421,12 @@ function getDistanceFromStartLine(latlng, line){
     return dist;
 }
 
+/**
+ * Takes the distance and turns it into a string with the unit; rounded to 0.1 or not
+ * @param {Number} dist 
+ * @param {Boolean} rounded 
+ * @returns {String}
+ */
 function distToString(dist, rounded){
     if (rounded){
          return (Math.round(dist/100)/10+"km") 
@@ -2652,8 +2701,8 @@ function createBrackets(event){
 function updatePosTexts(text, element, isVert){
     
     if (element != null){
-        console.log("UPSDATE");
-        console.log(element.getLatLng());
+        // console.log("UPSDATE");
+        // console.log(element.getLatLng());
         if (isVert){
             // console.log("vert");
             var left = toPixels(element.getLatLng()).x-80;
@@ -2846,6 +2895,9 @@ function updateMarkerTextPos(){
     }
 }
 
+/**
+ * Makes sure the circle markers are never bigger than the queryZone
+ */
 function updateSizeMarkers(){
     let zoneBounds = queryZone.getBounds();
     let distanceEW = zoneBounds.getSouthWest().distanceTo(zoneBounds.getSouthEast());
@@ -2867,6 +2919,9 @@ function updateSizeMarkers(){
     }
 }
 
+/**
+ * Updates the text of the circle marker according to the unit
+ */
 function updateCircleText(){
     let circleMarkerText = document.getElementById("circleText");
     if (isFloatingTextKM){
@@ -3089,6 +3144,9 @@ function createButton(label, container) {
     return btn;
 }
 
+/**
+ * Redraws the itinerary after a change of viewport to fix the mask disappearing
+ */
 function forceRedraw(){
     // if(needRedraw){        
         // console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
