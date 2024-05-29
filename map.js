@@ -2345,7 +2345,7 @@ function getTimeFromDistance(latlng){
     let dist = getDistanceFromStartLine(latlng, allPos);
     let percent = dist*100/distance;
     // if (transportationMode == "car"){
-        console.log(inHours(percent*time/100));
+    console.log(inHours(percent*time/100));
     return inHours(percent*time/100);
     // } else {
     //     Math.round(dist/100)/10;
@@ -2806,14 +2806,20 @@ function moveMarkers(latlng){
             
             
         // } 
-        isPointOnLine(currentCirclePos, allPos, 5);
-            points.push(currentCirclePos);
-            var dist = 0;
-            for (var i = 0; i < points.length - 1; i++){
-                dist += points[i].distanceTo(points[i+1]);
-            }
-            let circleMarkerText = document.getElementById("circleText");
-            circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
+        // isPointOnLine(currentCirclePos, allPos, 5);
+        // points.push(currentCirclePos);
+        // var dist = 0;
+        // for (var i = 0; i < points.length - 1; i++){
+        //     dist += points[i].distanceTo(points[i+1]);
+        // }
+        // let circleMarkerText = document.getElementById("circleText");
+        // if (transportationMode == "car"){
+        //     circleMarkerText.innerHTML=(dist/1000).toFixed(0) +"km";
+        // } else {
+        //     circleMarkerText.innerHTML=(Math.round(dist/100)/10) +"km";
+        // }
+        updateCircleText();
+            
             state = "circleMove";
             // console.log("WE ARE CHANGING THE POS");
             previousCirclePosition = currentCirclePos;
@@ -2859,6 +2865,15 @@ function updateSizeMarkers(){
     }
 }
 
+function updateCircleText(){
+    let circleMarkerText = document.getElementById("circleText");
+    if (isFloatingTextKM){
+        let dist = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
+        circleMarkerText.innerHTML = distToString(dist, (transportationMode == "foot"));
+    } else { 
+        circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+    }
+}
 
 /********************************************************************************
  *                                  Utilities                                   *
