@@ -74,6 +74,7 @@ var openedMarker;
 var openedPopup;
 
 var infoRouteTop = 605;
+const defaultRouteTop = 605;
 
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
@@ -81,6 +82,7 @@ var transportationMode = "car"; //"car" or "foot"
 
 const startCar = L.latLng(48.711967757928974, 2.166628674285006);
 const endCar = L.latLng(47.20617749880269, -1.564392769503869);
+// const endCar = L.latLng(48.69519492350087, 2.1760177471346864);
 const coordsCar = [startCar, endCar];
 // const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(48.69519492350087, 2.1760177471346864)];
 const addressCar = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
@@ -271,11 +273,12 @@ function ORSRouting(){
     let request = new XMLHttpRequest();
 
     let link = "https://api.openrouteservice.org/v2/directions/";
-    // let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/driving-car";
+    // let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
+    // https://mapitin.lisn.upsaclay.fr:8890/ors/v2 
     if (transportationMode == "car"){
         link += "driving-car";
     } else {
-        link += "foot-walking";
+        link += "foot-hiking";
     }
     link += "/json";
     request.open('POST', link);
@@ -440,7 +443,7 @@ function reroute(){
     let children = container.children;
     // console.log("children length: " + children.length);
 
-    if(children.length < routingAddresses.length){
+    while(children.length < routingAddresses.length){
         let geocoder = document.createElement("input");
         geocoder.setAttribute("class", "geocoder");
         container.append(geocoder);
@@ -448,9 +451,14 @@ function reroute(){
         infoRouteTop -= 24;
         const infoBox = document.getElementById("routingControl");
         infoBox.style.top = infoRouteTop+'px';
-    } else if (children.length > routingAddresses.length){
+    } 
+    while (children.length > routingAddresses.length){
         //REMOVE A DIV
         container.children[1].remove();
+        children = container.children;
+        infoRouteTop += 24;
+        const infoBox = document.getElementById("routingControl");
+        infoBox.style.top = infoRouteTop+'px';
         
     }
 
@@ -1636,11 +1644,15 @@ function itineraryToPointPlaced(latlng, point){
             // circleZoneOfInterest.dragging.enable()
 
             var circleHTML = circleZoneOfInterest._path;
-            circleHTML.onclick= function(e){
-                if(areBracketsOn){
-                    bracketsQuery();
-                } else   {
-                    openMenu();
+            circleHTML.onpointerup= function(e){
+                console.log("ONPOINTERUP DU CIRCLE");
+                const millis = Date.now() - startTime;
+                if ((millis / 1000) < 0.3){
+                    if(areBracketsOn){
+                        bracketsQuery();
+                    } else   {
+                        openMenu();
+                    }
                 }
             };
             circleHTML.onpointerdown = function(e){clickOnCircle = true};
@@ -1670,8 +1682,9 @@ function itineraryToPointPlaced(latlng, point){
  * @param {PointerEvent} event 
  */
 function openMenu(event){
-    // console.log(state);
+    console.log(state);
     if (state == "pointPlaced"){
+        console.log("dans la boucle");
         state = "menu";
         var menuDiv = document.getElementById("menu");
         menuDiv.onpointerdown = function(e){console.log("menu OnPointerDown"); clickOnMenu = true};
@@ -1688,6 +1701,7 @@ function openMenu(event){
             }
             openSlider(type)};
         supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
+        console.log("here we set the visibility to visible");
         menuDiv.style.visibility = "visible";
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
@@ -1759,10 +1773,6 @@ function itineraryPass(itinerary, distValue){
     for (var i = 0; i < itinerary.length - 1; i++){
         dist += itinerary[i].distanceTo(itinerary[i+1]);
         if (dist > distValue*3){
-            // var marker = L.marker(itinerary[i+1]).addTo(map); 
-            // marker.bindPopup("dist: " + dist/1000 + "km");
-            // console.log(isVertical(map.latLngToContainerPoint(prevPoint), map.latLngToContainerPoint(itinerary[i+1])));
-            // var circleDist;
             if (forstPoint == null){
                 forstPoint = itinerary[i+1];
             }
@@ -3455,7 +3465,8 @@ onpointerup = (event) => {
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
     // console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
-    if (state == "menu" && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
+    if (state == "menu" && !clickOnCircle && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
+        console.log("perhaps we arrive here");
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
         state = "pointPlaced";
