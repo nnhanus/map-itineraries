@@ -112,6 +112,11 @@ var intervalID;
 var isFloatingTextKM = true;
 var areBracketsOn = false;
 
+var queryType = "";
+var queryUnits = "";
+var queryRange = "";
+var hasMovedQueryZone = false;
+
 /********************************************************************************
  *                                   Controls                                   *
  ********************************************************************************/
@@ -943,6 +948,12 @@ function isochroneGlobal(type, value, units){
     }
 } 
 
+/**
+ * 
+ * @param {String} type 
+ * @param {Number} value 
+ * @param {String} units 
+ */
 function isochronesLocal(type, value, units){
     L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
     // console.log(points);
@@ -973,6 +984,9 @@ function isochronesLocal(type, value, units){
         }
     };
 
+    queryRange = value;
+    queryType = type;
+    queryUnits = units;
     // const body = makeIsoQuery(circleZoneOfInterest.getLatLng(), value, units);
     const point = circleZoneOfInterest.getLatLng();
     let body = '{"locations":[[' + point.lng + ',' + point.lat + ']],"range":[';
@@ -982,7 +996,7 @@ function isochronesLocal(type, value, units){
         body+= value*60;
     }
     body+= '],"range_type":"' + units + '"}';
-    // console.log(body);
+    console.log(body);
     request.send(body);
 }
 /**
@@ -1120,6 +1134,7 @@ function isochroneToPolygon(body, type, length){
         var polygon = pointToLatLng(polygonXY); //Put it back in LatLng
         // console.log("polygon length after simplify: " + polygon.length);
 
+        if (queryZone != null){map.removeLayer(queryZone);}
         //polygon
         var realZone = L.polygon(polygon, {color: 'blue', className:"pulse"}).addTo(map);
         queryZone = realZone; 
@@ -1149,7 +1164,8 @@ function isochroneToPolygon(body, type, length){
             markerBracketOpen.dragging.enable();
             markerBracketClose.dragging.enable(); 
             markerBracketOpen.setIcon(bracket);
-            markerBracketClose.setIcon(bracket);    
+            markerBracketClose.setIcon(bracket);   
+            circleZoneOfInterest.bringToFront(); 
         }
 
     // console.log(polyLatLngs);
@@ -1745,7 +1761,10 @@ function bracketsQuery(){
     }
 }
 
-//Builds the string for the query and makes the query
+/**
+ * Builds the string for the query
+ * @param {String} type 
+ */
 function makeQuery(type){
     disableCircle();
     let queryString = "";
@@ -1763,6 +1782,12 @@ function makeQuery(type){
     oplQuery(queryString);
 }
 
+/**
+ * Builds the polygon around which the query is made
+ * @param {L.LatLng} itinerary 
+ * @param {Number} distValue 
+ * @returns {L.Polygon}
+ */
 function itineraryPass(itinerary, distValue){
     
     var dist = 0;
@@ -2903,14 +2928,15 @@ function updateBracketOpenText(){
 function moveMarkers(latlng){
     // console.log("movemarkers");
     // console.log(state);
-    if( clickOnCircle && (state == "circleMove" || state == "pointPlaced")){
-
+    
+    if( clickOnCircle && (state == "circleMove" || state == "pointPlaced" || state == "queryResults")){
+        
         let limit = 0.05;
         if (map.getZoom() > 10){
             limit = 0.02;
         }
         
-        state = "circleMove";
+        
         // console.log("stateChanged");
         let prevCirclePose = circleZoneOfInterest.getLatLng(); //store the previous circle pos
 
@@ -2918,6 +2944,13 @@ function moveMarkers(latlng){
         let currentCirclePos = L.GeometryUtil.closest(map, allPos, latlng);
         circleZoneOfInterest.setLatLng(currentCirclePos);
 
+        if (prevState == "queryResults"){
+            console.log("why are you not moving?");
+            queryZone.setLatLng(currentCirclePos);
+        }
+            
+        state = "circleMove";
+        
         const prevCirclePixels = toPixels(prevCirclePose);
         const curentCirclePixel = toPixels(currentCirclePos);
         let distPixels = ((prevCirclePixels.distanceTo(curentCirclePixel))*2.54)/(ppi/window.devicePixelRatio);
@@ -2950,7 +2983,7 @@ function moveMarkers(latlng){
         } 
         updateCircleText();
             
-        state = "circleMove";
+        // state = "circleMove";
         // console.log("WE ARE CHANGING THE POS");
         previousCirclePosition = currentCirclePos;
     }
@@ -3429,6 +3462,22 @@ onpointermove = (event) => {
                 }
                 moveMarkers(latlng); //move the threemarkers together
             }
+            if (state == "queryResults" && clickOnCircle && !areBracketsOn){
+                console.log("queryREs");
+                console.log("change the circle");
+                if (!hasMovedQueryZone){
+                    hasMovedQueryZone = true;
+                    let bounds = queryZone.getBounds();
+                    let radius = bounds.getNorthEast().distanceTo(bounds.getSouthWest())/4;
+                    map.removeLayer(queryZone);
+                    queryZone = L.circle(circleZoneOfInterest.getLatLng(), {radius:radius, color: "blue", opacity: 0.4}).addTo(map);
+                    // L.rectangle(bounds, {color:"red"}).addTo(map);    
+                }
+                state = "circleMove";
+                prevState = "queryResults";
+                console.log(state);
+                // moveMarkers(latlng);
+            }
         } 
     }
     moveCursor(event); //text follow mouse
@@ -3457,6 +3506,7 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
+    console.log("ONPOINTERUP");
     // console.log(state);
     // console.log(event.target);
     // Get the pointer coords
@@ -3465,6 +3515,9 @@ onpointerup = (event) => {
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
     // console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
+    if (state == "circleMove" && prevState == "queryResults"){
+        isochronesLocal(queryType, queryRange, queryUnits);
+    }
     if (state == "menu" && !clickOnCircle && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
         console.log("perhaps we arrive here");
         var menuDiv = document.getElementById("menu");
@@ -3515,7 +3568,7 @@ onpointerup = (event) => {
     clickOnCircle = false;
     clickOnLayer = false;
     map.dragging.enable();
-    
+    hasMovedQueryZone = false;
     
     var zoom = map.getZoom();
     // console.log("   zoom level   " + zoom);
@@ -3560,5 +3613,8 @@ onpointerup = (event) => {
             markerBracketOpen.dragging.enable();
             markerBracketClose.dragging.enable();            
         }
+    }
+    if (circleZoneOfInterest != null){
+        circleZoneOfInterest.bringToFront();
     }
 }
