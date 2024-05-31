@@ -1,5 +1,6 @@
 
 // import Openrouteservice from "./ors-js-client";
+// import { GradientPath } from './file/gradient-path';
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -75,22 +76,25 @@ var openedPopup;
 var infoRouteTop = 605;
 
 var defaultBracketRange = 1200;
-var transportationMode = "car"; //"car" or "foot"
+var transportationMode = "drive"; //drive walk hike
 
 
-const startCar = L.latLng(48.711967757928974, 2.166628674285006);
-const endCar = L.latLng(47.20617749880269, -1.564392769503869);
+const startDrive = L.latLng(48.711967757928974, 2.166628674285006);
+const endDrive = L.latLng(47.20617749880269, -1.564392769503869);
 // const endCar = L.latLng(48.69519492350087, 2.1760177471346864);
-const coordsCar = [startCar, endCar];
-// const coordsCar = [L.latLng(48.711967757928974, 2.166628674285006), L.latLng(48.69519492350087, 2.1760177471346864)];
-const addressCar = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
-const startFoot = L.latLng(43.59210153989353, 1.4447266282743285);
-const endFoot = L.latLng(43.60560890094277, 1.4458011280603213);
-const coordsFoot = [startFoot, endFoot];
-const addressFoot = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
+const addressDrive = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
+
+const startWalk = L.latLng(43.59210153989353, 1.4447266282743285);
+const endWalk = L.latLng(43.60560890094277, 1.4458011280603213);
+const addressWalk = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
+
+const startHike = L.latLng(48.80694459578409, -3.0096764263674323);
+const endHike = L.latLng(48.72297955664577, -2.952516960505689);
+const addressHike = ["24 Rue de la Croix des Veuves, 22620 Ploubazlanec", "4 Chem. de Padel, 22580 Plouha"];
+
 const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 
-var routingWaypoints = [startCar, endCar];
+var routingWaypoints = [startDrive, endDrive];
 var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
 var routingMarkers = [];
 
@@ -179,16 +183,32 @@ L.Control.Mode = L.Control.extend({
     onAdd: function(map) {
         var container = document.getElementById("changeMode");
         let icon = document.getElementById("switchButton");
-        container.onclick = function(e){
-            // console.log(transportationMode);
+        let driveMode = document.getElementById("switchCar");
+        let walkMode = document.getElementById("switchWalk");
+        let hikeMode = document.getElementById("switchHike");
+        
+        // container.onpointerdown = function(e){
+        //     clickOnLayer = true;
+        // }
+        icon.onclick = function(e){
+            console.log("transportationMode");
             // clickOnLayer = true;
-            if(transportationMode == "car"){
-                icon.setAttribute("src", "icons/walk.svg");
-            } else {
-                icon.setAttribute("src", "icons/drive.svg");
-            }
-            switchMode();
+            let menu = document.getElementById("hiddenMode");
+            visibilityToggle(menu);
         }
+        driveMode.onclick = function(e){
+            switchMode("drive");
+            icon.setAttribute("src", "icons/drive.svg");
+        }
+        walkMode.onclick = function(e){
+            switchMode("walk");
+            icon.setAttribute("src", "icons/walk.svg");
+        }
+        hikeMode.onclick = function(e){
+            switchMode("hike");
+            icon.setAttribute("src", "icons/hike.svg");
+        }
+
         return container;
     },
 
@@ -281,7 +301,7 @@ function ORSRouting(){
     let link = "https://api.openrouteservice.org/v2/directions/";
     // let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
     // https://mapitin.lisn.upsaclay.fr:8890/ors/v2 
-    if (transportationMode == "car"){
+    if (transportationMode == "drive"){
         link += "driving-car";
     } else {
         link += "foot-hiking";
@@ -446,7 +466,7 @@ function reroute(){
     routingWaypoints.forEach((element) => routingMarkers.push(L.marker(element).addTo(map)));
 
     let infoRoute = document.getElementById("routeInfo");
-    if (transportationMode == "car"){
+    if (transportationMode == "drive"){
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
     } else {
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
@@ -480,6 +500,8 @@ function reroute(){
         // console.log(routingAddresses[i]);
         children[i].setAttribute("value", routingAddresses[i]);
     }
+
+   
 }
 
 /**
@@ -622,8 +644,13 @@ function createGradientRestaurant(){
     //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientRestaurant";
-    gradient.setAttribute("x1", "0%");
-    gradient.setAttribute("y1", "0%");
+    if (transportationMode == "drive"){
+        gradient.setAttribute("x1", "100%");
+    } else{
+        gradient.setAttribute("x1", "0%");
+    }
+    
+    gradient.setAttribute("y1", "10%");
     gradient.setAttribute("x2", "0%");
     gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
@@ -683,7 +710,11 @@ function createGradientFuel(){
     //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientFuel";
-    gradient.setAttribute("x1", "0%");
+    if (transportationMode == "drive"){
+        gradient.setAttribute("x1", "100%");
+    } else{
+        gradient.setAttribute("x1", "0%");
+    }
     gradient.setAttribute("y1", "0%");
     gradient.setAttribute("x2", "0%");
     gradient.setAttribute("y2", "100%");
@@ -744,7 +775,11 @@ function createGradientElevation(){
     //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientElevation";
-    gradient.setAttribute("x1", "0%");
+    if (transportationMode == "drive"){
+        gradient.setAttribute("x1", "100%");
+    } else{
+        gradient.setAttribute("x1", "0%");
+    }
     gradient.setAttribute("y1", "0%");
     gradient.setAttribute("x2", "0%");
     gradient.setAttribute("y2", "100%");
@@ -805,7 +840,11 @@ function createGradientSupermarket(){
     //Create the gradient
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientMarket";
-    gradient.setAttribute("x1", "0%");
+    if (transportationMode == "drive"){
+        gradient.setAttribute("x1", "100%");
+    } else{
+        gradient.setAttribute("x1", "0%");
+    }
     gradient.setAttribute("y1", "0%");
     gradient.setAttribute("x2", "0%");
     gradient.setAttribute("y2", "100%");
@@ -1451,6 +1490,12 @@ function whichWayIsFaster(latlng, address){
     ORSRouting();
 }
 
+
+function onPressQueryZone(){
+    //open the menu
+    //open the slider
+    //i think
+}
 /********************************************************************************
  *                                Changing State                                *
  ********************************************************************************/
@@ -1721,15 +1766,30 @@ function openMenu(event){
         var restaurant = document.getElementById("restaurant");
         var gasstation = document.getElementById("gasstation");
         var supermarket = document.getElementById("supermarket");
-        restaurant.onclick = function(e){console.log("click"); closeMenu(); openSlider("'amenity'='restaurant'")};
+        restaurant.onclick = function(e){
+            console.log("click"); 
+            // closeMenu(); 
+            let type = "'amenity'='restaurant'";
+            if (transportationMode == "hike"){
+                type = "'tourism'='picnic_site'";
+            }
+            openSlider(type)};
         gasstation.onclick = function(e){
             menuDiv.style.visibility="hidden"; 
-            let type = "'amenity'='fuel'";
-            if (transportationMode == "foot"){
+            let type = "'amenity'='fountain'";
+            if (transportationMode == "drive"){
+                type = "'amenity'='fuel'";
+            } else if (transportationMode == "walk"){
                 type = "'shop'='bakery'"
             }
             openSlider(type)};
-        supermarket.onclick = function(e){menuDiv.style.visibility="hidden"; openSlider("'shop'='supermarket'")};
+        supermarket.onclick = function(e){
+            menuDiv.style.visibility="hidden";
+            let type = "'shop'='supermarket'";
+            if (transportationMode == "hike"){
+                type = "'tourism'~'viewpoint|artwork'";
+            } 
+            openSlider(type)};
         console.log("here we set the visibility to visible");
         menuDiv.style.visibility = "visible";
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
@@ -1760,16 +1820,27 @@ function closeMenu(){
 }
 
 function bracketsQuery(){
-
     if (isRestaurantDisplayed){
-        makeQuery("'amenity' = 'restaurant'"); 
+        if (transportationMode == "hike"){
+            makeQuery("'tourism'='picnic_site'");
+        } else {
+            makeQuery("'amenity' = 'restaurant'");
+        }
+         
     } else if (isSupermarketDisplayed){
+        if (transportationMode == "hike"){
+            makeQuery("'tourism'~'viewpoint|artwork'");
+        } else {
+            makeQuery("'shop' = 'supermarket'");
+        }
         makeQuery("'shop' = 'supermarket'");
     } else if (isFuelDisplayed){
-        if (transportationMode == "car"){
+        if (transportationMode == "drive"){
             makeQuery("'amenity' = 'fuel'");
-        } else{
+        } else if (transportationMode == "walk"){
             makeQuery("'shop' = 'bakery'");
+        } else {
+            makeQuery("'amenity'='fountain'");
         }
     }
 }
@@ -1782,7 +1853,7 @@ function makeQuery(type){
     disableCircle();
     let queryString = "";
     let distValue;
-    if (transportationMode=="car"){
+    if (transportationMode=="drive"){
         distValue = 500;
     } else {
         distValue = 50;
@@ -2154,7 +2225,7 @@ function loadWeather(){
     //Create the layer for the first time
     if (weatherLayerGroup == null){
         let length = allPos.length;
-        if (transportationMode == "car"){
+        if (transportationMode == "drive"){
 
             const pos1 = turf.along(itineraryJSON,0).geometry.coordinates;
             const pos2 = turf.along(itineraryJSON,(distance*2/8)/1000).geometry.coordinates;
@@ -2624,7 +2695,7 @@ function distancePixelPoints(latlng, point){
         // console.log("percent: " + percent);
         // console.log("% time: " + percent*time/100)
         let body = inHours(percent*time/100) + "<br>";
-        if (transportationMode == "car"){
+        if (transportationMode == "drive"){
             body+= Math.round(dist/1000) +"km";
         } else {
             body+= (Math.round(dist/100)/10) +"km";
@@ -2889,7 +2960,7 @@ function updatePosTexts(text, element, isVert){
  */
 function updateBracketCloseText(){
     let fix = 0;
-    if (transportationMode == "foot"){fix = 1;}
+    if (transportationMode == "walk"){fix = 1;}
 
     let closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
@@ -2914,7 +2985,7 @@ function updateBracketCloseText(){
  */
 function updateBracketOpenText(){
     let fix = 0;
-    if (transportationMode == "foot"){fix = 1;}
+    if (transportationMode == "walk"){fix = 1;}
     let closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
     isPointOnLine(closestAbove, allPos, 0.5);
     let pointsAbove = new Array();
@@ -3008,14 +3079,14 @@ function moveMarkers(latlng){
 function updateMarkerTextPos(){
     // console.log("update marker text pos");
     let circleMarkerText = document.getElementById("circleText");
-    updatePosTexts(circleMarkerText, circleZoneOfInterest, (transportationMode=="foot"));
+    updatePosTexts(circleMarkerText, circleZoneOfInterest, (transportationMode=="walk"));
     if (areBracketsOn){
         let bracketOpenText = document.getElementById("bracketText");
         let bracketCloseText = document.getElementById("bracketCloseText");
         
 
         // let vert = isVertical(toPixels(markerBracketOpen.getLatLng()), toPixels(markerBracketClose.getLatLng()),0.5);
-        let vert = transportationMode=="foot";
+        let vert = transportationMode=="walk";
         updatePosTexts(bracketCloseText, markerBracketClose, vert);
         updatePosTexts(bracketOpenText, markerBracketOpen, vert);
         
@@ -3053,7 +3124,7 @@ function updateCircleText(){
     let circleMarkerText = document.getElementById("circleText");
     if (isFloatingTextKM){
         let dist = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
-        circleMarkerText.innerHTML = distToString(dist, (transportationMode == "foot"));
+        circleMarkerText.innerHTML = distToString(dist, (transportationMode == "walk"));
     } else { 
         circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
     }
@@ -3140,6 +3211,7 @@ function toLatLng(point){
  * @param {HTMLElement} element 
  */
 function visibilityToggle(element){
+    console.log(element.style.visibility);
     if (element.style.visibility == "visible"){
         element.style.visibility = "collapse";
     } else {
@@ -3313,43 +3385,65 @@ function forceRedraw(){
     }
 }
 
-// setInterval(function() {
-//     console.log("interval");
-//     forceRedraw();
-//   }, 1000);
-  
 /**
  * Switch between the transporation modes (car/foot)
  */
-function switchMode(){
+function switchMode(mode){
     let fuel = document.getElementById("gasstation");
     let fuelLayer = document.getElementById("gasstationLayer");
+    let rest = document.getElementById("restaurant");
+    let restLayer = document.getElementById("restaurantLayer");
+    let store = document.getElementById("supermarket");
+    let storeLayer = document.getElementById("supermarketLayer");
     hideLayers();
     
-    switch (transportationMode){
-        case "foot":
+    switch (mode){
+        case "drive":
             routingAddresses = [];
-            addressCar.forEach( (element) => {routingAddresses.push(element)});
-            routingWaypoints.length = 0;
-            coordsCar.forEach( (element) => {routingWaypoints.push(element)});
-            // routingWaypoints = coordsCar;
+            addressDrive.forEach( (element) => {routingAddresses.push(element)});
+            routingWaypoints = [startDrive, endDrive];
             defaultBracketRange = 1200;
-            transportationMode = "car";
+            transportationMode = "drive";
             fuel.setAttribute("src", "icons/fuelIcon.svg");
             fuelLayer.setAttribute("src", "icons/fuelIcon.svg");
+
+            rest.setAttribute("src", "icons/restoIcon.svg");
+            restLayer.setAttribute("src", "icons/restoIcon.svg");
+
+            store.setAttribute("src", "icons/cartIcon.svg");
+            storeLayer.setAttribute("src", "icons/cartIcon.svg");
            break; 
-        case "car":
-            // routingAddresses = addressFoot;
-            // routingWaypoints = coordsFoot;
+        case "walk":
             routingAddresses = [];
-            addressFoot.forEach( (element) => {routingAddresses.push(element)});
-            routingWaypoints.length = 0;
-            coordsFoot.forEach( (element) => {routingWaypoints.push(element)});
+            addressWalk.forEach( (element) => {routingAddresses.push(element)});
+            routingWaypoints = [startWalk, endWalk];
             defaultBracketRange = 300;
-            transportationMode = "foot";
+            transportationMode = "walk";
             fuel.setAttribute("src", "icons/bakery.svg");
             fuelLayer.setAttribute("src", "icons/bakery.svg");
+
+            rest.setAttribute("src", "icons/restoIcon.svg");
+            restLayer.setAttribute("src", "icons/restoIcon.svg");
+
+            store.setAttribute("src", "icons/cartIcon.svg");
+            storeLayer.setAttribute("src", "icons/cartIcon.svg");
            break; 
+        case "hike":
+            routingAddresses = [];
+            addressHike.forEach( (element) => {routingAddresses.push(element)});
+            routingWaypoints = [startHike, endHike];
+            defaultBracketRange = 300;
+            transportationMode = "hike";
+            fuel.setAttribute("src", "icons/water.svg");
+            fuelLayer.setAttribute("src", "icons/water.svg");
+
+            rest.setAttribute("src", "icons/picnic.svg");
+            restLayer.setAttribute("src", "icons/picnic.svg");
+
+            store.setAttribute("src", "icons/binoculars.svg");
+            storeLayer.setAttribute("src", "icons/binoculars.svg");
+
+            break;
     }
     // console.log("WE ARE CHANGING THE STATE !!!");
     state = "itinerary";
