@@ -45,9 +45,8 @@ var isElevationDisplayed = false;
 var isSupermarketDisplayed = false;
 var isInKM = true;
 
-var orService;
-
 var prevZoom;
+var prevCenter;
 
 const width = 350;
 const height = 650; 
@@ -55,14 +54,14 @@ const height = 650;
 const ppi = 410;
 //Oppo A9: 269; Samsung Note 10: 401 ou 410
 
-var requestMade = false;
+// var requestMade = false;
 var state = "itinerary";
 var prevState = "itinerary";
 //"itinerary" "pointPlaced" "circleMove" "openMove" "closeMove" "menu" "slider" "loadingQuery" "queryResults"
 
 var isMovingMap = false;
-var previousOpenPos;
-var previousClosePos;
+// var previousOpenPos;
+// var previousClosePos;
 
 var startTime;
 var clickOnCircle = false;
@@ -74,7 +73,6 @@ var openedMarker;
 var openedPopup;
 
 var infoRouteTop = 605;
-const defaultRouteTop = 605;
 
 var defaultBracketRange = 1200;
 var transportationMode = "car"; //"car" or "foot"
@@ -240,17 +238,18 @@ L.Control.Redraw = L.Control.extend({
     onAdd: function(map) {
         var container = document.getElementById("redraw");
         container.onclick = function(e){
-            // if (interval){
-            //     clearInterval(intervalID);
-            //     document.getElementById("redrawButton").classList.remove('selectedLayer');
-            // } else {
-            //     document.getElementById("redrawButton").classList.add('selectedLayer');
-            //     intervalID = setInterval(function() {
-            //         console.log("interval");
+            if (interval){
+                clearInterval(intervalID);
+                document.getElementById("redrawButton").classList.remove('selectedLayer');
+            } else {
+                document.getElementById("redrawButton").classList.add('selectedLayer');
+                intervalID = setInterval(function() {
+                    console.log("interval");
                     forceRedraw();
-                // }, 2000);
-            // }
-            // interval = !interval;
+                    
+                }, 1000);
+            }
+            interval = !interval;
             
         }
         return container;
@@ -1143,7 +1142,7 @@ function isochroneToPolygon(body, type, length){
         map.removeLayer(polyUnion); //remove uneeded layers
 
         if (polygon.length > 3){
-            requestMade = true;
+            // requestMade = true;
             var queryString = arrayToQuery(polygon, type); //turn the polygon into a string
             oplQuery(queryString); //make the query
         } else {
@@ -2746,7 +2745,7 @@ function createBrackets(event){
                 })
                 .on("dragstart", function(e){
                     if (state == "pointPlaced" || state == "closeMove"){
-                        previousClosePos = markerBracketClose.getLatLng();
+                        // previousClosePos = markerBracketClose.getLatLng();
                         state = "closeMove";
                         
                         isMovingBrackets = true;
@@ -2783,7 +2782,7 @@ function createBrackets(event){
                 })
                 .on("dragstart", function(e){
                     if (state == "pointPlaced" || state == "openMove"){
-                        previousOpenPos = markerBracketOpen.getLatLng();
+                        // previousOpenPos = markerBracketOpen.getLatLng();
                         state = "openMove";
                     
                         console.log("drag open");
@@ -3289,16 +3288,21 @@ function createButton(label, container) {
  * Redraws the itinerary after a change of viewport to fix the mask disappearing
  */
 function forceRedraw(){
-    // if(needRedraw){        
-        // console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
+    if(needRedraw){        
+        console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
         const bounds = map.getBounds();
         // map.fitBounds(stroke.getBounds());
         map.fitBounds(bounds.pad(-0.5));
         reroute();
         map.fitBounds(bounds);
-        // needRedraw = false;
-    // }
+        needRedraw = false;
+    }
 }
+
+// setInterval(function() {
+//     console.log("interval");
+//     forceRedraw();
+//   }, 1000);
   
 /**
  * Switch between the transporation modes (car/foot)
@@ -3407,7 +3411,7 @@ map.on("zoomanim", function(e){
         // circleMarkerText.innerHTML="distance "+isMovingMarker;
     }
     var zoom = map.getZoom();
-    needRedraw = true;
+    // needRedraw = true;
     // console.log("zoomed");
     
     // if (zoom > 14){
@@ -3435,6 +3439,7 @@ onpointerdown = (event) => {
     startTime = Date.now();
     isPointerDown = true;
     prevZoom = map.getZoom();
+    prevCenter = map.getCenter();
     if ((state == "menu" || state == "slider") && areBracketsOn){
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
@@ -3604,7 +3609,10 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    if (prevZoom != map.getZoom()){
+    // if (prevZoom != map.getZoom()){
+    //     needRedraw = true;
+    // }
+    if(prevCenter.distanceTo(map.getCenter()) > 500){
         needRedraw = true;
     }
 
