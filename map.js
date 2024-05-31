@@ -115,6 +115,8 @@ var queryUnits = "";
 var queryRange = "";
 var hasMovedQueryZone = false;
 
+var oplLayer;
+
 /********************************************************************************
  *                                   Controls                                   *
  ********************************************************************************/
@@ -357,6 +359,12 @@ function reroute(){
             map.removeLayer(element);
         })
     }
+    // if(state == "queryResults"){
+    //     clearQueryResults();
+    // }
+    // state = "itinerary";
+    // prevState = "itinerary";
+
 
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
     let strokeHTML = stroke._path;
@@ -447,6 +455,7 @@ function reroute(){
     let children = container.children;
     // console.log("children length: " + children.length);
 
+    // console.log ("children: ", children.length, ", routingAddresses: ", routingWaypoints.length);
     while(children.length < routingAddresses.length){
         let geocoder = document.createElement("input");
         geocoder.setAttribute("class", "geocoder");
@@ -1195,14 +1204,17 @@ function polygonToLatLng(line){
 function oplQuery(queryString){
     console.log("oplQuery");
     console.log(queryString);
-    var opl = new L.OverPassLayer({
+    oplLayer = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
         // endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
+        beforeRequest: function() {
+            console.log("BEFORE REQUEST");
+        },
         onSuccess: function(data) { 
-            // console.log("ON SUCCESS");
+            console.log("ON SUCCESS");
             // console.log(data);
             for (let i = 0; i < data.elements.length; i++) {
                 let pos;
@@ -1247,7 +1259,7 @@ function oplQuery(queryString){
                 //Create Popup
                 const popup = L.popup().setContent(popupContent);
                 marker.bindPopup(popup);
-                markers.push(marker); //Add marker to markers list
+                // markers.push(marker); //Add marker to markers list
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
@@ -1256,7 +1268,7 @@ function oplQuery(queryString){
                         ORSRouting();
                     } else {
                         // firstRequest(marker.getLatLng());
-                        whichWayIsFaster(latlng, address)
+                        geocoding(pos);
                     }
                     //Create new popup
                     const container =  L.DomUtil.create('div');
@@ -1273,6 +1285,7 @@ function oplQuery(queryString){
                         map.closePopup();
                         // routing.spliceWaypoints(1, 1); //Remove waypoint from the route and reroute
                         routingWaypoints.splice(1, 1);
+                        routingAddresses.splice(1, 1);
                         ORSRouting();
                         //replace popup with original
                         openedMarker.unbindPopup();
@@ -1320,7 +1333,7 @@ function oplQuery(queryString){
             makeClearButton(); //Add button to clear  query result
         } 
         });
-        map.addLayer(opl);
+        map.addLayer(oplLayer);
 
 }
 
@@ -1457,10 +1470,11 @@ function makeClearButton(){
  */
 function clearQueryResults(){
     //Remove all the markers
-    markers.forEach(element => {
-        map.removeLayer(element);
-    });
-    markers.length = 0;
+    map.removeLayer(oplLayer);
+    // markers.forEach(element => {
+    //     map.removeLayer(element);
+    // });
+    // markers.length = 0;
 
     //Range markers become blue again and re-enable interactions
     if (circleZoneOfInterest != null){
@@ -1660,7 +1674,7 @@ function itineraryToPointPlaced(latlng, point){
 
             var circleHTML = circleZoneOfInterest._path;
             circleHTML.onpointerup= function(e){
-                console.log("ONPOINTERUP DU CIRCLE");
+                // console.log("ONPOINTERUP DU CIRCLE");
                 const millis = Date.now() - startTime;
                 if ((millis / 1000) < 0.3){
                     if(areBracketsOn){
@@ -3349,7 +3363,10 @@ function switchMode(){
  */
 function hideLayers(){
 
-    clearQueryResults();
+    if (state == "queryResults"){
+        clearQueryResults();
+    }
+    
 
     if (circleZoneOfInterest != null){
         map.removeLayer(circleZoneOfInterest);
@@ -3511,7 +3528,7 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    console.log("ONPOINTERUP");
+    // console.log("ONPOINTERUP");
     // console.log(state);
     // console.log(event.target);
     // Get the pointer coords
