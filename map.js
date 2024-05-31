@@ -466,10 +466,10 @@ function reroute(){
     routingWaypoints.forEach((element) => routingMarkers.push(L.marker(element).addTo(map)));
 
     let infoRoute = document.getElementById("routeInfo");
-    if (transportationMode == "drive"){
-        infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
-    } else {
+    if (transportationMode == "walk"){
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
+    } else {
+        infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toHour(time);
     }
     const container = document.getElementById("geocoders");
     let children = container.children;
@@ -961,7 +961,7 @@ function isochroneGlobal(type, value, units){
 
             let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
             // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
-            if (transportationMode == "foot"){
+            if (transportationMode == "walk"){
                 src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
             }
             request.open('POST', src);
@@ -1006,10 +1006,10 @@ function isochronesLocal(type, value, units){
     // console.log(points);
     let request = new XMLHttpRequest();
 
-    let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
+    let src = "https://api.openrouteservice.org/v2/isochrones/foot-walking";
     // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
-    if (transportationMode == "foot"){
-        src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
+    if (transportationMode == "drive"){
+        src = "https://api.openrouteservice.org/v2/isochrones/driving-car"
     }
     request.open('POST', src);
 
@@ -1059,10 +1059,10 @@ function getNeededPoints(itinerary, value, units){
     if (units == "distance"){
         distValue = value*1000*0.7;
     } else {
-        if (transportationMode == "foot"){
-            distValue = Math.floor(((value*1000*5)/36)/2); //Considering km/h walking speed
-        } else {
+        if (transportationMode == "drive"){
             distValue = Math.floor(((value*1000*110)/36)/2); //Considering 110km/h car speed
+        } else {
+            distValue = Math.floor(((value*1000*5)/36)/2); //Considering km/h walking speed
         }
         
     }
@@ -2031,7 +2031,19 @@ function setSliderMinMax(isKiloMeter, slider){
         let value = distance/1000;
         value = value/3;
         
-        if (transportationMode == "foot"){
+        if (transportationMode == "drive"){
+            var min = Math.round(value/5);
+            if (value > 50){
+                value = 50;
+                min = 20;
+            }
+            let mid = (min + (value-min)/2);
+            slider.value = mid;
+            slider.setAttribute("min", min);
+            slider.setAttribute("max", value);
+            let text = document.getElementById("value");
+            text.innerHTML = mid;
+        } else {
             slider.setAttribute("step", 0.1);
             var min = Math.round((value/5)*10)/10;
             value = Math.round(value*10)/10;
@@ -2044,18 +2056,6 @@ function setSliderMinMax(isKiloMeter, slider){
             console.log("max: " + value);
             let mid = Math.round((min + (value-min)/2)*10)/10;
             console.log("mid: " + mid);
-            slider.value = mid;
-            slider.setAttribute("min", min);
-            slider.setAttribute("max", value);
-            let text = document.getElementById("value");
-            text.innerHTML = mid;
-        } else {
-            var min = Math.round(value/5);
-            if (value > 50){
-                value = 50;
-                min = 20;
-            }
-            let mid = (min + (value-min)/2);
             slider.value = mid;
             slider.setAttribute("min", min);
             slider.setAttribute("max", value);
@@ -2637,7 +2637,7 @@ function toggleFloatingTextsUnits(){
         }
         isFloatingTextKM = false;
     } else { //change to distance
-        circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), (transportationMode=="foot"));
+        circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), (transportationMode=="walk"));
         if(areBracketsOn){
             updateBracketCloseText();
             updateBracketOpenText();
@@ -3236,33 +3236,6 @@ function isVertical(pointA, pointB, precision){
         // console.log(coeff);
         return coeff > precision;
     }
-}
-
-/**
- * Coords in LatLng to JSTS
- * @param {LatLng[]} coords Array in LatLng(lat,lng)
- * @returns {JSTSCoords[]} Array in JSTS Coord(lat,lng)
- */
-function latLngToJSTS(coords){
-    var coordsJSTS = [];
-    for(var i = 0; i < coords.length; i++){
-        coordsJSTS.push(new jsts.geom.Coordinate(coords[i].lat, coords[i].lng));
-    }
-    return coordsJSTS;
-}
-
-/**
- * Coords in JSTS to LatLng
- * @param {JSTSCoords[]} coords Array in JSTS Coord(lat,lng)
- * @returns {LatLng[]} Array in LatLng(lat,lng)
- */
-function JSTStoLatLng(coords){
-    var coordsLatLng = [];
-    for(var i = 0; i < coords.length; i++){
-        coordsLatLng.push(L.latLng(coords[i].x, coords[i].y));
-    }
-    return coordsLatLng;
-
 }
 
 /**
