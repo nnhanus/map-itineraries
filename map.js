@@ -1,6 +1,5 @@
+// ngrok http 5500 --domain sunbird-stable-horribly.ngrok-free.app 
 
-// import Openrouteservice from "./ors-js-client";
-// import { GradientPath } from './file/gradient-path';
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
 L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -49,20 +48,16 @@ var isInKM = true;
 var prevZoom;
 var prevCenter;
 
-const width = 350;
-const height = 650; 
+const width = 395;
+const height = 710; 
 
-const ppi = 410;
-//Oppo A9: 269; Samsung Note 10: 401 ou 410
+const ppi = 410; //Oppo A9: 269; Samsung Note 10: 410
 
-// var requestMade = false;
 var state = "itinerary";
 var prevState = "itinerary";
 //"itinerary" "pointPlaced" "circleMove" "openMove" "closeMove" "menu" "slider" "loadingQuery" "queryResults"
 
 var isMovingMap = false;
-// var previousOpenPos;
-// var previousClosePos;
 
 var startTime;
 var clickOnCircle = false;
@@ -88,11 +83,11 @@ const startWalk = L.latLng(43.59210153989353, 1.4447266282743285);
 const endWalk = L.latLng(43.60560890094277, 1.4458011280603213);
 const addressWalk = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 Toulouse"];
 
-const startHike = L.latLng(48.80694459578409, -3.0096764263674323);
-const endHike = L.latLng(48.72297955664577, -2.952516960505689);
+const startHike = L.latLng(/*48.80694459578409, -3.0096764263674323*/45.590492270217666, 2.7666301922019465);
+const endHike = L.latLng(/*48.72297955664577, -2.952516960505689*/45.68284555835603, 2.841430193084532);
 const addressHike = ["24 Rue de la Croix des Veuves, 22620 Ploubazlanec", "4 Chem. de Padel, 22580 Plouha"];
 
-const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
+
 
 var routingWaypoints = [startDrive, endDrive];
 var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
@@ -121,6 +116,21 @@ var hasMovedQueryZone = false;
 
 var oplLayer;
 
+const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
+var gradientTH = [{color:"#E6E6FD", stop:0}, {color:"#4849EE", stop:0.32}, {color:"#E6E6FD", stop:1}];
+var gradientWH = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.15}, {color:"#C9C9E4", stop:0.48}, {color:"#C9C9E4", stop:0.59}, {color:"#9B9CD4", stop:0.77}, {color:"#00029C", stop:1}];
+var gradientVH = [{color:"#4849EE", stop:0}, {color:"#C9C9E4", stop:0.21}, {color:"#E6E6FD", stop:0.34}, {color:"#C9C9E4", stop:0.42}, {color:"#8788B7", stop:0.51}, {color:"#00029C", stop:0.69}, {color:"#0000FF", stop:1}];
+
+var gradientSW = [{color:"#C9C9E4", stop:0}, {color:"#7173FF", stop:0.14}, {color:"#4849EE", stop:0.4}, {color:"#E6E6FD", stop:1}];
+var gradientBW = [{color:"#0000FF", stop:0}, {color:"#4849EE", stop:0.24}, {color:"#0000FF", stop:0.44}, {color:"#7173FF", stop:0.77}, {color:"#C9C9E4", stop:1}];
+var gradientRW = [{color:"#0000FF", stop:0}, {color:"#00029C", stop:0.19}, {color:"#7173FF", stop:0.36}, {color:"#00029C", stop:0.57}, {color:"#C9C9E4", stop:0.88}, {color:"#7173FF", stop:1}];
+
+var gradientSD = [{color:"#00029C", stop:0}, {color:"#0001CD", stop:0.08}, {color:"#0000FF", stop:0.16}, {color:"#C9C9E4", stop:0.33}, {color:"#00029C", stop:0.5}, {color:"#C9C9E4", stop:0.62}, {color:"#00029C", stop:0.74}, {color:"#C9C9E4", stop:0.85}, {color:"#00029C", stop:1}];
+var gradientFD = [ {color:"#00029C", stop:0}, {color:"#7173FF", stop:0.11}, {color:"#C9C9E4", stop:0.22}, {color:"#00029C", stop:0.36}, {color:"#C9C9E4", stop:0.54}, {color:"#7173FF", stop:0.61}, {color:"#00029C", stop:0.76}, {color:"#C9C9E4", stop:0.87}, {color:"#00029C", stop:1}];
+var gradientRD = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.3}, {color:"#00029C", stop:0.52}, {color:"#C9C9E4", stop:0.63}, {color:"#00029C", stop:0.77}, {color:"#C9C9E4", stop:0.88}, {color:"#00029C", stop:1}];
+
+var gradientElev = [{color:"#00029C", stop:0}, {color:"#4849EE", stop:0.13}, {color:"#7173FF", stop:0.25}, {color:"#C9C9E4", stop:0.37}, {color:"#E6E6FD", stop:0.62}, {color:"#4849EE", stop:0.75}, {color:"#E6E6FD", stop:1}];
+
 /********************************************************************************
  *                                   Controls                                   *
  ********************************************************************************/
@@ -136,7 +146,7 @@ L.Control.Layers = L.Control.extend({
         var restaurantLayer = document.getElementById("restaurantLayer");
         var fuelLayer = document.getElementById("gasstationLayer");
         var elevationLayer = document.getElementById("elevationLayer");
-        var redrawButton = document.getElementById("supermarketLayer");
+        var marketButton = document.getElementById("supermarketLayer");
         container.onpointerdown = function(e){
             clickOnLayer = true;
         }
@@ -157,7 +167,7 @@ L.Control.Layers = L.Control.extend({
             let menu = document.getElementById("hiddenLayers");
             visibilityToggle(menu);
         };
-        redrawButton.onclick = function(e){
+        marketButton.onclick = function(e){
             toggleSupermarketDistribution();
             // forceRedraw();
             // redrawButton.classList.add('selectedLayer');
@@ -397,7 +407,11 @@ function reroute(){
     itinerary = L.polyline(allPos, {color: 'blue', weight: 8, className: "itinerary"}).addTo(map); //Draw a new polyline with the points
     itineraryJSON =  itinerary.toGeoJSON(); //convert the itinerary to JSON for distance purposes
 
-   
+   if (state == "pointPlaced"){
+        itinerary.setStyle({color:"#6D6D6D"});
+        stroke.setStyle({color:"#6D6D6D"});
+        outline.setStyle({color:"#000167"});
+   }
 
     if (!firstTime){
         //Make sure the range markers are on the new itinerary
@@ -463,8 +477,14 @@ function reroute(){
     // outline.bringToFront();
     // itinerary.bringToFront();
 
-    routingWaypoints.forEach((element) => routingMarkers.push(L.marker(element).addTo(map)));
-
+    routingWaypoints.forEach(function(element, index){
+        if (index == 0){
+            routingMarkers.push(L.circleMarker(allPos[0], {radius : 5, fillOpacity:1,fillColor:"#2B8DFF", color:"blue", weight:2 }).addTo(map));
+        } else {
+            routingMarkers.push(L.marker(element).addTo(map))
+        }
+    });
+        
     let infoRoute = document.getElementById("routeInfo");
     if (transportationMode == "walk"){
         infoRoute.innerHTML = (distance/1000).toFixed(0) + " km, " + toMinutes(time);
@@ -645,56 +665,29 @@ function createGradientRestaurant(){
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientRestaurant";
     if (transportationMode == "drive"){
-        gradient.setAttribute("x1", "100%");
+        gradient.setAttribute("x1", "93%");
+        gradient.setAttribute("y1", "9%");
+        gradient.setAttribute("x2", "7%");
+        gradient.setAttribute("y2", "62%");
     } else{
         gradient.setAttribute("x1", "0%");
+        gradient.setAttribute("y1", "10%");
+        gradient.setAttribute("x2", "0%");
+        gradient.setAttribute("y2", "100%");
     }
-    
-    gradient.setAttribute("y1", "10%");
-    gradient.setAttribute("x2", "0%");
-    gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
-    //Create the color stops for the gradient
-    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop1.setAttribute("stop-color",  gradientPalette[2]);
-    
-    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop2.setAttribute("offset", "0.16");
-    stop2.setAttribute("stop-color", gradientPalette[6]);
-
-    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop3.setAttribute("offset", "0.29");
-    stop3.setAttribute("stop-color", gradientPalette[4]);
-    
-    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop4.setAttribute("offset", "0.41");
-    stop4.setAttribute("stop-color", gradientPalette[3]);
-    
-    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop5.setAttribute("offset", "0.58");
-    stop5.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop6.setAttribute("offset", "0.81");
-    stop6.setAttribute("stop-color", gradientPalette[5]);
-    
-    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", gradientPalette[0]);
-
-    //Add the coor stops to the gradient
-    gradient.appendChild(stop1);
-    gradient.appendChild(stop2);
-    gradient.appendChild(stop3);
-    gradient.appendChild(stop4);
-    gradient.appendChild(stop5);
-    gradient.appendChild(stop6);
-    gradient.appendChild(stop7);
-
-    //Add the gradient to the defs
-    var defs = document.getElementById("defs");
-    defs.appendChild(gradient);
+    switch (transportationMode){
+        case "hike":
+            decodeGradient(gradient, gradientTH);
+            break;
+        case "walk":
+            decodeGradient(gradient, gradientRW);
+            break;
+        case "drive":
+            decodeGradient(gradient, gradientRD);
+            break;
+    }
 }
 
 /**
@@ -711,55 +704,29 @@ function createGradientFuel(){
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientFuel";
     if (transportationMode == "drive"){
-        gradient.setAttribute("x1", "100%");
+        gradient.setAttribute("x1", "93%");
+        gradient.setAttribute("y1", "9%");
+        gradient.setAttribute("x2", "7%");
+        gradient.setAttribute("y2", "62%");
     } else{
         gradient.setAttribute("x1", "0%");
+        gradient.setAttribute("y1", "10%");
+        gradient.setAttribute("x2", "0%");
+        gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("y1", "0%");
-    gradient.setAttribute("x2", "0%");
-    gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
-    //Create the color stops for the gradient
-    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop1.setAttribute("stop-color", gradientPalette[0]);
-    
-    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop2.setAttribute("offset", "0.16");
-    stop2.setAttribute("stop-color", gradientPalette[4]);
-
-    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop3.setAttribute("offset", "0.22");
-    stop3.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop4.setAttribute("offset", "0.41");
-    stop4.setAttribute("stop-color", gradientPalette[5]);
-    
-    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop5.setAttribute("offset", "0.58");
-    stop5.setAttribute("stop-color", gradientPalette[4]);
-    
-    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop6.setAttribute("offset", "0.81");
-    stop6.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", gradientPalette[6]);
-
-    //Add the coor stops to the gradient
-    gradient.appendChild(stop1);
-    gradient.appendChild(stop2);
-    gradient.appendChild(stop3);
-    gradient.appendChild(stop4);
-    gradient.appendChild(stop5);
-    gradient.appendChild(stop6);
-    gradient.appendChild(stop7);
-
-    //Add the gradient to the defs
-    var defs = document.getElementById("defs");
-    defs.appendChild(gradient);
+    switch (transportationMode){
+        case "hike":
+            decodeGradient(gradient, gradientWH);
+            break;
+        case "walk":
+            decodeGradient(gradient, gradientBW);
+            break;
+        case "drive":
+            decodeGradient(gradient, gradientFD);
+            break;
+    }
 }
 
 /**
@@ -776,55 +743,20 @@ function createGradientElevation(){
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientElevation";
     if (transportationMode == "drive"){
-        gradient.setAttribute("x1", "100%");
+        gradient.setAttribute("x1", "93%");
+        gradient.setAttribute("y1", "9%");
+        gradient.setAttribute("x2", "7%");
+        gradient.setAttribute("y2", "62%");
     } else{
         gradient.setAttribute("x1", "0%");
+        gradient.setAttribute("y1", "10%");
+        gradient.setAttribute("x2", "0%");
+        gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("y1", "0%");
-    gradient.setAttribute("x2", "0%");
-    gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
      //Create the color stops for the gradient
-    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop1.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop2.setAttribute("offset", "0.13");
-    stop2.setAttribute("stop-color", gradientPalette[3]);
-
-    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop3.setAttribute("offset", "0.25");
-    stop3.setAttribute("stop-color", gradientPalette[4]);
-    
-    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop4.setAttribute("offset", "0.37");
-    stop4.setAttribute("stop-color", gradientPalette[5]);
-    
-    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop5.setAttribute("offset", "0.62");
-    stop5.setAttribute("stop-color", gradientPalette[6]);
-    
-    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop6.setAttribute("offset", "0.75");
-    stop6.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", gradientPalette[6]);
-
-    //Add the coor stops to the gradient
-    gradient.appendChild(stop1);
-    gradient.appendChild(stop2);
-    gradient.appendChild(stop3);
-    gradient.appendChild(stop4);
-    gradient.appendChild(stop5);
-    gradient.appendChild(stop6);
-    gradient.appendChild(stop7);
-
-    //Add the gradient to the defs
-    var defs = document.getElementById("defs");
-    defs.appendChild(gradient);
+    decodeGradient(gradient, gradientElev);
 }
 
 /**
@@ -841,55 +773,30 @@ function createGradientSupermarket(){
     var gradient = document.createElementNS("http://www.w3.org/2000/svg", 'linearGradient');
     gradient.id = "gradientMarket";
     if (transportationMode == "drive"){
-        gradient.setAttribute("x1", "100%");
+        gradient.setAttribute("x1", "93%");
+        gradient.setAttribute("y1", "9%");
+        gradient.setAttribute("x2", "7%");
+        gradient.setAttribute("y2", "62%");
     } else{
         gradient.setAttribute("x1", "0%");
+        gradient.setAttribute("y1", "10%");
+        gradient.setAttribute("x2", "0%");
+        gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("y1", "0%");
-    gradient.setAttribute("x2", "0%");
-    gradient.setAttribute("y2", "100%");
     gradient.setAttribute("gradientUnits", "objectBoundingBox");
 
-     //Create the color stops for the gradient
-    var stop1 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop1.setAttribute("stop-color", gradientPalette[6]);
+    switch (transportationMode){
+        case "hike":
+            decodeGradient(gradient, gradientVH);
+            break;
+        case "walk":
+            decodeGradient(gradient, gradientSW);
+            break;
+        case "drive":
+            decodeGradient(gradient, gradientSD);
+            break;
+    }
     
-    var stop2 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop2.setAttribute("offset", "0.13");
-    stop2.setAttribute("stop-color", gradientPalette[4]);
-
-    var stop3 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop3.setAttribute("offset", "0.25");
-    stop3.setAttribute("stop-color", gradientPalette[2]);
-    
-    var stop4 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop4.setAttribute("offset", "0.37");
-    stop4.setAttribute("stop-color", gradientPalette[1]);
-    
-    var stop5 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop5.setAttribute("offset", "0.62");
-    stop5.setAttribute("stop-color", gradientPalette[3]);
-    
-    var stop6 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop6.setAttribute("offset", "0.75");
-    stop6.setAttribute("stop-color", gradientPalette[5]);
-    
-    var stop7 = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
-    stop7.setAttribute("offset", "100%");
-    stop7.setAttribute("stop-color", gradientPalette[2]);
-
-    //Add the coor stops to the gradient
-    gradient.appendChild(stop1);
-    gradient.appendChild(stop2);
-    gradient.appendChild(stop3);
-    gradient.appendChild(stop4);
-    gradient.appendChild(stop5);
-    gradient.appendChild(stop6);
-    gradient.appendChild(stop7);
-
-    //Add the gradient to the defs
-    var defs = document.getElementById("defs");
-    defs.appendChild(gradient);
 }
 
 //Icon for POI
@@ -935,6 +842,19 @@ var bracketGreyed = L.icon({
     shadowAnchor: [35, 21],  // the same for the shadow
     popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
 });
+
+function decodeGradient(gradient, grArray){
+    console.log("here we go");
+    grArray.forEach(function(element){
+        let stop = document.createElementNS("http://www.w3.org/2000/svg", 'stop');
+        stop.setAttribute("offset", element.stop);
+        stop.setAttribute("stop-color", element.color);
+        gradient.appendChild(stop);
+    });
+    var defs = document.getElementById("defs");
+    defs.appendChild(gradient);
+
+}
 
 /********************************************************************************
  *                            Isochrone & POI Queries                           *
@@ -2348,6 +2268,7 @@ function toggleRestaurantDistribution(){
         isRestaurantDisplayed = true;
         isFuelDisplayed = false;
         isElevationDisplayed = false;
+        isSupermarketDisplayed = false;
         document.getElementById("restaurantLayer").classList.add('selectedLayer');
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
         document.getElementById("gasstationLayer").classList.remove('selectedLayer');
@@ -2372,6 +2293,7 @@ function toggleFuelDistribution(){
         isFuelDisplayed = true;
         isRestaurantDisplayed = false;
         isElevationDisplayed = false;
+        isSupermarketDisplayed = false;
         document.getElementById("gasstationLayer").classList.add('selectedLayer');
         document.getElementById("restaurantLayer").classList.remove('selectedLayer');
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
@@ -2391,11 +2313,12 @@ function toggleElevationDistribution(){
         isElevationDisplayed = false;
         document.getElementById("elevationLayer").classList.remove('selectedLayer');
     } else {
-        outlineHTML.setAttribute("stroke", "url(#gradientMarket)");
+        outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isElevationDisplayed = true;
         isRestaurantDisplayed = false;
         isFuelDisplayed = false;
+        isSupermarketDisplayed = false;
         document.getElementById("elevationLayer").classList.add('selectedLayer');
         document.getElementById("restaurantLayer").classList.remove('selectedLayer');
         document.getElementById("gasstationLayer").classList.remove('selectedLayer');
@@ -2414,7 +2337,7 @@ function toggleSupermarketDistribution(){
         isSupermarketDisplayed = false;
         document.getElementById("supermarketLayer").classList.remove('selectedLayer');
     } else {
-        outlineHTML.setAttribute("stroke", "url(#gradientElevation)");
+        outlineHTML.setAttribute("stroke", "url(#gradientMarket)");
         outlineHTML.setAttribute("stroke-opacity", "0.7");
         isSupermarketDisplayed = true;
         isRestaurantDisplayed = false;
@@ -3405,7 +3328,7 @@ function switchMode(mode){
             routingAddresses = [];
             addressHike.forEach( (element) => {routingAddresses.push(element)});
             routingWaypoints = [startHike, endHike];
-            defaultBracketRange = 300;
+            defaultBracketRange = 900;
             transportationMode = "hike";
             fuel.setAttribute("src", "icons/water.svg");
             fuelLayer.setAttribute("src", "icons/water.svg");
@@ -3596,7 +3519,7 @@ onpointermove = (event) => {
 
 onpointerup = (event) => {
     // console.log("ONPOINTERUP");
-    // console.log(state);
+    console.log(state);
     // console.log(event.target);
     // Get the pointer coords
     let ETAFloatingText = document.getElementById("cursorText");
@@ -3630,11 +3553,10 @@ onpointerup = (event) => {
     } else if (state == "pointPlaced"){
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
-        // console.log(latlng);
-        const millis = Date.now() - startTime;
-        if ((millis / 1000) < 0.3){
+        // const millis = Date.now() - startTime;
+        // if ((millis) > 30){
             itineraryToPointPlaced(latlng,point);
-        }
+        // }
     } 
     if (state != "itinerary"){
         updateMarkerTextPos();
