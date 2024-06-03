@@ -1944,71 +1944,54 @@ function toggleMinKM(isKiloMeter){
  * @param {HTMLElement} slider 
  */
 function setSliderMinMax(isKiloMeter, slider){
-    // var value = getDistPolyLine(polylineBracket.getLatLngs());
-    // let value = distance/3;
-    slider.setAttribute("step", 1);
-    if (isKiloMeter){
-        let value = distance/1000;
-        value = value/3;
-        
-        if (transportationMode == "drive"){
-            var min = Math.round(value/5);
-            if (value > 50){
-                value = 50;
-                min = 20;
+    let text = document.getElementById("value");
+    switch (transportationMode){
+        case "drive":
+            slider.setAttribute("step", 5);
+            if(isKiloMeter){
+                slider.setAttribute("min", 5);
+                slider.setAttribute("max", 50);
+                slider.value = 30;
+                text.innerHTML = "30";
+            } else {
+                slider.setAttribute("min", 5);
+                slider.setAttribute("max", 60);
+                slider.value = 30;
+                text.innerHTML = "30";
             }
-            let mid = (min + (value-min)/2);
-            slider.value = mid;
-            slider.setAttribute("min", min);
-            slider.setAttribute("max", value);
-            let text = document.getElementById("value");
-            text.innerHTML = mid;
-        } else {
-            slider.setAttribute("step", 0.1);
-            var min = Math.round((value/5)*10)/10;
-            value = Math.round(value*10)/10;
-            if (value > 5){
-                value = 5;
-                min = 0.1;
+            break;
+        case "hike":
+            if(isKiloMeter){
+                slider.setAttribute("step", 0.1);
+                slider.setAttribute("min", 0.1);
+                slider.setAttribute("max", 5);
+                slider.value = 2.5;
+                text.innerHTML = "2.5";
+            } else {
+                slider.setAttribute("step", 1);
+                slider.setAttribute("min", 1);
+                slider.setAttribute("max", 30);
+                slider.value = 15;
+                text.innerHTML = "15";
             }
-            console.log("value: " + value);
-            console.log("min: " + min);
-            console.log("max: " + value);
-            let mid = Math.round((min + (value-min)/2)*10)/10;
-            console.log("mid: " + mid);
-            slider.value = mid;
-            slider.setAttribute("min", min);
-            slider.setAttribute("max", value);
-            let text = document.getElementById("value");
-            text.innerHTML = mid;
-        }
-        
-        
-    } else {
-        let value = time/3;
-        let inMinutes = Math.round(value/60);
-        // var percent = Math.round(((100*value)/(distance/1000))*100)/100;
-        // var percTime = (percent*time )/100;
-        // console.log("% time" + percTime);
-        // var inMinutes = Math.round(percTime/60);
-        console.log("minutes" + inMinutes);
-        // console.log(time);
-        // console.log(percent);
-        // console.log(percTime);
-        var min = Math.round(inMinutes/5);
-        var max = Math.round(inMinutes);
-        if (max > 60){
-            max = 60;
-            min = 40;
-        }
-        slider.setAttribute("min", min);
-        slider.setAttribute("max", max);
-        let mid = (min + (max-min)/2);
-        slider.value = mid;
-        let text = document.getElementById("value");
-        text.innerHTML = mid;
+            break;
+        case "walk":
+            if(isKiloMeter){
+                slider.setAttribute("step", 0.1);
+                slider.setAttribute("min", 0.1);
+                slider.setAttribute("max", 2);
+                slider.value = 1;
+                text.innerHTML = "1";
+            } else {
+                slider.setAttribute("step", 1);
+                slider.setAttribute("min", 1);
+                slider.setAttribute("max", 15);
+                slider.value = 7;
+                text.innerHTML = "7";
+            }
+            break;
 
-    }
+    }   
 }
 
 /**
