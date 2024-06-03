@@ -85,7 +85,7 @@ const addressWalk = ["Palais de Justice, 31400 Toulouse", "Happywool.com, 31000 
 
 const startHike = L.latLng(/*48.80694459578409, -3.0096764263674323*/45.590492270217666, 2.7666301922019465);
 const endHike = L.latLng(/*48.72297955664577, -2.952516960505689*/45.68284555835603, 2.841430193084532);
-const addressHike = ["24 Rue de la Croix des Veuves, 22620 Ploubazlanec", "4 Chem. de Padel, 22580 Plouha"];
+const addressHike = ["860-1436 Bd des Vernières, 63150 La Bourboule", "Pl. de la Basilique, 63210 Orcival"];
 
 
 
