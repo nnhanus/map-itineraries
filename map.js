@@ -308,8 +308,8 @@ function ORSRouting(){
     // orService = new Openrouteservice.Directions({api_key : APIKey});
     let request = new XMLHttpRequest();
 
-    let link = "https://api.openrouteservice.org/v2/directions/";
-    // let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
+    // let link = "https://api.openrouteservice.org/v2/directions/";
+    let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
     // https://mapitin.lisn.upsaclay.fr:8890/ors/v2 
     if (transportationMode == "drive"){
         link += "driving-car";
@@ -379,6 +379,7 @@ function routingToPolyline(routeJSON){
  */
 function reroute(){
     console.log("reroute");
+    areBracketsOn = false;
     var firstTime = true;
     if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
         map.removeLayer(itinerary);
@@ -880,9 +881,9 @@ function isochroneGlobal(type, value, units){
             let request = new XMLHttpRequest();
 
             let src = "https://api.openrouteservice.org/v2/isochrones/driving-car";
-            // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
-            if (transportationMode == "walk"){
-                src = "https://api.openrouteservice.org/v2/isochrones/foot-walking"
+            // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking"
+            if (transportationMode == "drive"){
+                src = "https://api.openrouteservice.org/v2/isochrones/driving-car"
             }
             request.open('POST', src);
 
@@ -926,8 +927,8 @@ function isochronesLocal(type, value, units){
     // console.log(points);
     let request = new XMLHttpRequest();
 
-    let src = "https://api.openrouteservice.org/v2/isochrones/foot-walking";
-    // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
+    // let src = "https://api.openrouteservice.org/v2/isochrones/foot-walking";
+    let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking"
     if (transportationMode == "drive"){
         src = "https://api.openrouteservice.org/v2/isochrones/driving-car"
     }
@@ -1167,6 +1168,7 @@ function oplQuery(queryString){
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
         // endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
+        // endPoint: "https://mapitin.lisn.upsaclay.fr:9000/api/interpreter",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         beforeRequest: function() {
@@ -1639,14 +1641,14 @@ function itineraryToPointPlaced(latlng, point){
 
             var circleHTML = circleZoneOfInterest._path;
             circleHTML.onpointerup= function(e){
-                // console.log("ONPOINTERUP DU CIRCLE");
+                console.log("ONPOINTERUP DU CIRCLE");
                 const millis = Date.now() - startTime;
                 if ((millis / 1000) < 0.3){
-                    if(areBracketsOn){
-                        bracketsQuery();
-                    } else   {
+                    // if(areBracketsOn){
+                    //     bracketsQuery();
+                    // } else   {
                         openMenu();
-                    }
+                    // }
                 }
             };
             circleHTML.onpointerdown = function(e){clickOnCircle = true};
@@ -1681,11 +1683,19 @@ function openMenu(event){
         console.log("dans la boucle");
         state = "menu";
         var menuDiv = document.getElementById("menu");
-        menuDiv.onpointerdown = function(e){console.log("menu OnPointerDown"); clickOnMenu = true};
+        menuDiv.onpointerdown = function(e){clickOnMenu = true};
+
+        let bracketsToggle = document.getElementById("bracketToggle");
+        bracketsToggle.onpointerdown = function(e){clickOnMenu = true};
+        bracketsToggle.onclick = function(e){toggleBrackets();}
+        // bracketsToggle.onpointerup = function(e){console.log("pointer up bracktoggl"); clickOnMenu = false};
+        
         // menuDiv.bringToFront();
         var restaurant = document.getElementById("restaurant");
         var gasstation = document.getElementById("gasstation");
         var supermarket = document.getElementById("supermarket");
+
+
         restaurant.onclick = function(e){
             console.log("click"); 
             // closeMenu(); 
@@ -1695,6 +1705,7 @@ function openMenu(event){
             }
             openSlider(type)};
         gasstation.onclick = function(e){
+            bracketsToggle.style.visibility="hidden";
             menuDiv.style.visibility="hidden"; 
             let type = "'amenity'='fountain'";
             if (transportationMode == "drive"){
@@ -1704,6 +1715,7 @@ function openMenu(event){
             }
             openSlider(type)};
         supermarket.onclick = function(e){
+            bracketsToggle.style.visibility="hidden";
             menuDiv.style.visibility="hidden";
             let type = "'shop'='supermarket'";
             if (transportationMode == "hike"){
@@ -1712,6 +1724,7 @@ function openMenu(event){
             openSlider(type)};
         console.log("here we set the visibility to visible");
         menuDiv.style.visibility = "visible";
+        bracketsToggle.style.visibility = "visible";
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
         // console.log()
@@ -1720,6 +1733,8 @@ function openMenu(event){
         }
         menuDiv.style.left=circlePos.x - 50 + 'px';
         menuDiv.style.top=top +  'px';
+        bracketsToggle.style.left = circlePos.x -11+ 'px';
+        bracketsToggle.style.top=circlePos.y+50 +  'px';
         isMenuOn = true;
         // if (circleCreated){
             // window.alert("clicked");
@@ -1734,35 +1749,59 @@ function openMenu(event){
  * Closes the menu
  */
 function closeMenu(){
+    console.log("close menu");
     var menuDiv = document.getElementById("menu");
     menuDiv.style.visibility="hidden";
     clickOnMenu = false;
+
+    let bracketsToggle = document.getElementById("bracketToggle");
+    bracketsToggle.style.visibility="hidden";
 }
 
-function bracketsQuery(){
-    if (isRestaurantDisplayed){
-        if (transportationMode == "hike"){
-            makeQuery("'tourism'='picnic_site'");
-        } else {
-            makeQuery("'amenity' = 'restaurant'");
-        }
-         
-    } else if (isSupermarketDisplayed){
-        if (transportationMode == "hike"){
-            makeQuery("'tourism'~'viewpoint|artwork'");
-        } else {
-            makeQuery("'shop' = 'supermarket'");
-        }
-        makeQuery("'shop' = 'supermarket'");
-    } else if (isFuelDisplayed){
-        if (transportationMode == "drive"){
-            makeQuery("'amenity' = 'fuel'");
-        } else if (transportationMode == "walk"){
-            makeQuery("'shop' = 'bakery'");
-        } else {
-            makeQuery("'amenity'='fountain'");
-        }
+function toggleBrackets(){
+    let bracketsToggle = document.getElementById("bracketsButton");
+    if (areBracketsOn){
+        areBracketsOn = false;
+        bracketsToggle.setAttribute("src", "icons/brackets.svg");
+        map.removeLayer(markerBracketOpen);
+        map.removeLayer(markerBracketClose);
+        map.removeLayer(polylineBracket);
+        let bracketOpenText = document.getElementById("bracketText");
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        bracketOpenText.style.visibility = "hidden";
+        bracketCloseText.style.visibility = "hidden";
+    } else {
+        areBracketsOn = true;
+        bracketsToggle.setAttribute("src", "icons/dashedBrackets.svg");
+        createBrackets(circleZoneOfInterest.getLatLng());
     }
+}
+
+function bracketsQuery(type){
+    makeQuery(type);
+    // if (isRestaurantDisplayed){
+    //     if (transportationMode == "hike"){
+    //         makeQuery("'tourism'='picnic_site'");
+    //     } else {
+    //         makeQuery("'amenity' = 'restaurant'");
+    //     }
+         
+    // } else if (isSupermarketDisplayed){
+    //     if (transportationMode == "hike"){
+    //         makeQuery("'tourism'~'viewpoint|artwork'");
+    //     } else {
+    //         makeQuery("'shop' = 'supermarket'");
+    //     }
+    //     makeQuery("'shop' = 'supermarket'");
+    // } else if (isFuelDisplayed){
+    //     if (transportationMode == "drive"){
+    //         makeQuery("'amenity' = 'fuel'");
+    //     } else if (transportationMode == "walk"){
+    //         makeQuery("'shop' = 'bakery'");
+    //     } else {
+    //         makeQuery("'amenity'='fountain'");
+    //     }
+    // }
 }
 
 /**
@@ -2018,15 +2057,21 @@ function clickGoButton(type){
     var sliderDiv = document.getElementById("slider");
     sliderDiv.style.visibility = "hidden";
     clickOnSlider = false;
-    if (isInKM){
-        // makeQuery(type, getSliderValue());
-        // isochroneGlobal(type, getSliderValue(), "distance");
-        isochronesLocal(type, getSliderValue(), "distance");
+    if (areBracketsOn){
+        if (isInKM){
+            isochroneGlobal(type,getSliderValue(), "distance");
+        } else {
+            isochroneGlobal(type, getSliderValue(), "time");
+        }    
     } else {
-        // isochroneGlobal(type, getSliderValue(), "time");
-        isochronesLocal(type, getSliderValue(), "time");
+        if (isInKM){
+            isochronesLocal(type, getSliderValue(), "distance");
+        } else {
+            isochronesLocal(type, getSliderValue(), "time");
+        }
+    
     }
-
+    
 }
 
 /**
@@ -2691,7 +2736,7 @@ function lineBracketsHighlight(latlngAbove, latlngBelow){
 
 /**
  * Spawns the range markers
- * @param {PointerEvent} event 
+ * @param {L.LatLng} event 
  */
 function createBrackets(event){
     //greys out rest
@@ -3501,8 +3546,8 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    // console.log("ONPOINTERUP");
-    console.log(state);
+    console.log("ONPOINTERUP");
+    // console.log(state);
     // console.log(event.target);
     // Get the pointer coords
     let ETAFloatingText = document.getElementById("cursorText");
@@ -3517,13 +3562,15 @@ onpointerup = (event) => {
         console.log("perhaps we arrive here");
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
+        let bracketsToggle = document.getElementById("bracketToggle");
+    bracketsToggle.style.visibility="hidden";
         state = "pointPlaced";
         if (areBracketsOn){
             markerBracketClose.dragging.enable();
             markerBracketOpen.dragging.enable();
         
         }
-        clickOnMenu = false;
+        
     } else if (state == "slider" && !clickOnSlider && !isMovingMap  && (prevZoom == map.getZoom())){
         var sliderDiv = document.getElementById("slider");
         sliderDiv.style.visibility = "hidden";
@@ -3563,6 +3610,7 @@ onpointerup = (event) => {
     clickOnLayer = false;
     map.dragging.enable();
     hasMovedQueryZone = false;
+    clickOnMenu = false;
     
     var zoom = map.getZoom();
     // console.log("   zoom level   " + zoom);

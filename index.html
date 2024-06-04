@@ -29,6 +29,10 @@
     <script src="files/OverPassLayer.bundle.js"></script>
     <script src='https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js'></script>
     <script src="files/Polyline.encoded.js"></script>
+    <!-- <script type="module" src="files/GradientPath.js"></script> -->
+    <!-- <script src="https://cdn.jsdelivr.net/npm/tinygradient@1.1.5/browser.min.js"></script> -->
+    <!-- <script type="text/javascript" src="files/_data.js"></script>
+    <script type="text/javascript" src="files/_utils.js"></script> -->
     <!-- <script src="https://unpkg.com/leaflet.markercluster@1.3.0/dist/leaflet.markercluster.js"></script> -->
      <!-- <script src="files/leaflet-routing-machine.js"></script> -->
     <!-- <script src="https://cdn.jsdelivr.net/npm/leaflet-control-geocoder/dist/Control.Geocoder.js"></script> -->
@@ -47,6 +51,9 @@
     <input type="image" class="layer restaurant" id="restaurant" src="icons/restoIcon.svg" width="28" height="28" />
     <input type="image" class="layer" id = "gasstation" src="icons/fuelIcon.svg" width="22" height="22"/>
     <input type="image" class="layer restaurant" id = "supermarket" src="icons/cartIcon.svg" width="28" height="28"/>
+    </div>
+    <div id="bracketToggle" style="visibility: hidden; z-index: 1000;">
+        <input type="image" class="layer" id="bracketsButton" src="icons/brackets.svg" width="22" height="22">
     </div>
     <div id="slider" style=" visibility: hidden;z-index: 1000; width: 170px; ">
         <div  style="display: flex; justify-content: flex-end">
@@ -88,8 +95,6 @@
     <div id="redraw">
         <input type="image" class="layer" id="redrawButton" src="icons/redraw.svg" width="22" height="22">
     </div> 
-
-
     <div id="routingControl" style="left: 15px; top: 605px; z-index: 1000">
         <div id="closeDiv" style="display: flex; justify-content: flex-end"><span class="closeButton"> x </span></div>
         

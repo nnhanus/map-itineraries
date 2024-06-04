@@ -68,6 +68,10 @@ body{
     padding: 1px;
 }
 
+#bracketToggle{
+    position:absolute;
+}
+
 #menu{
     position:absolute;
 }
