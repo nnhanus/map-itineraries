@@ -25,8 +25,11 @@ body{
     padding-right: 15px;
 }
 
+.floating{
+    position:absolute;
+}
 .sliderWidth{
-    width: 170px;
+    width: 130px;
 }
 #geocoders{
     padding-bottom: 5px;
@@ -65,7 +68,7 @@ body{
 .floatingText{
     position:absolute;
     background-color: #2b8eff9d;
-    padding: 1px;
+    padding: 5px;
 }
 
 #bracketToggle{

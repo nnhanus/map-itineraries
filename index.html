@@ -56,18 +56,23 @@
         <input type="image" class="layer" id="bracketsButton" src="icons/brackets.svg" width="22" height="22">
     </div>
     <div id="slider" style=" visibility: hidden;z-index: 1000; width: 170px; ">
-        <div  style="display: flex; justify-content: flex-end">
-            <output id="value" style="padding-right: 5px;"> </output>
-            <!-- <span id="sliderValue" style="padding-right: 5px;">4</span> -->
-            <input type="button" id="go" class="unselected" value="Go">
-        </div>
-        <input type="range" class="sliderWidth" id="range" min="0" max="45" value="15" >
-        
-        
-        <div id="buttons" style="display: flex; justify-content: flex-end">
+        <div id="buttons" style="display: flex; justify-content: flex-start">
             <input id="km" type="button" class="selected" value="km">
             <input id="min" type="button" class="unselected" value="min">
+            <output id="value" style="padding-left: 80px;"> </output>
         </div>
+        
+        <div  style="padding-top: 10px;">
+            <input type="range" class="sliderWidth" id="range" min="0" max="45" value="15" >
+            
+            <!-- <span id="sliderValue" style="padding-right: 5px;">4</span> -->
+            <input type="button" id="go" class="unselected" value="Go" style="padding-left: 5px;">
+        </div>
+        
+        
+        
+        
+        
     </div>
     <div id="layers" style=" display: flex; justify-content: flex-end; padding-top: 2px;">
         <div id="hiddenLayers" style="visibility: collapse; padding-right: 3px;" >
