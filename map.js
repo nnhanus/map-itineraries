@@ -486,7 +486,7 @@ function reroute(){
     routingWaypoints.forEach(function(element, index){
         if (index == 0){
             routingMarkers.push(L.circleMarker(allPos[0], {radius : 5, fillOpacity:1,fillColor:"#2B8DFF", color:"blue", weight:2 }).addTo(map));
-        } else if (index == routingWaypoints.length-1){
+        } else if (routingWaypoints.length == 2){
             let marker = L.marker(element).addTo(map);
             routingMarkers.push(marker);
         } else {
@@ -1232,7 +1232,6 @@ function oplQuery(queryString){
         
                 //Add Add to Route button to the PopUp
                 const popupContent = this._getPoiPopupHTML(e.tags, e.id);
-                console.log(popupContent);
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
