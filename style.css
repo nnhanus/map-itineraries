@@ -1,16 +1,12 @@
 body{
     font-family:Arial, Helvetica, sans-serif;
 }
-
-#clearDiv{
-    position:absolute;
-} 
+ 
 
 .closeButton{
     cursor: default;
 }
 #routingControl{
-    position:absolute;
     background-color: white;
     width: 365px;
     padding-left: 10px;
@@ -71,16 +67,7 @@ body{
     padding: 5px;
 }
 
-#bracketToggle{
-    position:absolute;
-}
-
-#menu{
-    position:absolute;
-}
-
 #slider{
-    position:absolute;
     border: solid blue;
     background-color: aliceblue;
     padding: 10px;

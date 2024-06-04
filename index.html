@@ -47,15 +47,15 @@
    <!-- 350, 650 -->
     
    <script type="text/javascript" src="map.js"></script>
-   <div id="menu" style = "visibility: hidden; z-index: 1000; ">
+   <div id="menu" class="floating" style = "visibility: hidden; z-index: 1000; ">
     <input type="image" class="layer restaurant" id="restaurant" src="icons/restoIcon.svg" width="28" height="28" />
     <input type="image" class="layer" id = "gasstation" src="icons/fuelIcon.svg" width="22" height="22"/>
     <input type="image" class="layer restaurant" id = "supermarket" src="icons/cartIcon.svg" width="28" height="28"/>
     </div>
-    <div id="bracketToggle" style="visibility: hidden; z-index: 1000;">
+    <div id="bracketToggle" class="floating" style="visibility: hidden; z-index: 1000;">
         <input type="image" class="layer" id="bracketsButton" src="icons/brackets.svg" width="22" height="22">
     </div>
-    <div id="slider" style=" visibility: hidden;z-index: 1000; width: 170px; ">
+    <div id="slider" class="floating" style=" visibility: hidden;z-index: 1000; width: 170px; ">
         <div id="buttons" style="display: flex; justify-content: flex-start">
             <input id="km" type="button" class="selected" value="km">
             <input id="min" type="button" class="unselected" value="min">
@@ -85,7 +85,7 @@
         <input type="image" class="layer" id="layersButton" src="icons/layers.png" width="22" height="22">
         <!-- <input type="image" class="layer" id="redrawButton" src="icons/arrival.svg" width="22" height="22"> -->
     </div> 
-    <div id="clearDiv" style="visibility: hidden; top: 125px; left: 358px; z-index:1000" >
+    <div id="clearDiv" class="floating" style="visibility: hidden; top: 125px; left: 358px; z-index:1000" >
         <input type="image" class="layer" id="clearButton" src="icons/delete.png" width="22" height="22">
     </div>  
     <div id="changeMode" style=" display: flex; justify-content: flex-start; padding-top: 2px;">
@@ -100,7 +100,7 @@
     <div id="redraw">
         <input type="image" class="layer" id="redrawButton" src="icons/redraw.svg" width="22" height="22">
     </div> 
-    <div id="routingControl" style="left: 15px; top: 605px; z-index: 1000">
+    <div id="routingControl" class="floating" style="left: 15px; top: 605px; z-index: 1000">
         <div id="closeDiv" style="display: flex; justify-content: flex-end"><span class="closeButton"> x </span></div>
         
         <div id="geocoders">

@@ -165,7 +165,7 @@ L.Control.Layers = L.Control.extend({
         }
         button.onclick =  function(e){
             let menu = document.getElementById("hiddenLayers");
-            visibilityToggle(menu);
+            visibilityToggle(menu, button);
         };
         marketButton.onclick = function(e){
             toggleSupermarketDistribution();
@@ -204,7 +204,7 @@ L.Control.Mode = L.Control.extend({
             console.log("transportationMode");
             // clickOnLayer = true;
             let menu = document.getElementById("hiddenMode");
-            visibilityToggle(menu);
+            visibilityToggle(menu, icon);
         }
         driveMode.onclick = function(e){
             switchMode("drive");
@@ -3084,12 +3084,15 @@ function toLatLng(point){
  * Toggles visibility of an HTML element from visible to collapse
  * @param {HTMLElement} element 
  */
-function visibilityToggle(element){
+function visibilityToggle(element, layer){
     console.log(element.style.visibility);
     if (element.style.visibility == "visible"){
         element.style.visibility = "collapse";
+        layer.classList.remove("selectedLayer");
+        
     } else {
         element.style.visibility = "visible";
+        layer.classList.add("selectedLayer");
     }
 }
 
@@ -3447,6 +3450,7 @@ onpointermove = (event) => {
         
     if (isMenuOn){
         var menuDiv = document.getElementById("menu");
+        let bracketsToggle = document.getElementById("bracketToggle");
         var circlePos = toPixels(circleZoneOfInterest.getLatLng());
         var top = circlePos.y - 70;
         // console.log()
@@ -3456,6 +3460,9 @@ onpointermove = (event) => {
         menuDiv.style.left=circlePos.x - 50 + 'px';
         menuDiv.style.top=top +  'px';
 
+        bracketsToggle.style.left = circlePos.x -11+ 'px';
+        bracketsToggle.style.top=circlePos.y+50 +  'px';
+        
         var sliderDiv = document.getElementById("slider");
         // // sliderDiv.style.visibility = "visible";
         // // var circlePos = toPixels(circleMarker.getLatLng());
