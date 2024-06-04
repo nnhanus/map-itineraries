@@ -486,8 +486,28 @@ function reroute(){
     routingWaypoints.forEach(function(element, index){
         if (index == 0){
             routingMarkers.push(L.circleMarker(allPos[0], {radius : 5, fillOpacity:1,fillColor:"#2B8DFF", color:"blue", weight:2 }).addTo(map));
+        } else if (index == routingWaypoints.length-1){
+            let marker = L.marker(element).addTo(map);
+            routingMarkers.push(marker);
         } else {
-            routingMarkers.push(L.marker(element).addTo(map))
+            let marker = L.marker(element).addTo(map);
+            let div = document.createElement("div");
+            const cancelButton = createButton("Remove from route", div);
+            L.DomEvent.on(cancelButton, 'click', function() {
+                map.closePopup();
+                routingWaypoints.splice(index, 1);
+                routingAddresses.splice(index, 1);
+                ORSRouting();
+                
+            });
+            const popup = L.popup().setContent(div);
+            marker.bindPopup(popup);
+
+            // marker.on("pointerup", function(e){
+                
+            // });
+            routingMarkers.push(marker);
+
         }
     });
         
@@ -1212,6 +1232,7 @@ function oplQuery(queryString){
         
                 //Add Add to Route button to the PopUp
                 const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+                console.log(popupContent);
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
@@ -1241,7 +1262,7 @@ function oplQuery(queryString){
                     const container =  L.DomUtil.create('div');
                     const okButton = createButton("Add to route", container);
                     L.DomEvent.on(okButton, 'click', function() {
-                        //Reaplce popup with original one
+                        //Replace popup with original one
                         geocoding(marker.getLatLng());
                         openedMarker.unbindPopup();
                         openedMarker.bindPopup(openedPopup);
@@ -3462,7 +3483,7 @@ onpointermove = (event) => {
 
         bracketsToggle.style.left = circlePos.x -11+ 'px';
         bracketsToggle.style.top=circlePos.y+50 +  'px';
-        
+
         var sliderDiv = document.getElementById("slider");
         // // sliderDiv.style.visibility = "visible";
         // // var circlePos = toPixels(circleMarker.getLatLng());
