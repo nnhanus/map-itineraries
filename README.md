@@ -11,7 +11,7 @@ See logs:
 
 `sudo docker compose logs --follow`
 
-The server runs on `http://129.175.5.5:8080` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:8890`
+The server runs on `http://129.175.5.5:8080` a.k.a `http://pc5-5.lisn.upsaclay.fr:8080` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:8890`
 
 Checking the server's health: `https://mapitin.lisn.upsaclay.fr:8890/ors/v2/health`
 
@@ -49,7 +49,7 @@ Edit `sites-enabled/000-default.conf`:
 Restart Apache 2 server:
 `sudo systemctl reload apache2`
 
-The server runs on `http://129.175.5.5:8082` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:XXXX`
+The server runs on `http://129.175.5.5:8082` a.k.a `http://pc5-5.lisn.upsaclay.fr:8082` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:9000`
 
 Checking the server's reachability:
 `https://mapitin.lisn.upsaclay.fr:XXXX/api/interpreter`
