@@ -300,18 +300,17 @@ L.control.redraw = function(opts){
  *                                   Routing                                    *
  ********************************************************************************/
 
+//This is the start of everything
 let routing = L.control.routing({}).addTo(map);
 
 /**
  * Sends the routing request to OSR
  */
 function ORSRouting(){
-    // orService = new Openrouteservice.Directions({api_key : APIKey});
     let request = new XMLHttpRequest();
 
     // let link = "https://api.openrouteservice.org/v2/directions/";
     let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
-    // https://mapitin.lisn.upsaclay.fr:8890/ors/v2 
     if (transportationMode == "drive"){
         link += "driving-car";
     } else {
@@ -328,12 +327,8 @@ function ORSRouting(){
         if (this.readyState === 4) {
             console.log('Status:', this.status);
             console.log('Headers:', this.getAllResponseHeaders());
-            // console.log(JSON.parse(this.response).routes[0].geometry);
             let jsonResult = JSON.parse(this.response);
             let route = jsonResult.routes[0];
-            //route.summary.distance
-            //route.summary.duration
-            // console.log(L.Polyline.fromEncoded(route.geometry));
             routingToPolyline(route);
         }
     };
@@ -1140,7 +1135,7 @@ function isochroneToPolygon(body, type, length){
         if (polygon.length > 3){
             // requestMade = true;
             var queryString = arrayToQuery(polygon, type); //turn the polygon into a string
-            oplQuery(queryString); //make the query
+            oplQuery(queryString, type); //make the query
         } else {
             //Sometimes the simplification doesn't work
             //Go back to pointPlaced
@@ -1188,7 +1183,7 @@ function polygonToLatLng(line){
  * Sends the Overpass Query using Leaflet Overpass Layer
  * @param {string} queryString 
  */
-function oplQuery(queryString){
+function oplQuery(queryString, type){
     console.log("oplQuery");
     console.log(queryString);
     oplLayer = new L.OverPassLayer({
@@ -1198,9 +1193,6 @@ function oplQuery(queryString){
         // endPoint: "https://mapitin.lisn.upsaclay.fr:9000/api/interpreter",
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
-        beforeRequest: function() {
-            console.log("BEFORE REQUEST");
-        },
         onSuccess: function(data) { 
             console.log("ON SUCCESS");
             // console.log(data);
@@ -1232,7 +1224,7 @@ function oplQuery(queryString){
                 }
         
                 //Add Add to Route button to the PopUp
-                const popupContent = this._getPoiPopupHTML(e.tags, e.id);
+                const popupContent = getPoiPopupHTML(e.tags, e.id, type);
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
@@ -1327,7 +1319,63 @@ function oplQuery(queryString){
         map.addLayer(oplLayer);
 
 }
+function getPoiPopupHTML(tags, id, type) {
+    let row;
+    const link = document.createElement('a');
+    const table = document.createElement('table');
+    const div = document.createElement('div');
 
+    // link.href = `https://www.openstreetmap.org/edit?editor=id&node=${id}`;
+    // link.appendChild(document.createTextNode('Edit this entry in iD'));
+
+    table.style.borderSpacing = '10px';
+    table.style.borderCollapse = 'separate';
+
+    if (type=="'tourism'='picnic_site'"){
+        row = table.insertRow(0);
+        row.insertCell(0).appendChild(document.createTextNode("Picnic site"));
+        for (const key in tags) {
+            if (key == "covered" || key == "name"){
+                row = table.insertRow(1);
+                row.insertCell(0).appendChild(document.createTextNode(key));
+                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+            }
+          
+        }
+    } else if (type=="'amenity'='fountain'"){
+        row = table.insertRow(0);
+        row.insertCell(0).appendChild(document.createTextNode("Water fountain"));
+        for (const key in tags) {
+            if (key == "drinkable" || key == "name" || key == "description"){
+                row = table.insertRow(1);
+                row.insertCell(0).appendChild(document.createTextNode(key));
+                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+            }
+          
+        }
+
+    }else {
+        for (const key in tags) {
+            // if (key == "shop" || key == "opening_hours" || key == "name"){
+                row = table.insertRow(0);
+                row.insertCell(0).appendChild(document.createTextNode(key));
+                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+            // }
+          
+        }
+    }
+
+    
+
+    div.appendChild(link);
+    div.appendChild(table);
+
+    return div;
+  }
+/**
+ * Displays a simple route preview when selecting a marker
+ * @param {L.LatLng[]} latlngs 
+ */
 function previewIti(latlngs){
     console.log("preview Iti");
     let request = new XMLHttpRequest();
@@ -1853,6 +1901,9 @@ function closeMenu(){
     bracketsToggle.style.visibility="hidden";
 }
 
+/**
+ * Toggles the range 
+ */
 function toggleBrackets(){
     let bracketsToggle = document.getElementById("bracketsButton");
     if (areBracketsOn){
@@ -2548,14 +2599,10 @@ function toggleFloatingTextsUnits(){
     let bracketCloseText = document.getElementById("bracketCloseText");
     if (isFloatingTextKM){ //change to time
         
-        let circleTime = getTimeFromDistance(circleZoneOfInterest.getLatLng())
-        circleMarkerText.innerHTML = circleTime;
+        circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
         if(areBracketsOn){
-            // bracketOpenText.innerHTML = getTimeFromDistance(markerBracketOpen.getLatLng());getRangeTime(latlng, isOpen)
-            // bracketCloseText.innerHTML = getTimeFromDistance(markerBracketClose.getLatLng());
             bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
-            bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false)
-            
+            bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false)  
         }
         isFloatingTextKM = false;
     } else { //change to distance
@@ -2686,16 +2733,8 @@ function moveCursor(e){
  * @param {L.LatLng} latlngBelow 
  */
 function lineBracketsHighlight(latlngAbove, latlngBelow){
-    var closestAbove = L.GeometryUtil.closest(map, allPos, latlngAbove);
-    isPointOnLine(closestAbove, allPos, 0.5);
-    var pointsAbove = new Array();
-    points.forEach(element => {pointsAbove.push(element)});
-    var closestBelow = L.GeometryUtil.closest(map, allPos, latlngBelow);
-    isPointOnLine(closestBelow, allPos, 0.5);
-    
-    var pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    pointsToKeep.splice(0, 0, latlngAbove);
-    pointsToKeep.push(latlngBelow);
+    let pointsToKeep = getSliced(latlngAbove, latlngBelow, allPos);
+
     if (polylineBracket != null){
         map.removeLayer(polylineBracket);
     }
@@ -2884,22 +2923,16 @@ function updateBracketCloseText(){
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
 
-    let closestAbove = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
-    isPointOnLine(closestAbove, allPos, 0.5);
-    let pointsAbove = new Array();
-    points.forEach(element => {pointsAbove.push(element)});
-    let closestBelow = L.GeometryUtil.closest(map, allPos, L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
-    isPointOnLine(closestBelow, allPos, 0.5);
-    
-    let pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    let distCircleBracket = 0;
-    for (let i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-        distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
-    }
-    let bracketCloseText = document.getElementById("bracketCloseText");
-    bracketCloseText.innerHTML="+ " + (distCircleBracket/1000).toFixed(fix) +" km";
+    if (isFloatingTextKM){
+        let distPoint = getDistanceFromWaypoints(circleZoneOfInterest.getLatLng(),markerBracketClose.getLatLng(),allPos);
+        let bracketCloseText = document.getElementById("bracketCloseText");
+        bracketCloseText.innerHTML="+ " + (distPoint/1000).toFixed(fix) +" km";
 
-    closeCircleDist = distCircleBracket;
+        closeCircleDist = distPoint;
+    } else {
+        bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false);
+    }
+
 }
 
 /**
@@ -2908,23 +2941,35 @@ function updateBracketCloseText(){
 function updateBracketOpenText(){
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
-    let closestAbove = L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng());
-    isPointOnLine(closestAbove, allPos, 0.5);
-    let pointsAbove = new Array();
-    points.forEach(element => {pointsAbove.push(element)});
-    let closestBelow = L.GeometryUtil.closest(map, allPos, circleZoneOfInterest.getLatLng());
-    isPointOnLine(closestBelow, allPos, 0.5);
-    
-    let pointsToKeep = points.filter(n => !pointsAbove.includes(n));
-    let distCircleBracket = 0;
-    for (let i = 0; i < pointsToKeep.length - 1; i++){ //calculate the distance from the start to this point
-        distCircleBracket += pointsToKeep[i].distanceTo(pointsToKeep[i+1]);
-    }
-    
-    let bracketOpenText = document.getElementById("bracketText");
-    bracketOpenText.innerHTML="- " + (distCircleBracket/1000).toFixed(fix) +" km";
+    if(isFloatingTextKM){
+        let distPoint = getDistanceFromWaypoints(markerBracketOpen.getLatLng(), circleZoneOfInterest.getLatLng(),allPos);
+        let bracketOpenText = document.getElementById("bracketText");
+        bracketOpenText.innerHTML="- " + (distPoint/1000).toFixed(fix) +" km";
 
-    openCircleDist = distCircleBracket;
+        openCircleDist = distPoint;
+    } else {
+        bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
+    }
+}
+
+function getDistanceFromWaypoints(start,end,route){
+    let sliced = getSliced(start, end, route);
+
+    let distTurf = 0;
+    for (let i = 0; i < sliced.length - 1; i++){ //calculate the distance from the start to this point
+        distTurf += sliced[i].distanceTo(sliced[i+1]);
+    }
+    return distTurf;
+}
+
+function getSliced(start, end, route){
+    let lineTurf = turf.lineString(arrayToLngLat(route));
+    let startPoint = turf.point(toLngLat(start));
+    let endPoint = turf.point(toLngLat(end));
+
+    let sliced = turf.lineSlice(startPoint, endPoint, lineTurf);
+    let lineSliced = arraytoLatLng(sliced.geometry.coordinates);
+    return lineSliced;
 }
 
 /**
@@ -3140,6 +3185,30 @@ function latLngToPoint(line){
     return res;
 }
 
+function toLngLat(latlng){
+    return [latlng.lng, latlng.lat];
+}
+
+function lngLatToLatLng(lnglat){
+    return L.latLng([lnglat[1], lnglat[0]]);
+
+}
+
+function arrayToLngLat(latlngs){
+    let lnglats = [];
+    latlngs.forEach((element) => {
+        lnglats.push(toLngLat(element));
+    });
+    return lnglats;
+}
+
+function arraytoLatLng(lnglats){
+    let latlngs = [];
+    lnglats.forEach((element) => {
+        latlngs.push(lngLatToLatLng(element));
+    });
+    return latlngs;
+}
 /**
  * 
  * @param {L.LatLng} latlng LatLng(lat,lng)
@@ -3601,7 +3670,6 @@ onpointerup = (event) => {
             markerBracketClose.setLatLng(polyLatLngs[polyLatLngs.length-1]);
         }
         state = prevState;
-        
 
     }
     isPointerDown = false;
@@ -3648,9 +3716,6 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    // if (prevZoom != map.getZoom()){
-    //     needRedraw = true;
-    // }
     if(prevCenter.distanceTo(map.getCenter()) > 500){
         needRedraw = true;
     }
