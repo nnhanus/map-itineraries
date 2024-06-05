@@ -131,6 +131,7 @@ var gradientRD = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.3}, {color
 
 var gradientElev = [{color:"#00029C", stop:0}, {color:"#4849EE", stop:0.13}, {color:"#7173FF", stop:0.25}, {color:"#C9C9E4", stop:0.37}, {color:"#E6E6FD", stop:0.62}, {color:"#4849EE", stop:0.75}, {color:"#E6E6FD", stop:1}];
 
+var previewRoute;
 /********************************************************************************
  *                                   Controls                                   *
  ********************************************************************************/
@@ -1291,12 +1292,15 @@ function oplQuery(queryString){
                         hideFloatingTexts(); //Hide marker text when popup open
                     })
                     .on("popupclose", function(e){
+                        map.removeLayer(previewRoute);
                         showFloatingTexts(); //SHow marker text when popup is closed
                     })
                     .on("click", function(e){
+                        console.log("clicked");
                         marker.setIcon(darkGreenIcon); //Change icon when closed
                         openedMarker = marker;
                         openedPopup = marker.getPopup();
+                        whichWayIsFaster(marker.getLatLng(), "", false);
                     })
     
                 this._markers.addLayer(marker); //Add to map
@@ -1324,6 +1328,43 @@ function oplQuery(queryString){
 
 }
 
+function previewIti(latlngs){
+    console.log("preview Iti");
+    let request = new XMLHttpRequest();
+
+    let link = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/directions/";
+    if (transportationMode == "drive"){
+        link += "driving-car";
+    } else {
+        link += "foot-hiking";
+    }
+    link += "/json";
+    request.open('POST', link);
+
+    request.setRequestHeader('Accept', 'application/json, application/geo+json, application/gpx+xml, img/png; charset=utf-8');
+    request.setRequestHeader('Content-Type', 'application/json');
+    request.setRequestHeader('Authorization', APIKey);
+
+    request.onreadystatechange = function () {
+        if (this.readyState === 4) {
+            console.log('Status:', this.status);
+            console.log('Headers:', this.getAllResponseHeaders());
+            let jsonResult = JSON.parse(this.response);
+            let route = jsonResult.routes[0];
+            let line = L.Polyline.fromEncoded(route.geometry);
+            let routeDecoded = line.getLatLngs();
+            if(previewRoute!=null){
+                map.removeLayer(previewRoute);
+            } 
+            previewRoute = L.polyline(routeDecoded, {weight: 8}).addTo(map);
+        }
+    };
+
+    const body = routingWaypointsToQueryString(latlngs);
+    console.log(body);
+
+    request.send(body);
+}
 /**
  * Takes an array of LatLng and turns it into a OPL query
  * @param {L.LatLng[]} itinerary 
@@ -1366,7 +1407,7 @@ function geocoding(latlng){
             ORSRouting();
         } else {
             // firstRequest(latlng, adress);
-            whichWayIsFaster(latlng, adress)
+            whichWayIsFaster(latlng, adress, true)
         }
         // routingWaypoints.splice(1, 0, latlng);
         // ORSRouting();
@@ -1395,9 +1436,9 @@ function decodeGeocodingResults(result){
  * @param {L.LatLng} latlng 
  * @param {String} address 
  */
-function whichWayIsFaster(latlng, address){
+function whichWayIsFaster(latlng, address, reroute){
     //find closest waypoints
-
+    console.log("which way is faster");
     let dist = latlng.distanceTo(routingWaypoints[0]) ;
     let index = 0;
     for(let i = 0; i < routingWaypoints.length; i++){
@@ -1425,17 +1466,28 @@ function whichWayIsFaster(latlng, address){
         }
     } 
     console.log("index: ", index, ", firstroute: ", firstRoute, ", secondRoute: ", secondRoute);
-    if (index == 0){
-        routingAddresses.splice(1, 0, address);
-        routingWaypoints.splice(1, 0, latlng);
-    } else if (firstRoute < secondRoute || index == routingWaypoints.length-1){
-        routingAddresses.splice(index, 0, address);
-        routingWaypoints.splice(index, 0, latlng);
+    if (reroute){
+        if (index == 0){
+            routingAddresses.splice(1, 0, address);
+            routingWaypoints.splice(1, 0, latlng);
+        } else if (firstRoute < secondRoute || index == routingWaypoints.length-1){
+            routingAddresses.splice(index, 0, address);
+            routingWaypoints.splice(index, 0, latlng);
+        } else {
+            routingAddresses.splice(index+1, 0, address);
+            routingWaypoints.splice(index+1, 0, latlng);
+        }
+        ORSRouting();
     } else {
-        routingAddresses.splice(index+1, 0, address);
-        routingWaypoints.splice(index+1, 0, latlng);
+        if (index == 0){
+            previewIti(routingWaypoints.toSpliced(1, 0, latlng));
+        } else if (firstRoute < secondRoute || index == routingWaypoints.length-1){
+            previewIti(routingWaypoints.toSpliced(index, 0, latlng));
+        } else {
+            previewIti(routingWaypoints.toSpliced(index+1, 0, latlng));
+        }
     }
-    ORSRouting();
+    
 }
 
 
@@ -3612,4 +3664,6 @@ onpointerup = (event) => {
     if (circleZoneOfInterest != null){
         circleZoneOfInterest.bringToFront();
     }
+
+    
 }
