@@ -49,6 +49,15 @@ Edit `sites-enabled/000-default.conf`:
 Restart Apache 2 server:
 `sudo systemctl reload apache2`
 
+In our current installation, 
+$EXEC_DIR=/home/ilda/projects/overpass/osm-3s_v0.7.62.2
+$DB_DIR=/home/ilda/projects/overpass/osm-3s_v0.7.62.2/db
+
+Start the dispatcher:
+`nohup $EXEC_DIR/bin/dispatcher --osm-base --db-dir=$DB_DIR &`
+
+There might be a problem starting the dispatcher. One option is to simply delete `$DB_DIR/ osm3s_osm_base`
+
 The server runs on `http://129.175.5.5:8082` a.k.a `http://pc5-5.lisn.upsaclay.fr:8082` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:9000`
 
 Checking the server's reachability:
