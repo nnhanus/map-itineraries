@@ -51,7 +51,7 @@ var prevCenter;
 const width = 395;
 const height = 710; 
 
-const ppi = 410; //Oppo A9: 269; Samsung Note 10: 410
+const ppi = 416; //Oppo A9: 269; Samsung Note 10: 410
 
 var state = "itinerary";
 var prevState = "itinerary";
@@ -68,7 +68,7 @@ var clickOnLayer = false;
 var openedMarker;
 var openedPopup;
 
-var infoRouteTop = 605;
+var infoRouteTop = 530;
 
 var defaultBracketRange = 1200;
 var transportationMode = "drive"; //drive walk hike
@@ -380,6 +380,8 @@ function routingToPolyline(routeJSON){
  */
 function reroute(){
     console.log("reroute");
+    
+    // getResolution();
     areBracketsOn = false;
     var firstTime = true;
     if (itinerary != null){ //In case of re-route, make sure to delete evrything before adding new route
@@ -541,9 +543,7 @@ function reroute(){
         // console.log(children[i]);
         // console.log(routingAddresses[i]);
         children[i].setAttribute("value", routingAddresses[i]);
-    }
-
-   
+    }   
 }
 
 /**
@@ -1191,6 +1191,7 @@ function oplQuery(queryString, type){
         query: queryString,
         // endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
         // endPoint: "https://mapitin.lisn.upsaclay.fr:9000/api/interpreter",
+        endPoint: 'https://mapitin.lisn.upsaclay.fr:9000/api/', 
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
@@ -1333,30 +1334,161 @@ function getPoiPopupHTML(tags, id, type) {
 
     if (type=="'tourism'='picnic_site'"){
         row = table.insertRow(0);
-        row.insertCell(0).appendChild(document.createTextNode("Picnic site"));
+        let elem = document.createElement('p');
+        elem.innerText = "Picnic site";
+        div.appendChild(elem);
         for (const key in tags) {
             if (key == "covered" || key == "name"){
-                row = table.insertRow(1);
-                row.insertCell(0).appendChild(document.createTextNode(key));
-                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+                let elem = document.createElement('p');
+                elem.innerText = key + ": " + tags[key];
+                div.appendChild(elem);
             }
           
         }
     } else if (type=="'amenity'='fountain'"){
         row = table.insertRow(0);
-        row.insertCell(0).appendChild(document.createTextNode("Water fountain"));
+        let elem = document.createElement('p');
+        elem.innerText = "Water fountain";
+        div.appendChild(elem);
         for (const key in tags) {
-            if (key == "drinkable" || key == "name" || key == "description"){
-                row = table.insertRow(1);
-                row.insertCell(0).appendChild(document.createTextNode(key));
-                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+            if (key == "drinkable" ){
+                let elem = document.createElement('p');
+                elem.innerText = key + ": " + tags[key];
+                div.appendChild(elem);
+            } else if (key == "description"|| key == "name"){
+                let elem = document.createElement('p');
+                elem.innerText = tags[key];
+                div.appendChild(elem);
             }
           
         }
 
-    }else {
+    } else if (type=="'tourism'~'viewpoint|artwork'"){
         for (const key in tags) {
-            // if (key == "shop" || key == "opening_hours" || key == "name"){
+            switch (key){
+                case "name":
+                    let name = document.createElement('p');
+                    name.innerText = tags[key];
+                    div.prepend(name);
+                break;
+                case "tourism":
+                    let tourism = document.createElement('p');
+                    tourism.innerText = tags[key];
+                    tourism.classList.add("capitalize");
+                    div.prepend(tourism);
+                break;
+                case "material":
+                    let material = div.appendChild(document.createElement('p'));
+                    material.innerText = "Material: " + tags[key];
+                break;
+                case "inscription":
+                    let inscription = div.appendChild(document.createElement('p'));
+                    inscription.innerText = tags[key];
+                break;
+                case "artwork_type":
+                    let type = div.appendChild(document.createElement('p'));
+                    type.innerText = tags[key];
+                    type.classList.add("capitalize");
+                break;
+                default : 
+                    if(key.includes("description")){
+                        let hours = div.appendChild(document.createElement('p'));
+                        hours.innerText = tags[key];
+                    
+                    }
+                break;
+            }
+          
+        }
+    }  else if (type=="'shop'='supermarket'"){
+        for (const key in tags) {
+            switch (key){
+                
+                case "website":
+                    let website = div.appendChild(document.createElement('p'));
+                    website.innerText = "Website: " + tags[key];
+                break;
+                case "contact:phone":
+                    let material = div.appendChild(document.createElement('p'));
+                    material.innerText = "Phone: " + tags[key];
+                break;
+                case "opening_hours":
+                    let type = div.appendChild(document.createElement('p'));
+                    type.innerText = "Opening hours: " + tags[key];
+                break;
+                case "name":
+                    let name = document.createElement('p');
+                    name.innerText = tags[key];
+                    div.prepend(name);
+                break;
+                default : 
+                break;
+            }
+          
+        }
+    } else if (type=="'shop'='bakery'"){
+       for (const key in tags) {
+            switch (key){
+                case "website":
+                    let website = div.appendChild(document.createElement('p'));
+                    website.innerText = "Website: " + tags[key];
+                break;
+                case "contact:phone":
+                    let material = div.appendChild(document.createElement('p'));
+                    material.innerText = "Phone: " + tags[key];
+                break;
+                case "opening_hours":
+                    let type = div.appendChild(document.createElement('p'));
+                    type.innerText = "Opening hours: " + tags[key];
+                break;
+                case "name":
+                    let name = document.createElement('p');
+                    name.innerText = tags[key];
+                    div.prepend(name);
+                break;
+                default : 
+                break;
+            }
+          
+        }
+    }else if (type=="'amenity'='restaurant'"){
+        for (const key in tags) {
+            switch (key){
+                case "website":
+                    let website = div.appendChild(document.createElement('p'));
+                    website.innerText = "Website: " + tags[key];
+                break;
+                case "phone":
+                    let material = div.appendChild(document.createElement('p'));
+                    material.innerText = "Phone: " + tags[key];
+                break;
+                case "opening_hours":
+                    let type = div.appendChild(document.createElement('p'));
+                    type.innerText = "Opening hours: " + tags[key];
+                break;
+                case "name":
+                    let name = document.createElement('p');
+                    name.innerText = tags[key];
+                    div.prepend(name);
+                break;
+                case "cuisine":
+                    let cuisine = div.appendChild(document.createElement('p'));
+                    cuisine.innerText = "Cuisine: " + tags[key];
+                break;
+                case "description":
+                    let description = div.appendChild(document.createElement('p'));
+                    description.innerText =  tags[key];
+                break;
+                default : 
+                break;
+            }
+          
+        }
+    }else if (type=="'amenity'='fuel'"){
+        popupFuel(tags, div);
+    } else {
+        for (const key in tags) {
+            // if (key == "shop" || key == "opening_hours" || key == "name" || key == "description" || key == "website" || key == "toilets" || key == "tourism"){
                 row = table.insertRow(0);
                 row.insertCell(0).appendChild(document.createTextNode(key));
                 row.insertCell(1).appendChild(document.createTextNode(tags[key]));
@@ -1364,14 +1496,63 @@ function getPoiPopupHTML(tags, id, type) {
           
         }
     }
-
-    
-
     div.appendChild(link);
     div.appendChild(table);
 
     return div;
   }
+
+  function popupFuel(tags, div){
+    let type = document.createElement('p');
+    type.innerText = "Gas station";
+    div.appendChild(type);
+    let fuel = [];
+    for (const key in tags) {
+        switch (key){
+            case "opening_hours":
+                let hours = div.appendChild(document.createElement('p'));
+                hours.innerText = "Opening hours: " + tags[key];
+            break;
+            case "brand":
+                let brand = div.appendChild(document.createElement('p'));
+                brand.innerText = tags[key];
+            break;
+            case "description":
+                let description = div.appendChild(document.createElement('p'));
+                description.innerText = tags[key];
+            break;
+            case "toilets":
+                if (tags[key] == "yes"){
+                    let toilets = div.appendChild(document.createElement('p'));
+                    toilets.innerText = "Toilets";
+                }
+            break;
+            case "compressed_air":
+                if (tags[key] == "yes"){
+                    let air = div.appendChild(document.createElement('p'));
+                    air.innerText = "Compressed air";
+                }
+            break;
+            default:
+                if (key.includes("fuel") && tags[key] == "yes"){
+                    let words = key.split(':');
+                    fuel.push(words[1]);
+                }
+        };
+    }
+    let gas = document.createElement('p');
+    let string = "Fuel: ";
+    fuel.forEach( (elem, index) => {
+        if (index == fuel.length-1){
+            string+=elem;
+        } else{
+            string+=elem + ", ";
+        }
+    })
+    gas.innerText = string;
+    div.appendChild(gas)
+  }
+
 /**
  * Displays a simple route preview when selecting a marker
  * @param {L.LatLng[]} latlngs 
@@ -2037,15 +2218,15 @@ function setSliderMinMax(isKiloMeter, slider){
             if(isKiloMeter){
                 slider.setAttribute("step", 0.1);
                 slider.setAttribute("min", 0.1);
-                slider.setAttribute("max", 2);
-                slider.value = 1;
-                text.innerHTML = "1";
+                slider.setAttribute("max", 0.5);
+                slider.value = 0.3;
+                text.innerHTML = "0.3";
             } else {
                 slider.setAttribute("step", 1);
                 slider.setAttribute("min", 1);
-                slider.setAttribute("max", 15);
-                slider.value = 7;
-                text.innerHTML = "7";
+                slider.setAttribute("max", 10);
+                slider.value = 5;
+                text.innerHTML = "5";
             }
             break;
 
@@ -3273,7 +3454,7 @@ function getDistanceInCM(latlng, point, route){
  *Alerts the screen resolution of the device 
  */
 function getResolution() {
-    alert("Your screen resolution is: " + (screen.width* window.devicePixelRatio) + "x" + (screen.height* window.devicePixelRatio));
+    alert("Your screen resolution is: " + (screen.width * window.devicePixelRatio) + "x" + (screen.height* window.devicePixelRatio));
 }
 
 /**
@@ -3365,11 +3546,13 @@ function createButton(label, container) {
  * Redraws the itinerary after a change of viewport to fix the mask disappearing
  */
 function forceRedraw(){
+    console.log("redraw hello", needRedraw);
     if(needRedraw){        
         console.log("WE ARE REDRAWING SIR WE ARE DELETING EVERYTHING AND REDRAWING EVERYTHGN");
         const bounds = map.getBounds();
         // map.fitBounds(stroke.getBounds());
-        map.fitBounds(bounds.pad(-0.5));
+        map.fitBounds(L.latLngBounds(L.latLng(40.712, -74.227), L.latLng(40.774, -74.125)));
+        // map.fitBounds(bounds.pad(-0.5));
         reroute();
         map.fitBounds(bounds);
         needRedraw = false;
@@ -3617,7 +3800,7 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    console.log("ONPOINTERUP");
+    // console.log("ONPOINTERUP");
     // console.log(state);
     // console.log(event.target);
     // Get the pointer coords
@@ -3716,7 +3899,11 @@ onpointerup = (event) => {
         menuDiv.style.top=top +  'px';
     }
 
-    if(prevCenter.distanceTo(map.getCenter()) > 500){
+    let distRedraw = 50;
+    if (transportationMode == "drive"){
+        distRedraw = 500;
+    }
+    if(prevCenter.distanceTo(map.getCenter()) > distRedraw){
         needRedraw = true;
     }
 

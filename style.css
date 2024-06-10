@@ -1,14 +1,17 @@
 body{
     font-family:Arial, Helvetica, sans-serif;
+    
 }
  
-
+.capitalize{
+    text-transform: capitalize;
+}
 .closeButton{
     cursor: default;
 }
 #routingControl{
     background-color: white;
-    width: 365px;
+    width: 315px;
     padding-left: 10px;
     padding-top: 5px;
     padding-bottom: 5px;
@@ -32,7 +35,7 @@ body{
 }
 
 .geocoder{
-    width: 345px;
+    width: 295px;
     margin-bottom: 2px;
 }
 .layer{
