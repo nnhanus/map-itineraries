@@ -901,10 +901,11 @@ function isochroneGlobal(type, value, units){
         for (var i = 0; i < points.length; i++){
             let request = new XMLHttpRequest();
 
-            let src = "https://api.openrouteservice.org/v2/isochrones/foot-hiking";
+            // let src = "https://api.openrouteservice.org/v2/isochrones/foot-hiking";
+            let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking";
             // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking"
             if (transportationMode == "drive"){
-                src = "https://api.openrouteservice.org/v2/isochrones/driving-car"
+                src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
             }
             request.open('POST', src);
 
@@ -928,7 +929,7 @@ function isochroneGlobal(type, value, units){
             };
 
             const body = makeIsoQuery(points[i], value, units);
-            // console.log(body);
+            console.log(body);
             request.send(body);
         }
         // console.log(resIso); 
@@ -1022,7 +1023,7 @@ function getNeededPoints(itinerary, value, units){
             prevPoint = itinerary[i];
             // L.circle(itinerary[i], {radius:50, color:"red"}).addTo(map);
             //Query limit of 5 points so we split the points into arrays with length 5
-            if (polygon.length > 4){
+            if (polygon.length > 1){
                 var poly = [];
                 polygon.forEach(element => {
                     poly.push(element);
@@ -1310,6 +1311,8 @@ function oplQuery(queryString, type){
             //Replace pulsing queryZone with non pulsing one
             L.DomUtil.removeClass(queryZone._path, "pulse");
             queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
+            circleZoneOfInterest.bringToFront();
+            circleZoneOfInterest.setStyle({color: "blue", fillColor: "#2B8DFF"});
             
             if(areBracketsOn){
                 polylineBracket.setStyle({opacity:0}); //Hide highlight polyline
@@ -1970,10 +1973,10 @@ function itineraryToPointPlaced(latlng, point){
                 map.removeLayer(queryZone);
             }
 
-            if (isElevationDisplayed || isRestaurantDisplayed || isFuelDisplayed || isSupermarketDisplayed){
-                console.log("a layer is displayed");
-                createBrackets(latlng);
-            }
+            // if (isElevationDisplayed || isRestaurantDisplayed || isFuelDisplayed || isSupermarketDisplayed){
+            //     console.log("a layer is displayed");
+            //     createBrackets(latlng);
+            // }
             
             
         if (!isFuelDisplayed && !isRestaurantDisplayed && !isElevationDisplayed && !isSupermarketDisplayed){
@@ -2779,20 +2782,21 @@ function toggleFloatingTextsUnits(){
     let bracketOpenText = document.getElementById("bracketText");
     let bracketCloseText = document.getElementById("bracketCloseText");
     if (isFloatingTextKM){ //change to time
-        
+        isFloatingTextKM = false;
         circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
         if(areBracketsOn){
             bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
             bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false)  
         }
-        isFloatingTextKM = false;
+        
     } else { //change to distance
+        isFloatingTextKM = true;
         circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), (transportationMode=="walk"));
         if(areBracketsOn){
             updateBracketCloseText();
             updateBracketOpenText();
         }
-        isFloatingTextKM = true;
+        
     }
 }
 
@@ -3101,6 +3105,7 @@ function updatePosTexts(text, element, isVert){
  * Update text from the close range marker
  */
 function updateBracketCloseText(){
+    let bracketCloseText = document.getElementById("bracketCloseText");
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
 
@@ -3120,6 +3125,7 @@ function updateBracketCloseText(){
  * Update text from the open range marker
  */
 function updateBracketOpenText(){
+    let bracketOpenText = document.getElementById("bracketText");
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
     if(isFloatingTextKM){
