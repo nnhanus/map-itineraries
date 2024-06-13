@@ -543,7 +543,8 @@ function reroute(){
         // console.log(children[i]);
         // console.log(routingAddresses[i]);
         children[i].setAttribute("value", routingAddresses[i]);
-    }   
+    }  
+    
 }
 
 /**
@@ -1226,7 +1227,7 @@ function oplQuery(queryString, type){
                 }
         
                 //Add Add to Route button to the PopUp
-                const popupContent = getPoiPopupHTML(e.tags, e.id, type);
+                const popupContent = getPoiPopupHTML(e.tags, type);
                 startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
@@ -1244,7 +1245,6 @@ function oplQuery(queryString, type){
                 // markers.push(marker); //Add marker to markers list
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
-                    // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
                     if (routingWaypoints < 3){
                         routingWaypoints.splice(1, 0, marker.getLatLng());
                         ORSRouting();
@@ -1256,16 +1256,11 @@ function oplQuery(queryString, type){
                     const container =  L.DomUtil.create('div');
                     const okButton = createButton("Add to route", container);
                     L.DomEvent.on(okButton, 'click', function() {
-                        //Replace popup with original one
-                        // geocoding(marker.getLatLng());
-                        openedMarker.unbindPopup();
-                        openedMarker.bindPopup(openedPopup);
                         map.closePopup();
                     });
                     const cancelButton = createButton("Cancel", container);
                     L.DomEvent.on(cancelButton, 'click', function() {
                         map.closePopup();
-                        // routing.spliceWaypoints(1, 1); //Remove waypoint from the route and reroute
                         routingWaypoints.splice(1, 1);
                         routingAddresses.splice(1, 1);
                         ORSRouting();
@@ -1300,7 +1295,6 @@ function oplQuery(queryString, type){
                 this._markers.addLayer(marker); //Add to map
                 
             }
-            // console.log("WE ARE SETTING THE STATE TO RESULTS");
             state = "queryResults";
         },
         onError: function(xhr){
@@ -1324,20 +1318,16 @@ function oplQuery(queryString, type){
 
 }
 
-function getPoiPopupHTML(tags, id, type) {
-    let row;
-    const link = document.createElement('a');
-    const table = document.createElement('table');
+/**
+ * Dsiplays the information about a place according to its type in a div
+ * @param {*} tags 
+ * @param {*} type 
+ * @returns Div
+ */
+function getPoiPopupHTML(tags, type) {
     const div = document.createElement('div');
 
-    // link.href = `https://www.openstreetmap.org/edit?editor=id&node=${id}`;
-    // link.appendChild(document.createTextNode('Edit this entry in iD'));
-
-    table.style.borderSpacing = '10px';
-    table.style.borderCollapse = 'separate';
-
     if (type=="'tourism'='picnic_site'"){
-        row = table.insertRow(0);
         let elem = document.createElement('p');
         elem.innerText = "Picnic site";
         div.appendChild(elem);
@@ -1350,7 +1340,6 @@ function getPoiPopupHTML(tags, id, type) {
           
         }
     } else if (type=="'amenity'='fountain'"){
-        row = table.insertRow(0);
         let elem = document.createElement('p');
         elem.innerText = "Water fountain";
         div.appendChild(elem);
@@ -1489,72 +1478,66 @@ function getPoiPopupHTML(tags, id, type) {
           
         }
     }else if (type=="'amenity'='fuel'"){
-        popupFuel(tags, div);
-    } else {
+        let type = document.createElement('p');
+        type.innerText = "Gas station";
+        div.appendChild(type);
+        let fuel = [];
         for (const key in tags) {
-            // if (key == "shop" || key == "opening_hours" || key == "name" || key == "description" || key == "website" || key == "toilets" || key == "tourism"){
-                row = table.insertRow(0);
-                row.insertCell(0).appendChild(document.createTextNode(key));
-                row.insertCell(1).appendChild(document.createTextNode(tags[key]));
-            // }
-          
+            switch (key){
+                case "opening_hours":
+                    let hours = div.appendChild(document.createElement('p'));
+                    hours.innerText = "Opening hours: " + tags[key];
+                break;
+                case "brand":
+                    let brand = div.appendChild(document.createElement('p'));
+                    brand.innerText = tags[key];
+                break;
+                case "description":
+                    let description = div.appendChild(document.createElement('p'));
+                    description.innerText = tags[key];
+                break;
+                case "toilets":
+                    if (tags[key] == "yes"){
+                        let toilets = div.appendChild(document.createElement('p'));
+                        toilets.innerText = "Toilets";
+                    }
+                break;
+                case "compressed_air":
+                    if (tags[key] == "yes"){
+                        let air = div.appendChild(document.createElement('p'));
+                        air.innerText = "Compressed air";
+                    }
+                break;
+                default:
+                    if (key.includes("fuel") && tags[key] == "yes"){
+                        let words = key.split(':');
+                        fuel.push(words[1]);
+                    }
+            };
         }
+        let gas = document.createElement('p');
+        let string = "Fuel: ";
+        fuel.forEach( (elem, index) => {
+            if (index == fuel.length-1){
+                string+=elem;
+            } else{
+                string+=elem + ", ";
+            }
+        })
+        gas.innerText = string;
+        div.appendChild(gas)
+    // } else {
+    //     for (const key in tags) {
+    //         // if (key == "shop" || key == "opening_hours" || key == "name" || key == "description" || key == "website" || key == "toilets" || key == "tourism"){
+    //             row = table.insertRow(0);
+    //             row.insertCell(0).appendChild(document.createTextNode(key));
+    //             row.insertCell(1).appendChild(document.createTextNode(tags[key]));
+    //         // }
+          
+    //     }
     }
-    div.appendChild(link);
-    div.appendChild(table);
 
     return div;
-  }
-
-  function popupFuel(tags, div){
-    let type = document.createElement('p');
-    type.innerText = "Gas station";
-    div.appendChild(type);
-    let fuel = [];
-    for (const key in tags) {
-        switch (key){
-            case "opening_hours":
-                let hours = div.appendChild(document.createElement('p'));
-                hours.innerText = "Opening hours: " + tags[key];
-            break;
-            case "brand":
-                let brand = div.appendChild(document.createElement('p'));
-                brand.innerText = tags[key];
-            break;
-            case "description":
-                let description = div.appendChild(document.createElement('p'));
-                description.innerText = tags[key];
-            break;
-            case "toilets":
-                if (tags[key] == "yes"){
-                    let toilets = div.appendChild(document.createElement('p'));
-                    toilets.innerText = "Toilets";
-                }
-            break;
-            case "compressed_air":
-                if (tags[key] == "yes"){
-                    let air = div.appendChild(document.createElement('p'));
-                    air.innerText = "Compressed air";
-                }
-            break;
-            default:
-                if (key.includes("fuel") && tags[key] == "yes"){
-                    let words = key.split(':');
-                    fuel.push(words[1]);
-                }
-        };
-    }
-    let gas = document.createElement('p');
-    let string = "Fuel: ";
-    fuel.forEach( (elem, index) => {
-        if (index == fuel.length-1){
-            string+=elem;
-        } else{
-            string+=elem + ", ";
-        }
-    })
-    gas.innerText = string;
-    div.appendChild(gas)
   }
 
 /**
