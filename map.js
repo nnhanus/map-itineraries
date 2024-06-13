@@ -896,7 +896,7 @@ function isochroneGlobal(type, value, units){
     var points = getNeededPoints(polylineBracket.getLatLngs(), value, units); //Get all the points
     L.DomUtil.addClass(circleZoneOfInterest._path, "pulse"); //Circle pulse to indicate query is happening
     // console.log(points);
-    if (points.length < 6){ // 5 points limit on the query
+    // if (points.length < 6){ // 5 points limit on the query
         var resIso = [];
         for (var i = 0; i < points.length; i++){
             let request = new XMLHttpRequest();
@@ -933,9 +933,9 @@ function isochroneGlobal(type, value, units){
             request.send(body);
         }
         // console.log(resIso); 
-    } else {
-        window.alert("Too many points do you really need 25 points???");
-    }
+    // } else {
+    //     window.alert("Too many points do you really need 25 points???");
+    // }
 } 
 
 /**
@@ -1257,7 +1257,7 @@ function oplQuery(queryString, type){
                     const okButton = createButton("Add to route", container);
                     L.DomEvent.on(okButton, 'click', function() {
                         //Replace popup with original one
-                        geocoding(marker.getLatLng());
+                        // geocoding(marker.getLatLng());
                         openedMarker.unbindPopup();
                         openedMarker.bindPopup(openedPopup);
                         map.closePopup();
@@ -1323,6 +1323,7 @@ function oplQuery(queryString, type){
         map.addLayer(oplLayer);
 
 }
+
 function getPoiPopupHTML(tags, id, type) {
     let row;
     const link = document.createElement('a');
