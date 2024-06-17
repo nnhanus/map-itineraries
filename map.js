@@ -327,8 +327,10 @@ function ORSRouting(){
         if (this.readyState === 4) {
             console.log('Status:', this.status);
             console.log('Headers:', this.getAllResponseHeaders());
+            console.log(this.responseText);
             let jsonResult = JSON.parse(this.response);
             let route = jsonResult.routes[0];
+            
             routingToPolyline(route);
         }
     };
@@ -1191,14 +1193,10 @@ function oplQuery(queryString, type){
     oplLayer = new L.OverPassLayer({
         minZoom: 9, //results appear from this zoom levem 
         query: queryString,
-        // endPoint: "https://mapitin.lisn.upsaclay.fr/api/",
-        // endPoint: "https://mapitin.lisn.upsaclay.fr:9000/api/interpreter",
         endPoint: 'https://mapitin.lisn.upsaclay.fr:9000/api/', 
         markerIcon : greenIcon, //custom icon
         minZoomIndicatorEnabled : false,
         onSuccess: function(data) { 
-            console.log("ON SUCCESS");
-            // console.log(data);
             for (let i = 0; i < data.elements.length; i++) {
                 let pos;
                 let marker;
@@ -1228,7 +1226,7 @@ function oplQuery(queryString, type){
         
                 //Add Add to Route button to the PopUp
                 const popupContent = getPoiPopupHTML(e.tags, type);
-                startBtn = createButton('Add to route', popupContent);
+                let startBtn = createButton('Add to route', popupContent);
                 L.DomEvent.on(startBtn, 'click', function() { //On click of button
                     // routing.spliceWaypoints(1, 0, marker.getLatLng()); //Add waypoint to route and reroute
                     geocoding(pos);
@@ -1237,12 +1235,12 @@ function oplQuery(queryString, type){
                 });
 
                 //Create Preview Route button
-                previewBtn = createButton('Preview route', popupContent);
+                let previewBtn = createButton('Preview route', popupContent);
                 
                 //Create Popup
                 const popup = L.popup().setContent(popupContent);
                 marker.bindPopup(popup);
-                // markers.push(marker); //Add marker to markers list
+                markers.push(marker); //Add marker to markers list
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
                     if (routingWaypoints < 3){
@@ -1261,8 +1259,10 @@ function oplQuery(queryString, type){
                     const cancelButton = createButton("Cancel", container);
                     L.DomEvent.on(cancelButton, 'click', function() {
                         map.closePopup();
-                        routingWaypoints.splice(1, 1);
-                        routingAddresses.splice(1, 1);
+                        let index = routingWaypoints.findIndex( (element) => element == marker.getLatLng());
+                        console.log("index", index);
+                        routingWaypoints.splice(index, 1);
+                        routingAddresses.splice(index, 1);
                         ORSRouting();
                         //replace popup with original
                         openedMarker.unbindPopup();
@@ -1301,7 +1301,6 @@ function oplQuery(queryString, type){
             console.log("error");
         },
         afterRequest: function()  {
-            console.log("afterRequest");
             //Replace pulsing queryZone with non pulsing one
             L.DomUtil.removeClass(queryZone._path, "pulse");
             queryZone.setStyle({opacity:0, fillOpacity: 0.4, fillColor: '#1b1bff'});
@@ -1732,10 +1731,10 @@ function makeClearButton(){
 function clearQueryResults(){
     //Remove all the markers
     map.removeLayer(oplLayer);
-    // markers.forEach(element => {
-    //     map.removeLayer(element);
-    // });
-    // markers.length = 0;
+    markers.forEach(element => {
+        map.removeLayer(element);
+    });
+    markers.length = 0;
 
     //Range markers become blue again and re-enable interactions
     if (circleZoneOfInterest != null){
