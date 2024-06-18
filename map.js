@@ -24,7 +24,7 @@ var time; //secondes
 
 var points = new Array();
 
-var markers = new Array(); //all the circles along the road.
+var markers = new Array(); //all the circles along the road. 
 var itineraryJSON;
 
 var circleZoneOfInterest = null;
@@ -327,7 +327,7 @@ function ORSRouting(){
         if (this.readyState === 4) {
             console.log('Status:', this.status);
             console.log('Headers:', this.getAllResponseHeaders());
-            console.log(this.responseText);
+            // console.log(this.responseText);
             let jsonResult = JSON.parse(this.response);
             let route = jsonResult.routes[0];
             
@@ -336,7 +336,7 @@ function ORSRouting(){
     };
 
     const body = routingWaypointsToQueryString(routingWaypoints);
-    console.log(body);
+    // console.log(body);
 
     request.send(body);
 }
@@ -1571,7 +1571,7 @@ function previewIti(latlngs){
             if(previewRoute!=null){
                 map.removeLayer(previewRoute);
             } 
-            previewRoute = L.polyline(routeDecoded, {weight: 8}).addTo(map);
+            previewRoute = L.polyline(routeDecoded, {weight: 8, color:"green"}).addTo(map);
         }
     };
 
