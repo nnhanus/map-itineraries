@@ -64,6 +64,7 @@ var clickOnCircle = false;
 var clickOnMenu = false;
 var clickOnSlider = false;
 var clickOnLayer = false;
+var clickOnLabel = false;
 
 var openedMarker;
 var openedPopup;
@@ -382,6 +383,7 @@ function routingToPolyline(routeJSON){
  */
 function reroute(){
     console.log("reroute");
+    console.log(state);
     
     // getResolution();
     areBracketsOn = false;
@@ -484,31 +486,35 @@ function reroute(){
     // itinerary.bringToFront();
 
     routingWaypoints.forEach(function(element, index){
+        let marker;
         if (index == 0){
-            routingMarkers.push(L.circleMarker(allPos[0], {radius : 5, fillOpacity:1,fillColor:"#2B8DFF", color:"blue", weight:2 }).addTo(map));
+            marker = L.circleMarker(allPos[0], {radius : 5, fillOpacity:1,fillColor:"#2B8DFF", color:"blue", weight:2 }).addTo(map)
+            routingMarkers.push(marker);
         } else if (routingWaypoints.length == 2){
-            let marker = L.marker(element).addTo(map);
+            marker = L.marker(element).addTo(map);
             routingMarkers.push(marker);
         } else {
-            let marker = L.marker(element).addTo(map);
-            let div = document.createElement("div");
-            const cancelButton = createButton("Remove from route", div);
-            L.DomEvent.on(cancelButton, 'click', function() {
-                map.closePopup();
-                routingWaypoints.splice(index, 1);
-                routingAddresses.splice(index, 1);
-                ORSRouting();
-                
-            });
-            const popup = L.popup().setContent(div);
-            marker.bindPopup(popup);
-
-            // marker.on("pointerup", function(e){
-                
-            // });
+            marker = L.marker(element).addTo(map);
+            if (state != "preview"){
+                let div = document.createElement("div");
+                const cancelButton = createButton("Remove from route", div);
+                L.DomEvent.on(cancelButton, 'click', function() {
+                    map.closePopup();
+                    routingWaypoints.splice(index, 1);
+                    routingAddresses.splice(index, 1);
+                    ORSRouting();
+                    
+                });
+                const popup = L.popup().setContent(div);
+                marker.bindPopup(popup);
+            }
             routingMarkers.push(marker);
-
         }
+        marker.on("mousedown", function(e){
+            console.log("WE ON MARKER");
+            clickOnCircle = true;
+        });
+        
     });
         
     let infoRoute = document.getElementById("routeInfo");
@@ -904,9 +910,7 @@ function isochroneGlobal(type, value, units){
         for (var i = 0; i < points.length; i++){
             let request = new XMLHttpRequest();
 
-            // let src = "https://api.openrouteservice.org/v2/isochrones/foot-hiking";
             let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking";
-            // let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking"
             if (transportationMode == "drive"){
                 src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
             }
@@ -1243,6 +1247,7 @@ function oplQuery(queryString, type){
                 markers.push(marker); //Add marker to markers list
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
+                    state = "preview";
                     if (routingWaypoints < 3){
                         routingWaypoints.splice(1, 0, marker.getLatLng());
                         ORSRouting();
@@ -1255,9 +1260,13 @@ function oplQuery(queryString, type){
                     const okButton = createButton("Add to route", container);
                     L.DomEvent.on(okButton, 'click', function() {
                         map.closePopup();
+                        state = prevState;
+                        reroute();
                     });
                     const cancelButton = createButton("Cancel", container);
                     L.DomEvent.on(cancelButton, 'click', function() {
+                        
+                        state = prevState;
                         map.closePopup();
                         let index = routingWaypoints.findIndex( (element) => element == marker.getLatLng());
                         console.log("index", index);
@@ -2736,6 +2745,7 @@ function createFloatingTexts(){
     bracketOpenText.style.visibility='hidden';
     bracketOpenText.id="bracketText";
     bracketOpenText.setAttribute("class", "floatingText");
+    bracketOpenText.onpointerdown = function(e){clickOnLabel = true;}
     bracketOpenText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(bracketOpenText);
 
@@ -2744,6 +2754,7 @@ function createFloatingTexts(){
     bracketCloseText.style.visibility='hidden';
     bracketCloseText.id="bracketCloseText";
     bracketCloseText.setAttribute("class", "floatingText");
+    bracketCloseText.onpointerdown = function(e){clickOnLabel = true;}
     bracketCloseText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(bracketCloseText);
 
@@ -2752,6 +2763,7 @@ function createFloatingTexts(){
     circleMarkerText.style.visibility='hidden';
     circleMarkerText.id="circleText";
     circleMarkerText.setAttribute("class", "floatingText");
+    circleMarkerText.onpointerdown = function(e){clickOnLabel = true;}
     circleMarkerText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(circleMarkerText);
 }
@@ -2958,11 +2970,18 @@ function createBrackets(event){
                     }
                 })
                 .on("dragstart", function(e){
+                    console.log("dragstart", state);
+                    // console.log("");
                     if (state == "pointPlaced" || state == "closeMove"){
                         // previousClosePos = markerBracketClose.getLatLng();
                         state = "closeMove";
-                        
                         isMovingBrackets = true;
+                    } else if (state == "menu"){
+
+                        state = "closeMove";
+                        isMovingBrackets = true;
+                        isMenuOn = false;
+                        closeMenu();
                     }
                 })
                 .on("drag", function(e){
@@ -2970,7 +2989,7 @@ function createBrackets(event){
                     if (state == "pointPlaced" || state == "closeMove"){
                         isMovingBrackets = true;
                         
-                        if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketClose.getLatLng()) < 50000){
+                        // if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketClose.getLatLng()) < 50000){
                             markerBracketClose.setLatLng( L.GeometryUtil.closest(map, allPos, markerBracketClose.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(), markerBracketClose.getLatLng());
                             let bracketCloseText = document.getElementById("bracketCloseText");
@@ -2978,9 +2997,9 @@ function createBrackets(event){
                             updateBracketCloseText();
                             // updateMarkersRotation(markerBracketClose, false);
                         
-                        }  else {
-                            markerBracketClose.dragging.disable();
-                        }
+                        // }  else {
+                        //     markerBracketClose.dragging.disable();
+                        // }
                     }
 
                     
@@ -3001,13 +3020,19 @@ function createBrackets(event){
                     
                         console.log("drag open");
                         isMovingBrackets = true;
+                    }  else if (state == "menu"){
+
+                        state = "openMove";
+                        isMovingBrackets = true;
+                        isMenuOn = false;
+                        closeMenu();
                     }
                 })
                 .on("drag", function(e){
                     if (state == "pointPlaced" || state == "openMove"){
                         isMovingBrackets = true;
                         
-                        if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketOpen.getLatLng()) < 50000){
+                        // if(circleZoneOfInterest.getLatLng().distanceTo(markerBracketOpen.getLatLng()) < 50000){
                             markerBracketOpen.setLatLng(L.GeometryUtil.closest(map, allPos, markerBracketOpen.getLatLng()));
                             lineBracketsHighlight(markerBracketOpen.getLatLng(),  markerBracketClose.getLatLng());
                             let bracketOpenText = document.getElementById("bracketText");
@@ -3015,9 +3040,9 @@ function createBrackets(event){
                             updateBracketOpenText();
                             var latLngs = polylineBracket.getLatLngs();
                             // updateMarkersRotation(markerBracketOpen, true);
-                        } else {
-                            markerBracketOpen.dragging.disable();
-                        }
+                        // } else {
+                        //     markerBracketOpen.dragging.disable();
+                        // }
                         
                     }
                    
@@ -3714,7 +3739,7 @@ onpointerdown = (event) => {
     isPointerDown = true;
     prevZoom = map.getZoom();
     prevCenter = map.getCenter();
-    if ((state == "menu" || state == "slider") && areBracketsOn){
+    if ((/*state == "menu" ||*/ state == "slider") && areBracketsOn){
         markerBracketClose.dragging.disable();
         markerBracketOpen.dragging.disable();
     }
@@ -3789,15 +3814,13 @@ onpointermove = (event) => {
 };
 
 onpointerup = (event) => {
-    // console.log("ONPOINTERUP");
-    // console.log(state);
     // console.log(event.target);
-    // Get the pointer coords
+    // console.log(clickOnCircle);
+   // Get the pointer coords
     let ETAFloatingText = document.getElementById("cursorText");
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
-    // console.log("!clickMenu: " + !clickOnMenu + ", !movemap: " + !isMovingMap);
     if (state == "circleMove" && prevState == "queryResults"){
         isochronesLocal(queryType, queryRange, queryUnits);
     }
@@ -3823,7 +3846,7 @@ onpointerup = (event) => {
             markerBracketOpen.dragging.enable();
         }
         clickOnSlider = false;
-    } else if (state == "pointPlaced"){
+    } else if (state == "pointPlaced" && !clickOnLabel){
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
         // const millis = Date.now() - startTime;
@@ -3850,6 +3873,7 @@ onpointerup = (event) => {
     isMovingMap = false;
     clickOnCircle = false;
     clickOnLayer = false;
+    clickOnLabel = false;
     map.dragging.enable();
     hasMovedQueryZone = false;
     clickOnMenu = false;
