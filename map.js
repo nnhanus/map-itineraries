@@ -1016,7 +1016,7 @@ function getNeededPoints(itinerary, value, units){
         }
         
     }
-    // console.log(distValue);
+    console.log("value: ", value, units, ", distValue: ", distValue);
 
     var polygons = [];
     var polygon = [itinerary[0]]; //the 1st point is the 1st point of the route (so the marker open)
@@ -1028,7 +1028,7 @@ function getNeededPoints(itinerary, value, units){
         if (dist > distValue){
             polygon.push(itinerary[i]);
             prevPoint = itinerary[i];
-            // L.circle(itinerary[i], {radius:50, color:"red"}).addTo(map);
+            // L.circle(itinerary[i], {radius:distValue, color:"red"}).addTo(map);
             //Query limit of 5 points so we split the points into arrays with length 5
             if (polygon.length > 1){
                 var poly = [];
@@ -1093,6 +1093,7 @@ function isochroneToPolygon(body, type, length){
             layerOne.forEach(element => {
                 var coords = element.geometry.coordinates[0];
                 var latLngs = [];
+                // console.log(coords);
                 coords.forEach(element =>{
                     latLngs.push(L.latLng(element[1], element[0])); //Leaflet uses LatLng and OSR uses LngLat
                 });
@@ -1100,7 +1101,7 @@ function isochroneToPolygon(body, type, length){
                 
                 //Create a polygon with the latlng and add it to the list
                 var qZone = L.polygon(latLngs, {color:'orange'}).addTo(map);
-                polygons.push(qZone.toGeoJSON());
+                polygons.push(element);
                 map.removeLayer(qZone);
             });
         });
@@ -1125,24 +1126,27 @@ function isochroneToPolygon(body, type, length){
         var polygonXY = line;
         
         var simpMult = 1;
-        while (polygonXY.length > 200){
-            polygonXY = L.LineUtil.simplify(line, simpMult);
-            simpMult++;
-        }
+        // while (polygonXY.length > 200){
+        //     polygonXY = L.LineUtil.simplify(line, simpMult);
+        //     simpMult++;
+        // }
+        var options = {tolerance : 0.01, highQuality : false};
+        let simplified = turf.simplify(union, options);
+        
         var polygon = pointToLatLng(polygonXY); //Put it back in LatLng
         // console.log("polygon length after simplify: " + polygon.length);
 
         if (queryZone != null){map.removeLayer(queryZone);}
         //polygon
-        var realZone = L.polygon(polygon, {color: 'blue', className:"pulse"}).addTo(map);
+        var realZone = L.polygon(polygonToLatLng(simplified.geometry.coordinates[0]), {color: 'blue', className:"pulse"}).addTo(map);
         queryZone = realZone; 
-
+        console.log("length", realZone.getLatLngs());
         updateSizeMarkers();
         map.removeLayer(polyUnion); //remove uneeded layers
 
         if (polygon.length > 3){
             // requestMade = true;
-            var queryString = arrayToQuery(polygon, type); //turn the polygon into a string
+            var queryString = arrayToQuery(realZone.getLatLngs()[0], type); //turn the polygon into a string
             oplQuery(queryString, type); //make the query
         } else {
             //Sometimes the simplification doesn't work
@@ -3271,7 +3275,7 @@ function updateSizeMarkers(){
     } else {
         radius = distanceNS/2;
     }
-    console.log("Radius: " + radius);
+    // console.log("Radius: " + radius);
     if (radius < circleZoneOfInterest.getRadius){
         circleZoneOfInterest.setRadius(radius);
         markerBracketClose.setRadius(radius*0.8);
