@@ -2291,17 +2291,6 @@ function getSliderValue(){
  */
 function loadWeather(){
     //Load all the icons
-    var weatherSunny = L.icon({
-        iconUrl: 'icons/sunny.svg',
-        shadowUrl: 'icons/shadow.png',
-    
-        iconSize:     [100, 45], // size of the icon
-        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-    });
-
     var weatherRainy = L.icon({
         iconUrl: 'icons/rain.svg',
         shadowUrl: 'icons/shadow.png',
@@ -2315,39 +2304,6 @@ function loadWeather(){
 
     var weatherCloudy = L.icon({
         iconUrl: 'icons/cloud.svg',
-        shadowUrl: 'icons/shadow.png',
-    
-        iconSize:     [100, 45], // size of the icon
-        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-    });
-
-    var weatherWindy = L.icon({
-        iconUrl: 'icons/wind.svg',
-        shadowUrl: 'icons/shadow.png',
-    
-        iconSize:     [100, 45], // size of the icon
-        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-    });
-
-    var weatherSnowy = L.icon({
-        iconUrl: 'icons/snow.svg',
-        shadowUrl: 'icons/shadow.png',
-    
-        iconSize:     [100, 45], // size of the icon
-        shadowSize:   [50, 64], // size of the shadow
-        iconAnchor:   [50, 25], // point of the icon which will correspond to marker's location
-        shadowAnchor: [4, 62],  // the same for the shadow
-        popupAnchor:  [120, 50] // point from which the popup should open relative to the iconAnchor
-    });
-
-    var weatherStormy = L.icon({
-        iconUrl: 'icons/storm.svg',
         shadowUrl: 'icons/shadow.png',
     
         iconSize:     [100, 45], // size of the icon
@@ -2393,9 +2349,9 @@ function loadWeather(){
             const latlng6 = L.latLng(pos6[1], pos6[0]);
             const latlngLast = L.latLng(posLast[1], posLast[0]);
 
-            var marker1 = L.marker(getWeatherPos(latlng1, 1, 60), {icon: weatherRainy});
+            var marker1 = L.marker(getWeatherPos(latlng1, 1, 60), {icon: weatherCloudy});
             var marker2 = L.marker(getWeatherPos(latlng2, 2.5, 60), {icon: weatherCloudSun});
-            var marker3 = L.marker(getWeatherPos(latlng3, 4.5, 60), {icon: weatherCloudy});
+            var marker3 = L.marker(getWeatherPos(latlng3, 4.5, 60), {icon: weatherRainy });
             var marker6 = L.marker(getWeatherPos(latlng6, 7, 60), {icon: weatherCloudSun});
 
             var line1 = L.polyline([marker1.getLatLng(), latlng1], {color:"black", weigth:1}).addTo(map);
