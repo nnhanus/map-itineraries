@@ -117,7 +117,6 @@ var hasMovedQueryZone = false;
 
 var oplLayer;
 
-const gradientPalette = ["#04055E", "#00029C", "#0000FF", "#4849EE", "#7173FF", "#C9C9E4", "#E6E6FD"]; //Darkest to Lightest
 var gradientTH = [{color:"#E6E6FD", stop:0}, {color:"#4849EE", stop:0.32}, {color:"#E6E6FD", stop:1}];
 var gradientWH = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.15}, {color:"#C9C9E4", stop:0.48}, {color:"#C9C9E4", stop:0.59}, {color:"#9B9CD4", stop:0.77}, {color:"#00029C", stop:1}];
 var gradientVH = [{color:"#4849EE", stop:0}, {color:"#C9C9E4", stop:0.21}, {color:"#E6E6FD", stop:0.34}, {color:"#C9C9E4", stop:0.42}, {color:"#8788B7", stop:0.51}, {color:"#00029C", stop:0.69}, {color:"#0000FF", stop:1}];
@@ -706,7 +705,7 @@ function createGradientRestaurant(){
         gradient.setAttribute("x2", "0%");
         gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
 
     switch (transportationMode){
         case "hike":
@@ -745,7 +744,7 @@ function createGradientFuel(){
         gradient.setAttribute("x2", "0%");
         gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
 
     switch (transportationMode){
         case "hike":
@@ -784,7 +783,7 @@ function createGradientElevation(){
         gradient.setAttribute("x2", "0%");
         gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
 
      //Create the color stops for the gradient
     decodeGradient(gradient, gradientElev);
@@ -814,7 +813,7 @@ function createGradientSupermarket(){
         gradient.setAttribute("x2", "0%");
         gradient.setAttribute("y2", "100%");
     }
-    gradient.setAttribute("gradientUnits", "objectBoundingBox");
+    gradient.setAttribute("gradientUnits", "userSpaceOnUse");
 
     switch (transportationMode){
         case "hike":
@@ -2008,16 +2007,16 @@ function openMenu(event){
         var gasstation = document.getElementById("gasstation");
         var supermarket = document.getElementById("supermarket");
 
-        restaurant.classList.remove('selectedLayer');
-        gasstation.classList.remove('selectedLayer');
-        supermarket.classList.remove('selectedLayer');
-        if (isRestaurantDisplayed){
-            restaurant.classList.add('selectedLayer');
-        } else if (isFuelDisplayed){
-            gasstation.classList.add('selectedLayer');
-        } else if (isSupermarketDisplayed){
-            supermarket.classList.add('selectedLayer');
-        } 
+        // restaurant.classList.remove('selectedLayer');
+        // gasstation.classList.remove('selectedLayer');
+        // supermarket.classList.remove('selectedLayer');
+        // if (isRestaurantDisplayed){
+        //     restaurant.classList.add('selectedLayer');
+        // } else if (isFuelDisplayed){
+        //     gasstation.classList.add('selectedLayer');
+        // } else if (isSupermarketDisplayed){
+        //     supermarket.classList.add('selectedLayer');
+        // } 
 
         restaurant.onclick = function(e){
             console.log("click"); 
@@ -3425,14 +3424,44 @@ function toLatLng(point){
  * @param {HTMLElement} element 
  */
 function visibilityToggle(element, layer){
+    let layers = document.getElementById("layersButton");
     console.log(element.style.visibility);
     if (element.style.visibility == "visible"){
         element.style.visibility = "collapse";
         layer.classList.remove("selectedLayer");
-        
+        if (layer == layers){
+            if (isElevationDisplayed){
+                layers.setAttribute("src", "icons/route_elev.svg");
+            } else if (isRestaurantDisplayed){
+                if (transportationMode == "hike"){
+                    layers.setAttribute("src", "icons/route_picnic.svg");
+                } else {
+                    layers.setAttribute("src", "icons/route_resto.svg");
+                }
+            } else if (isSupermarketDisplayed){
+                if (transportationMode == "hike"){
+                    layers.setAttribute("src", "icons/route_pov.svg");
+                } else {
+                    layers.setAttribute("src", "icons/route_cart.svg");
+                }
+            } else if (isFuelDisplayed){
+                if (transportationMode == "hike"){
+                    layers.setAttribute("src", "icons/route_water.svg");
+                } else if (transportationMode == "walk") {
+                    layers.setAttribute("src", "icons/route_bakery.svg");
+                } else {
+                layers.setAttribute("src", "icons/route_fuel.svg");
+                }
+            } else if (isWeatherDisplayed){
+                layers.setAttribute("src", "icons/route_weather.svg");
+            }
+        }
     } else {
         element.style.visibility = "visible";
         layer.classList.add("selectedLayer");
+        if (layer == layers){
+            layers.setAttribute("src", "icons/layers.svg");
+        }
     }
 }
 
