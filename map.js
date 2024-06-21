@@ -2373,32 +2373,48 @@ function loadWeather(){
         let length = allPos.length;
         if (transportationMode == "drive"){
 
-            const pos1 = turf.along(itineraryJSON,0).geometry.coordinates;
-            const pos2 = turf.along(itineraryJSON,(distance*2/8)/1000).geometry.coordinates;
-            const pos3 = turf.along(itineraryJSON,(distance*3/8)/1000).geometry.coordinates;
-            const pos6 = turf.along(itineraryJSON,(distance*6/8)/1000).geometry.coordinates;
+            const pos0 = turf.along(itineraryJSON,0).geometry.coordinates;
+            const pos1 = turf.along(itineraryJSON,(distance*(1)/8)/1000).geometry.coordinates;
+            const pos12 = turf.along(itineraryJSON,(distance*(2)/8)/1000).geometry.coordinates;
+            const pos2 = turf.along(itineraryJSON,(distance*(2.5)/8)/1000).geometry.coordinates;
+            const pos23 = turf.along(itineraryJSON,(distance*(3)/8)/1000).geometry.coordinates;
+            const pos3 = turf.along(itineraryJSON,(distance*(4.5)/8)/1000).geometry.coordinates;
+            const pos34 = turf.along(itineraryJSON,(distance*(6)/8)/1000).geometry.coordinates;
+            const pos6 = turf.along(itineraryJSON,(distance*7/8)/1000).geometry.coordinates;
+            const posLast = turf.along(itineraryJSON,(distance*(8)/8)/1000).geometry.coordinates;
 
+            const latlng0 = L.latLng(pos0[1], pos0[0]);
             const latlng1 = L.latLng(pos1[1], pos1[0]);
+            const latlng12 = L.latLng(pos12[1], pos12[0]);
             const latlng2 = L.latLng(pos2[1], pos2[0]);
+            const latlng23 = L.latLng(pos23[1], pos23[0]);
             const latlng3 = L.latLng(pos3[1], pos3[0]);
+            const latlng34 = L.latLng(pos34[1], pos34[0]);
             const latlng6 = L.latLng(pos6[1], pos6[0]);
+            const latlngLast = L.latLng(posLast[1], posLast[0]);
 
-            var marker1 = L.marker(getWeatherPos(latlng1, 1), {icon: weatherRainy});
-            var marker2 = L.marker(getWeatherPos(latlng2, 2), {icon: weatherCloudSun});
-            var marker3 = L.marker(getWeatherPos(latlng3, 3), {icon: weatherCloudy});
-            var marker6 = L.marker(getWeatherPos(latlng6, 6), {icon: weatherCloudSun});
+            var marker1 = L.marker(getWeatherPos(latlng1, 1, 60), {icon: weatherRainy});
+            var marker2 = L.marker(getWeatherPos(latlng2, 2.5, 60), {icon: weatherCloudSun});
+            var marker3 = L.marker(getWeatherPos(latlng3, 4.5, 60), {icon: weatherCloudy});
+            var marker6 = L.marker(getWeatherPos(latlng6, 7, 60), {icon: weatherCloudSun});
 
             var line1 = L.polyline([marker1.getLatLng(), latlng1], {color:"black", weigth:1}).addTo(map);
             var line2 = L.polyline([marker2.getLatLng(), latlng2], {color:"black", weigth:1}).addTo(map);
             var line3 = L.polyline([marker3.getLatLng(), latlng3], {color:"black", weigth:1}).addTo(map);
             var line6 = L.polyline([marker6.getLatLng(), latlng6], {color:"black", weigth:1}).addTo(map);
+
+            var line0 = L.polyline([latlng0, getWeatherPos(latlng0, 1, -15)], {color:"black", weigth:1}).addTo(map);
+            var line12 = L.polyline([latlng12, getWeatherPos(latlng12, 2, -15)], {color:"black", weigth:1}).addTo(map);
+            var line23 = L.polyline([latlng23, getWeatherPos(latlng23, 3, -15)], {color:"black", weigth:1}).addTo(map);
+            var line34 = L.polyline([latlng34, getWeatherPos(latlng34, 6, -15)], {color:"black", weigth:1}).addTo(map);
+            var lineLast = L.polyline([latlngLast, getWeatherPos(latlngLast, 8, -15)], {color:"black", weigth:1}).addTo(map);
             // var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
 
             weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker6 ]).addTo(map);
-            weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line6]).addTo(map);
+            weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line6, line0, line12, line23, line34, lineLast]).addTo(map);
         } else {
-            var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1), {icon: weatherRainy});
-            var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 2), {icon: weatherCloudy});
+            var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1, 60), {icon: weatherRainy});
+            var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 2, 60), {icon: weatherCloudy});
 
             var line1 = L.polyline([marker1.getLatLng(), allPos[Math.floor(length*(1/8))]], {color:"black", weigth:1}).addTo(map);
             var line2 = L.polyline([marker2.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
@@ -2429,14 +2445,19 @@ function loadWeather(){
  * @param {number} index 
  * @returns {L.LatLng} 
  */
-function getWeatherPos(pos, index){
+function getWeatherPos(pos, index, tolerance){
+    console.log("index: ", index);
+    console.log("pos: ", pos);
     var posXY = toPixels(pos);
+    
     var length = allPos.length;
     var newPosXY;
-    if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[Math.floor(length*(index/8))]), 0.03)){
-        newPosXY = L.point(posXY.x-60, posXY.y);
+    console.log(allPos[Math.floor(length*(index/8))-1]);
+    if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[(Math.floor(length*(index/8)))-1]), 0.03)){
+        newPosXY = L.point(posXY.x-tolerance, posXY.y);
+        console.log("hello hello punch you like an 808");
     } else {
-        newPosXY = L.point(posXY.x, posXY.y+60);
+        newPosXY = L.point(posXY.x, posXY.y+tolerance);
     }
     var newPosLatLng =  map.containerPointToLatLng(newPosXY);
     // var line = L.polyline([pos, newPosLatLng], {color:"black", weigth:2});
@@ -2472,6 +2493,14 @@ function updatePositions(){
         layers[i].setLatLng(newLatLng);
         prevPoint = closestXY;
         lines[i].setLatLngs([newLatLng, closest]);
+    }
+    for (let i = 4; i < lines.length; i++){
+        let closest = lines[i].getLatLngs()[0];
+        var closestXY = toPixels(closest);
+        var newXY;
+        newXY = L.point(closestXY.x, (closestXY.y-15));
+        var newLatLng = map.containerPointToLatLng(newXY);
+        lines[i].setLatLngs([closest, newLatLng]);
     }
     closestWeatherIcon();
 
