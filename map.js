@@ -2562,7 +2562,7 @@ function toggleSupermarketDistribution(){
 }
 
 /**
- * Calculates on which portion of the itinerary we are accoridng to the weather
+ * Calculates on which portion of the itinerary we are according to the weather
  */
 function closestWeatherIcon(){
     const bounds = map.getBounds();
@@ -2572,30 +2572,30 @@ function closestWeatherIcon(){
     
     if (fraction > (6/8)){
         // console.log("SIX");
-        const pos6 = turf.along(itineraryJSON,(distance*6/8)/1000).geometry.coordinates;
+        const pos6 = turf.along(itineraryJSON,(distance*(7)/8)/1000).geometry.coordinates;
         const latlng6 = L.latLng(pos6[1], pos6[0]);
         // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"red"}).addTo(map);
-        weatherIconMove(weatherLayerGroup.getLayers()[3], weatherLayerGroupLines.getLayers()[3], latlng6);
+        weatherIconMove(weatherLayerGroup.getLayers()[3], weatherLayerGroupLines.getLayers()[3], weatherLayerGroupLines.getLayers()[7], latlng6);
     } else if (fraction > (3/8)){
         // console.log("THREE");
-        const pos3 = turf.along(itineraryJSON,(distance*3/8)/1000).geometry.coordinates;
+        const pos3 = turf.along(itineraryJSON,(distance*(4.5)/8)/1000).geometry.coordinates;
         const latlng3 = L.latLng(pos3[1], pos3[0]);
         // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"green"}).addTo(map);
-        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], latlng3);
+        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], weatherLayerGroupLines.getLayers()[6], latlng3);
 
     } else if (fraction > (2/8)){
         // console.log("TWO");
-        const pos2 = turf.along(itineraryJSON,(distance*2/8)/1000).geometry.coordinates;
+        const pos2 = turf.along(itineraryJSON,(distance*(2.5)/8)/1000).geometry.coordinates;
         const latlng2 = L.latLng(pos2[1], pos2[0]);
         // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"black"}).addTo(map);
-        weatherIconMove(weatherLayerGroup.getLayers()[1], weatherLayerGroupLines.getLayers()[1], latlng2);
+        weatherIconMove(weatherLayerGroup.getLayers()[1], weatherLayerGroupLines.getLayers()[1], weatherLayerGroupLines.getLayers()[5], latlng2);
 
     } else{
         // console.log("ONE");
-        const pos1 = turf.along(itineraryJSON,0).geometry.coordinates;
+        const pos1 = turf.along(itineraryJSON,(distance*(1)/8)/1000).geometry.coordinates;
         const latlng1 = L.latLng(pos1[1], pos1[0]);
         // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110}).addTo(map);
-        weatherIconMove(weatherLayerGroup.getLayers()[0], weatherLayerGroupLines.getLayers()[0], latlng1);
+        weatherIconMove(weatherLayerGroup.getLayers()[0], weatherLayerGroupLines.getLayers()[0], weatherLayerGroupLines.getLayers()[4], latlng1);
     }
 }
 
@@ -2605,7 +2605,7 @@ function closestWeatherIcon(){
  * @param {L.Polyline} line 
  * @param {L.LatLng} latlng 
  */
-function weatherIconMove(icon, line, latlng){
+function weatherIconMove(icon, line, tick, latlng){
     // let latlng = icon.getLatLng();
     let bounds = map.getBounds();
     let center = bounds.getCenter();
@@ -2619,38 +2619,43 @@ function weatherIconMove(icon, line, latlng){
     let NEP = toPixels(NE);
     let posPixels = toPixels(latlng);
     let oldLatlng = icon.getLatLng();
+    // console.log("posPix: ", posPixels, " SWP: ", SWP);
 
     if (posPixels.x < SWP.x){
+        console.log("first onditon");
         let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
         let lineWest = turf.lineString([[SW.lng, SW.lat], [NW.lng, NW.lat]]);
         let intersects = turf.lineIntersect(lineCenter, lineWest);   
         if (intersects.length == 0){
             if (posPixels.y < NWP.y){
-                let intPixels = getIntersection (center, latlng, NW, NE);
+                let intPixels = getIntersection(center, latlng, NW, NE);
                 intPixels.y = intPixels.y+30;
                 updateLineAndPos(intPixels, line, oldLatlng, icon);
             } else if (posPixels.y > SWP.y){
-                let intPixels = getIntersection (center, latlng, SW, SE);
+                let intPixels = getIntersection(center, latlng, SW, SE);
                 intPixels.y = intPixels.y-30;
                 updateLineAndPos(intPixels, line, oldLatlng, icon);
             }
         } else {
+            // console.
             let intJSON = intersects.features[0].geometry.coordinates;
             let intPixels = toPixels(L.latLng(intJSON[1], intJSON[0]));
-            intPixels.x = intPixels.x+15;
+            intPixels.x = intPixels.x+30;
+            // L.circle(toLatLng(intPixels), {radius:500}).addTo(map);
             updateLineAndPos(intPixels, line, oldLatlng, icon);
         }
     } else if (posPixels.x > SEP.x){
+        console.log("second onditon");
         let lineCenter = turf.lineString([[center.lng, center.lat], [latlng.lng, latlng.lat]]);
         let lineEast = turf.lineString([[SE.lng, SE.lat], [NE.lng, NE.lat]]);
         let intersects = turf.lineIntersect(lineCenter, lineEast);
         if (intersects.length == 0){
             if (posPixels.y < NWP.y){
-                let intPixels = getIntersection (center, latlng, NW, NE);
+                let intPixels = getIntersection(center, latlng, NW, NE);
                 intPixels.y = intPixels.y+30;
                 updateLineAndPos(intPixels, line, oldLatlng, icon);
             } else if (posPixels.y > SWP.y){
-                let intPixels = getIntersection (center, latlng, SW, SE);
+                let intPixels = getIntersection(center, latlng, SW, SE);
                 intPixels.y = intPixels.y-30;
                 updateLineAndPos(intPixels, line, oldLatlng,icon);
             }
@@ -2662,14 +2667,18 @@ function weatherIconMove(icon, line, latlng){
             updateLineAndPos(intPixels, line, oldLatlng,icon);  
         }
     } else if (posPixels.y < NWP.y){
-        let intPixels = getIntersection (center, latlng, NW, NE);
+        console.log("thirs onditon");
+        let intPixels = getIntersection(center, latlng, NW, NE);
         intPixels.y = intPixels.y+30;
         updateLineAndPos(intPixels, line, oldLatlng,icon);
     } else if (posPixels.y > SWP.y){
-        let intPixels = getIntersection (center, latlng, SW, SE);
+        console.log("foutrh onditon");
+        let intPixels = getIntersection(center, latlng, SW, SE);
         lintPixels.y = intPixels.y-30;
         updateLineAndPos(intPixels, line, oldLatlng, icon);
 
+    } else{
+        console.log("else");
     }
 }
 
@@ -3135,6 +3144,13 @@ function updateBracketOpenText(){
     }
 }
 
+/**
+ * Returns the distance between a waypoint of the route and a point on the route
+ * @param {L.LatLng} start 
+ * @param {L.LatLng} end 
+ * @param {L.LatLng[]} route 
+ * @returns {Number}
+ */
 function getDistanceFromWaypoints(start,end,route){
     let sliced = getSliced(start, end, route);
 
@@ -3145,6 +3161,13 @@ function getDistanceFromWaypoints(start,end,route){
     return distTurf;
 }
 
+/**
+ * Returns the portion of the line between start and end
+ * @param {L.LatLng} start 
+ * @param {L.LatLng} end 
+ * @param {L.LatLng[]} route 
+ * @returns {L.LatLng[]}
+ */
 function getSliced(start, end, route){
     let lineTurf = turf.lineString(arrayToLngLat(route));
     let startPoint = turf.point(toLngLat(start));
@@ -3300,6 +3323,12 @@ function getTimeFromDistance(latlng){
     // }
 }
 
+/**
+ * Returns the text of the range in minutes
+ * @param {L.LatLng} latlng 
+ * @param {boolean} isOpen 
+ * @returns {String}
+ */
 function getRangeTime(latlng, isOpen){
     let distMarker = getDistanceFromStartLine(latlng, allPos);
     let percentMarker = distMarker*100/distance;
@@ -3368,10 +3397,20 @@ function latLngToPoint(line){
     return res;
 }
 
+/**
+ * Transforms a [lat, lng] into a [lng, lat]
+ * @param {L.LatLng} latlng 
+ * @returns {number[]}
+ */
 function toLngLat(latlng){
     return [latlng.lng, latlng.lat];
 }
 
+/**
+ * Transforms a [lng, lat] into a [lat, lng]
+ * @param {number[]} lnglat 
+ * @returns {L.LatLng}
+ */
 function lngLatToLatLng(lnglat){
     return L.latLng([lnglat[1], lnglat[0]]);
 
