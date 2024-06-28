@@ -958,7 +958,7 @@ function isochronesLocal(type, value, units){
     // let src = "https://api.openrouteservice.org/v2/isochrones/foot-walking";
     let src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/foot-hiking"
     if (transportationMode == "drive"){
-        src = "https://api.openrouteservice.org/v2/isochrones/driving-car"
+        src = "https://mapitin.lisn.upsaclay.fr:8890/ors/v2/isochrones/driving-car"
     }
     request.open('POST', src);
 
