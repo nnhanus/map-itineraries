@@ -972,7 +972,7 @@ function isochronesLocal(type, value, units){
         if (this.readyState === 4) {
             console.log('Status:', this.status);
             console.log('Headers:', this.getAllResponseHeaders());
-            // console.log('Body:', this.response);
+            console.log('Body:', this.response);
             // console.log("i : " + i + ", length : " + points.length);
             // console.log(resIso);
             
@@ -1082,7 +1082,7 @@ function makeIsoQuery(points, value, units){
  * Called after each request so when there are diff requests for one (because more than 5 points), we need to know the expected length
  */
 function isochroneToPolygon(body, type, length){
-    // console.log(body);
+    console.log(body);
     if (body.length == length){ //Check if it is the right length
         // console.log("long enough");
         disableCircle();
@@ -1130,7 +1130,13 @@ function isochroneToPolygon(body, type, length){
         //     simpMult++;
         // }
         var options = {tolerance : 0.01, highQuality : false};
-        let simplified = turf.simplify(union, options);
+        let simplified /*= turf.simplify(union, options)*/;
+        console.log("um hello ", line.length);
+        if (line.length > 100){
+            simplified = turf.simplify(union, options);
+        } else {
+            simplified = union;
+        }
         
         var polygon = pointToLatLng(polygonXY); //Put it back in LatLng
         // console.log("polygon length after simplify: " + polygon.length);
