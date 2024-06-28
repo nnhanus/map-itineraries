@@ -5,6 +5,8 @@ https://mapitin.lisn.upsaclay.fr:9000/mapitin/
 
 Served by the same Apache 2 server used for Overpass (see below).
 
+To update the web app: `cd /var/www/html/mapitin` then `sudo -s` then `git pull`
+
 # Local instance of OpenRouteService 
 
 The server is managed through a docker image. The corresponding YAML and ENV files are in
