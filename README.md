@@ -73,5 +73,6 @@ Checking the server's reachability:
 # Restarting the services after server shutdown
 
 - Login
+- Open a Terminal
 - For the Web and the Overpass service: `sudo systemctl reload apache2`
-- For ORS: `xxx`
+- For ORS: `cd projects/ors` and then `sudo docker compose up -d`
