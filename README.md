@@ -1,3 +1,10 @@
+# Public instance of MapItin App
+
+Available from:
+https://mapitin.lisn.upsaclay.fr:9000/mapitin/
+
+Served by the same Apache 2 server used for Overpass (see below).
+
 # Local instance of OpenRouteService 
 
 The server is managed through a docker image. The corresponding YAML and ENV files are in
@@ -61,4 +68,11 @@ There might be a problem starting the dispatcher. One option is to simply delete
 The server runs on `http://129.175.5.5:8082` a.k.a `http://pc5-5.lisn.upsaclay.fr:8082` and is accessible from eduroam at `https://mapitin.lisn.upsaclay.fr:9000`
 
 Checking the server's reachability:
-`https://mapitin.lisn.upsaclay.fr:XXXX/api/interpreter`
+`https://mapitin.lisn.upsaclay.fr:9000/api/interpreter`
+
+# Restarting the services after server shutdown
+
+- Login
+- Open a Terminal
+- For the Web and the Overpass service: `sudo systemctl reload apache2`
+- For ORS: `cd projects/ors` and then `sudo docker compose up -d` (this can take some time)
