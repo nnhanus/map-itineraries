@@ -2,7 +2,9 @@
 
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=5b59a7ec1b164e5f8f0e1c7aeb9e616b
+// L.tileLayer('https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=5b59a7ec1b164e5f8f0e1c7aeb9e616b', {
+var tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     // minZoom: 10,
     maxZoom: 19,
     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -104,6 +106,8 @@ var tempMarkerOpen;
 var tempMarkerClose;
 let needRedraw = false;
 
+var isTerrain = false;
+
 var interval = false;
 var intervalID;
 
@@ -136,7 +140,7 @@ var previewRoute;
  *                                   Controls                                   *
  ********************************************************************************/
 
-L.Control.Layers = L.Control.extend({
+L.Control.RouteInfo = L.Control.extend({
     options:{
         position: 'topright'
     },
@@ -183,8 +187,8 @@ L.Control.Layers = L.Control.extend({
     }
 });
 
-L.control.layers = function(opts) {
-    return new L.Control.Layers(opts);
+L.control.routeInfo = function(opts) {
+    return new L.Control.RouteInfo(opts);
 }
 
 L.Control.Mode = L.Control.extend({
@@ -296,6 +300,35 @@ L.Control.Redraw = L.Control.extend({
 L.control.redraw = function(opts){
     return new L.Control.Redraw(opts);
 }
+
+L.Control.Layers = L.Control.extend({
+    options:{
+        position: 'topright'
+    },
+    onAdd: function(map) {
+        let container = document.getElementById("tiles");
+        container.onclick = function(e){
+            if (isTerrain){
+                document.getElementById("tilesButton").classList.remove('selectedLayer');
+                tileLayer.setUrl('https://tile.openstreetmap.org/{z}/{x}/{y}.png');
+            } else {
+                document.getElementById("tilesButton").classList.add('selectedLayer');
+                tileLayer.setUrl('https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=5b59a7ec1b164e5f8f0e1c7aeb9e616b');
+            }
+            isTerrain = !isTerrain;
+            
+        }
+        return container;
+    },
+
+    onRemove: function(map) {
+        // Nothing to do here
+    }
+});
+
+L.control.layers = function(opts){
+    return new L.Control.Layers(opts);
+}
 /********************************************************************************
  *                                   Routing                                    *
  ********************************************************************************/
@@ -383,6 +416,7 @@ function routingToPolyline(routeJSON){
 function reroute(){
     console.log("reroute");
     console.log(state);
+    console.log(map.getZoom());
     
     // getResolution();
     areBracketsOn = false;
@@ -461,9 +495,10 @@ function reroute(){
         var svg = document.querySelectorAll("svg.leaflet-zoom-animated");
          svg[0].appendChild(defs);
 
-        L.control.layers({}).addTo(map); //Add the layers menu to the map
+        L.control.routeInfo({}).addTo(map); //Add the layers menu to the map
         L.control.mode({}).addTo(map); //Switch between foot and car
         L.control.redraw({}).addTo(map);
+        L.control.layers({}).addTo(map);
 
         createFloatingTexts(); //Creatte the cursor text and the marker text
     }
