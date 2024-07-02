@@ -2784,7 +2784,7 @@ function createFloatingTexts(){
     bracketOpenText.id="bracketText";
     bracketOpenText.setAttribute("class", "floatingText");
     bracketOpenText.onpointerdown = function(e){clickOnLabel = true;}
-    bracketOpenText.onclick = function(e){toggleFloatingTextsUnits();}
+    // bracketOpenText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(bracketOpenText);
 
     let bracketCloseText=document.createElement('div');
@@ -2793,7 +2793,7 @@ function createFloatingTexts(){
     bracketCloseText.id="bracketCloseText";
     bracketCloseText.setAttribute("class", "floatingText");
     bracketCloseText.onpointerdown = function(e){clickOnLabel = true;}
-    bracketCloseText.onclick = function(e){toggleFloatingTextsUnits();}
+    // bracketCloseText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(bracketCloseText);
 
     let circleMarkerText=document.createElement('div');
@@ -2802,7 +2802,7 @@ function createFloatingTexts(){
     circleMarkerText.id="circleText";
     circleMarkerText.setAttribute("class", "floatingText");
     circleMarkerText.onpointerdown = function(e){clickOnLabel = true;}
-    circleMarkerText.onclick = function(e){toggleFloatingTextsUnits();}
+    // circleMarkerText.onclick = function(e){toggleFloatingTextsUnits();}
     document.body.appendChild(circleMarkerText);
 }
 
@@ -2810,27 +2810,27 @@ function createFloatingTexts(){
  * Toggles between distance and time for the floating texts
  */
 function toggleFloatingTextsUnits(){
-    console.log("toggle; isKM: ", isFloatingTextKM);
-    let circleMarkerText = document.getElementById("circleText");
-    let bracketOpenText = document.getElementById("bracketText");
-    let bracketCloseText = document.getElementById("bracketCloseText");
-    if (isFloatingTextKM){ //change to time
-        isFloatingTextKM = false;
-        circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
-        if(areBracketsOn){
-            bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
-            bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false)  
-        }
+    // console.log("toggle; isKM: ", isFloatingTextKM);
+    // let circleMarkerText = document.getElementById("circleText");
+    // let bracketOpenText = document.getElementById("bracketText");
+    // let bracketCloseText = document.getElementById("bracketCloseText");
+    // if (isFloatingTextKM){ //change to time
+    //     isFloatingTextKM = false;
+    //     circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+    //     if(areBracketsOn){
+    //         bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
+    //         bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false)  
+    //     }
         
-    } else { //change to distance
-        isFloatingTextKM = true;
-        circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), (transportationMode=="walk"));
-        if(areBracketsOn){
-            updateBracketCloseText();
-            updateBracketOpenText();
-        }
+    // } else { //change to distance
+    //     isFloatingTextKM = true;
+    //     circleMarkerText.innerHTML = distToString(getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos), (transportationMode=="walk"));
+    //     if(areBracketsOn){
+    //         updateBracketCloseText();
+    //         updateBracketOpenText();
+    //     }
         
-    }
+    // }
 }
 
 /**
@@ -3090,9 +3090,7 @@ function createBrackets(event){
     //Set floating texts
     updateBracketOpenText();
     updateBracketCloseText();
-
-    let circleMarkerText = document.getElementById("circleText");
-    circleMarkerText.innerHTML=(dist/1000).toFixed(0) + "km";
+    updateCircleText();
 
     showFloatingTexts()
 
@@ -3126,8 +3124,8 @@ function updatePosTexts(text, element, isVert){
             text.style.top=top+'px';
             
         } else{
-            var left = toPixels(element.getLatLng()).x-15;
-            var top = toPixels(element.getLatLng()).y-50;
+            var left = toPixels(element.getLatLng()).x-25;
+            var top = toPixels(element.getLatLng()).y-70;
             var textSize=[text.offsetWidth,text.offsetHeight];
             if (top + textSize[1] < 0){
                 top = top + 100;
@@ -3154,17 +3152,10 @@ function updateBracketCloseText(){
     let bracketCloseText = document.getElementById("bracketCloseText");
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
-
-    if (isFloatingTextKM){
-        let distPoint = getDistanceFromWaypoints(circleZoneOfInterest.getLatLng(),markerBracketClose.getLatLng(),allPos);
-        let bracketCloseText = document.getElementById("bracketCloseText");
-        bracketCloseText.innerHTML="+ " + (distPoint/1000).toFixed(fix) +" km";
-
-        closeCircleDist = distPoint;
-    } else {
-        bracketCloseText.innerHTML = getRangeTime(markerBracketClose.getLatLng(), false);
-    }
-
+    let body = getRangeTime(markerBracketClose.getLatLng(), false);
+    let distPoint = getDistanceFromWaypoints(circleZoneOfInterest.getLatLng(),markerBracketClose.getLatLng(),allPos);
+    body += '<br>' + "+ " + (distPoint/1000).toFixed(fix) +" km";
+    bracketCloseText.innerHTML = body;
 }
 
 /**
@@ -3174,15 +3165,12 @@ function updateBracketOpenText(){
     let bracketOpenText = document.getElementById("bracketText");
     let fix = 0;
     if (transportationMode == "walk"){fix = 1;}
-    if(isFloatingTextKM){
-        let distPoint = getDistanceFromWaypoints(markerBracketOpen.getLatLng(), circleZoneOfInterest.getLatLng(),allPos);
-        let bracketOpenText = document.getElementById("bracketText");
-        bracketOpenText.innerHTML="- " + (distPoint/1000).toFixed(fix) +" km";
-
-        openCircleDist = distPoint;
-    } else {
-        bracketOpenText.innerHTML = getRangeTime(markerBracketOpen.getLatLng(), true);
-    }
+    let body = getRangeTime(markerBracketOpen.getLatLng(), true);
+    let distPoint = getDistanceFromWaypoints(markerBracketOpen.getLatLng(), circleZoneOfInterest.getLatLng(),allPos);
+    body += '<br>' + "- " + (distPoint/1000).toFixed(fix) +" km";
+    openCircleDist = distPoint;
+   
+    bracketOpenText.innerHTML = body;
 }
 
 /**
@@ -3336,12 +3324,10 @@ function updateSizeMarkers(){
  */
 function updateCircleText(){
     let circleMarkerText = document.getElementById("circleText");
-    if (isFloatingTextKM){
-        let dist = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
-        circleMarkerText.innerHTML = distToString(dist, (transportationMode == "walk"));
-    } else { 
-        circleMarkerText.innerHTML = getTimeFromDistance(circleZoneOfInterest.getLatLng());
-    }
+    let body = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+    let dist = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
+    body += '<br>' + distToString(dist, (transportationMode == "walk"));
+    circleMarkerText.innerHTML = body;
 }
 
 /********************************************************************************
@@ -3379,16 +3365,16 @@ function getRangeTime(latlng, isOpen){
     let percentCircle = distcircle*100/distance;
     let timeCircle = Math.round(percentCircle*time/100);
 
-    console.log("percent marker: ", timeMarker, " ; percentCircle: ", timeCircle);
+    // console.log("percent marker: ", timeMarker, " ; percentCircle: ", timeCircle);
     if (isOpen){
         let range = timeCircle - timeMarker;
-        console.log("range open: ", range);
-        let string = "+ " + toMinutes(range);
+        // console.log("range open: ", range);
+        let string = "- " + toMinutes(range);
         return string;
     } else {
         let range =  timeMarker - timeCircle;
-        console.log("range close: ", range);
-        let string = "- " + toMinutes(range);
+        // console.log("range close: ", range);
+        let string = "+ " + toMinutes(range);
         return string;
     }
 
@@ -3636,7 +3622,13 @@ function inHours(time){
     if (in_hours >= 24){
         in_hours = in_hours - 24;
     }
-    return (in_hours + "h" + in_minutes);
+    let min_string;
+    if (in_minutes < 10){
+        min_string = "0"+in_minutes.toString();
+    } else {
+        min_string = in_minutes.toString();
+    }
+    return (in_hours.toString() + "h" + min_string);
 
 
 }
