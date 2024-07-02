@@ -78,9 +78,12 @@ var transportationMode = "drive"; //drive walk hike
 
 
 const startDrive = L.latLng(48.711967757928974, 2.166628674285006);
-const endDrive = L.latLng(47.20617749880269, -1.564392769503869);
+// const endDrive = L.latLng(47.20617749880269, -1.564392769503869);
+// const endDrive = L.latLng(47.45119048659056, -1.9558925137469443);
+// 47.528428217385866, -1.7663516677145368
+const endDrive = L.latLng(47.528428217385866, -1.7663516677145368);
 // const endCar = L.latLng(48.69519492350087, 2.1760177471346864);
-const addressDrive = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
+const addressDrive = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Auberge de la Forêt Le Gavre, 33 La Maillardais, 44130 Le Gavre"];
 
 const startWalk = L.latLng(43.59210153989353, 1.4447266282743285);
 const endWalk = L.latLng(43.60560890094277, 1.4458011280603213);
@@ -93,7 +96,7 @@ const addressHike = ["860-1436 Bd des Vernières, 63150 La Bourboule", "Pl. de l
 
 
 var routingWaypoints = [startDrive, endDrive];
-var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Les Machines de l'Île, Parc des Chantiers, Bd Léon Bureau, 44200 Nantes"];
+var routingAddresses = ["Digiteo Moulon Batiment 660, 660 Av. des Sciences Bâtiment, 91190, 91190 Gif-sur-Yvette", "Auberge de la Forêt Le Gavre, 33 La Maillardais, 44130 Le Gavre"];
 var routingMarkers = [];
 
 const APIKey = '5b3ce3597851110001cf62488744889721734d3298f65573faadbc4f';
@@ -2407,8 +2410,43 @@ function loadWeather(){
             var lineLast = L.polyline([latlngLast, getWeatherPos(latlngLast, 8, -15)], {color:"black", weigth:1}).addTo(map);
             // var line6 = L.polyline([marker6.getLatLng(), allPos[Math.floor(length*(7/8))]], {color:"black", weigth:1}).addTo(map);
 
-            weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker6 ]).addTo(map);
+            weatherLayerGroup = L.layerGroup([marker1, marker2, marker3, marker6]).addTo(map);
             weatherLayerGroupLines = L.layerGroup([line1, line2, line3, line6, line0, line12, line23, line34, lineLast]).addTo(map);
+
+            let label1=document.createElement('div');
+            label1.style.zIndex = 500;
+            label1.style.visibility='visible';
+            label1.setAttribute("class", "floatingText");
+            label1.id="weatherLabel1";
+            label1.innerHTML = getTimeFromDistance(latlng1);
+            document.body.appendChild(label1);
+
+            let label2=document.createElement('div');
+            label2.style.zIndex = 500;
+            label2.style.visibility='visible';
+            label2.setAttribute("class", "floatingText");
+            label2.id="weatherLabel2";
+            label2.innerHTML = getTimeFromDistance(latlng2);
+            document.body.appendChild(label2);
+
+            let label3=document.createElement('div');
+            label3.style.zIndex = 500;
+            label3.style.visibility='visible';
+            label3.setAttribute("class", "floatingText");
+            label3.id="weatherLabel3";
+            label3.innerHTML = getTimeFromDistance(latlng3);
+            document.body.appendChild(label3);
+
+            let label6=document.createElement('div');
+            label6.style.zIndex = 500;
+            label6.style.visibility='visible';
+            label6.setAttribute("class", "floatingText");
+            label6.id="weatherLabel4";
+            label6.innerHTML = getTimeFromDistance(latlng6);
+            document.body.appendChild(label6);
+
+            setLabelWeatherPos();
+
         } else {
             var marker1 = L.marker(getWeatherPos(allPos[Math.floor(length*(1/8))], 1, 60), {icon: weatherRainy});
             var marker2 = L.marker(getWeatherPos(allPos[Math.floor(length*(7/8))], 2, 60), {icon: weatherCloudy});
@@ -2427,14 +2465,61 @@ function loadWeather(){
         weatherLayerGroupLines.addTo(map);
         isWeatherDisplayed = true;
         document.getElementById("weatherLayer").classList.add('selectedLayer');
+        let label1=document.getElementById("weatherLabel1");
+        label1.style.visibility='visible';
+        let label2=document.getElementById("weatherLabel2");
+        label2.style.visibility='visible';
+        let label3=document.getElementById("weatherLabel3");
+        label3.style.visibility='visible';
+        let label4=document.getElementById("weatherLabel4");
+        label4.style.visibility='visible';        
+        updatePositions();
+
     } else { //Hide
         weatherLayerGroup.removeFrom(map);
         weatherLayerGroupLines.removeFrom(map);
         isWeatherDisplayed = false;
         document.getElementById("weatherLayer").classList.remove('selectedLayer');
+        let label1=document.getElementById("weatherLabel1");
+        label1.style.visibility='hidden';
+        let label2=document.getElementById("weatherLabel2");
+        label2.style.visibility='hidden';
+        let label3=document.getElementById("weatherLabel3");
+        label3.style.visibility='hidden';
+        let label4=document.getElementById("weatherLabel4");
+        label4.style.visibility='hidden';
     }
+}
+
+
+function setLabelWeatherPos(){
+    let label1=document.getElementById("weatherLabel1");
+    let label2=document.getElementById("weatherLabel2");
+    let label3=document.getElementById("weatherLabel3");
+    let label4=document.getElementById("weatherLabel4");
+
+    
+    var layers = weatherLayerGroup.getLayers();
+
+    let pos1 = toPixels(layers[0].getLatLng());
+    label1.style.left = (pos1.x - 15) + "px";
+    label1.style.top = (pos1.y + 50) + "px";
+
+    let pos2 = toPixels(layers[1].getLatLng());
+    label2.style.left = (pos2.x - 15) + "px";
+    label2.style.top = (pos2.y + 50) + "px";
+
+    let pos3 = toPixels(layers[2].getLatLng());
+    label3.style.left = (pos3.x - 15) + "px";
+    label3.style.top = (pos3.y + 50) + "px";
+
+    let pos4 = toPixels(layers[3].getLatLng());
+    label4.style.left = (pos4.x - 15) + "px";
+    label4.style.top = (pos4.y + 50) + "px";
+
 
 }
+
 
 /**
  * Returns the updated position of the weather icon after zoom
@@ -2443,8 +2528,8 @@ function loadWeather(){
  * @returns {L.LatLng} 
  */
 function getWeatherPos(pos, index, tolerance){
-    console.log("index: ", index);
-    console.log("pos: ", pos);
+    // console.log("index: ", index);
+    // console.log("pos: ", pos);
     var posXY = toPixels(pos);
     
     var length = allPos.length;
@@ -2452,7 +2537,7 @@ function getWeatherPos(pos, index, tolerance){
     console.log(allPos[Math.floor(length*(index/8))-1]);
     if (isVertical(toPixels(allPos[Math.floor(length*((index-1)/8))]), toPixels(allPos[(Math.floor(length*(index/8)))-1]), 0.03)){
         newPosXY = L.point(posXY.x-tolerance, posXY.y);
-        console.log("hello hello punch you like an 808");
+        // console.log("hello hello punch you like an 808");
     } else {
         newPosXY = L.point(posXY.x, posXY.y+tolerance);
     }
@@ -2500,7 +2585,7 @@ function updatePositions(){
         lines[i].setLatLngs([closest, newLatLng]);
     }
     closestWeatherIcon();
-
+    setLabelWeatherPos();
 
 }
 
@@ -3988,6 +4073,7 @@ onpointerup = (event) => {
 
     if(isWeatherDisplayed){
         updatePositions();
+        // setLabelWeatherPos()
     }
     
     if (isMenuOn){
