@@ -2416,7 +2416,7 @@ function loadWeather(){
             let label1=document.createElement('div');
             label1.style.zIndex = 500;
             label1.style.visibility='visible';
-            label1.setAttribute("class", "floatingText");
+            label1.setAttribute("class", "floatingText floatingWeather");
             label1.id="weatherLabel1";
             label1.innerHTML = getTimeFromDistance(latlng1);
             document.body.appendChild(label1);
@@ -2424,15 +2424,16 @@ function loadWeather(){
             let label2=document.createElement('div');
             label2.style.zIndex = 500;
             label2.style.visibility='visible';
-            label2.setAttribute("class", "floatingText");
+            label2.setAttribute("class", "floatingText floatingWeather");
             label2.id="weatherLabel2";
             label2.innerHTML = getTimeFromDistance(latlng2);
             document.body.appendChild(label2);
+            
 
             let label3=document.createElement('div');
             label3.style.zIndex = 500;
             label3.style.visibility='visible';
-            label3.setAttribute("class", "floatingText");
+            label3.setAttribute("class", "floatingText floatingWeather");
             label3.id="weatherLabel3";
             label3.innerHTML = getTimeFromDistance(latlng3);
             document.body.appendChild(label3);
@@ -2440,7 +2441,7 @@ function loadWeather(){
             let label6=document.createElement('div');
             label6.style.zIndex = 500;
             label6.style.visibility='visible';
-            label6.setAttribute("class", "floatingText");
+            label6.setAttribute("class", "floatingText floatingWeather");
             label6.id="weatherLabel4";
             label6.innerHTML = getTimeFromDistance(latlng6);
             document.body.appendChild(label6);

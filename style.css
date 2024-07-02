@@ -70,6 +70,10 @@ body{
     padding: 5px;
 }
 
+.floatingWeather{
+    font-size: small;
+}
+
 #slider{
     border: solid blue;
     background-color: aliceblue;
