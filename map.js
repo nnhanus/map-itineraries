@@ -332,6 +332,45 @@ L.Control.Layers = L.Control.extend({
 L.control.layers = function(opts){
     return new L.Control.Layers(opts);
 }
+
+L.Control.Clear = L.Control.extend({
+    options:{
+        position: 'topright'
+    },
+    onAdd: function(map) { 
+
+        let container = document.createElement("div");
+        container.id = "clearDiv";
+
+        let icon = document.createElement("input");
+        icon.setAttribute("type", "image");
+        icon.setAttribute("class", "layer");
+        icon.setAttribute("src", "icons/delete.png");
+        icon.setAttribute("width", "22");
+        icon.setAttribute("height", "22");
+        icon.id = "clearButton";
+        // icon.setAttribute("type", "image");
+
+        container.appendChild(icon);
+        document.body.appendChild(container);
+
+        
+        {/* container.style.visibility = "visible"; */}
+        container.onclick = function(e){
+            clearQueryResults();
+            this.remove(); 
+        }
+        return container;
+    },
+
+    onRemove: function(map) {
+        // Nothing to do here
+    }
+});
+
+L.control.clear = function(opts){
+    return new L.Control.Clear(opts);
+}
 /********************************************************************************
  *                                   Routing                                    *
  ********************************************************************************/
@@ -1778,10 +1817,7 @@ function onPressQueryZone(){
  * Create the clear result button
  */
 function makeClearButton(){
-    var button = document.getElementById("clearDiv");
-    button.style.visibility = "visible";
-    button.onclick = function(e){clearQueryResults()};
-    document.body.appendChild(button);
+    L.control.clear({}).addTo(map);
 }
 
 /**
