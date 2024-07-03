@@ -71,6 +71,10 @@ var openedPopup;
 
 var infoRouteTop = 530;
 
+var isPreview = false;
+var shouldPrevGo = false;
+var previewIndex = -1;
+
 var defaultBracketRange = 1200;
 var transportationMode = "drive"; //drive walk hike
 
@@ -426,6 +430,13 @@ function ORSRouting(){
         }
     };
 
+    if (shouldPrevGo){
+        routingWaypoints.splice(previewIndex, 1);
+        shouldPrevGo = false;
+    } else if (isPreview){
+        shouldPrevGo = true;
+        isPreview = false;
+    }
     const body = routingWaypointsToQueryString(routingWaypoints);
     // console.log(body);
 
@@ -493,7 +504,6 @@ function reroute(){
     // }
     // state = "itinerary";
     // prevState = "itinerary";
-
 
     stroke = L.polyline(allPos, {color: 'blue', weight: 53,className: "outline willnotrender"}).addTo(map); // Draw the interaction zone
     let strokeHTML = stroke._path;
@@ -1353,8 +1363,10 @@ function oplQuery(queryString, type){
                 
                 L.DomEvent.on(previewBtn, 'click', function() { //On click of preview button
                     state = "preview";
+                    isPreview = true;
                     if (routingWaypoints < 3){
                         routingWaypoints.splice(1, 0, marker.getLatLng());
+                        previewIndex = 1;
                         ORSRouting();
                     } else {
                         // firstRequest(marker.getLatLng());
@@ -1778,6 +1790,7 @@ function whichWayIsFaster(latlng, address, reroute){
         }
     }
 
+    previewIndex = index;
     let firstRoute = 0;
     let secondRoute = 0;
     for (let i = 0; i < routingWaypoints.length-1; i++){
