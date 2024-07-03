@@ -2,8 +2,6 @@
 
 var map = L.map('map', {dragging: true}).setView([52.19226,0.15216], 16);
 
-// https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=5b59a7ec1b164e5f8f0e1c7aeb9e616b
-// L.tileLayer('https://tile.thunderforest.com/landscape/{z}/{x}/{y}.png?apikey=5b59a7ec1b164e5f8f0e1c7aeb9e616b', {
 var tileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
     // minZoom: 10,
     maxZoom: 19,
@@ -157,6 +155,7 @@ L.Control.RouteInfo = L.Control.extend({
         var marketButton = document.getElementById("supermarketLayer");
         container.onpointerdown = function(e){
             clickOnLayer = true;
+            console.log("clickOnLabel RouteInfo: ", clickOnLayer);
         }
         fuelLayer.onclick = function(e){
             toggleFuelDistribution();
@@ -226,7 +225,10 @@ L.Control.Mode = L.Control.extend({
             switchMode("hike");
             icon.setAttribute("src", "icons/hike.svg");
         }
-
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+            console.log("clickOnMabel: ", clickOnLayer);
+        }
         return container;
     },
 
@@ -255,7 +257,10 @@ L.Control.ORSRouting = L.Control.extend({
         input.setAttribute("height", "22");
         container.append(input);
 
-        
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+            console.log("clickOnMabel: ", clickOnLayer);
+        }
         container.onpointerup = function(e){
             toggleRouteInfoVisibility();
         }
@@ -292,6 +297,10 @@ L.Control.Redraw = L.Control.extend({
             interval = !interval;
             
         }
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+            console.log("clickOnMabel: ", clickOnLayer);
+        }
         return container;
     },
 
@@ -320,6 +329,10 @@ L.Control.Layers = L.Control.extend({
             }
             isTerrain = !isTerrain;
             
+        }
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+            console.log("clickOnMabel: ", clickOnLayer);
         }
         return container;
     },
@@ -355,7 +368,10 @@ L.Control.Clear = L.Control.extend({
         document.body.appendChild(container);
 
         
-        {/* container.style.visibility = "visible"; */}
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+            console.log("clickOnMabel: ", clickOnLabel);
+        }
         container.onclick = function(e){
             clearQueryResults();
             this.remove(); 
@@ -1905,9 +1921,10 @@ function pointPlacedToItinerary(latlng, point){
     var distFromLine = getDistanceInCM(latlng, point, allPos);
     var closest = L.GeometryUtil.closest(map, allPos, latlng);
     var closestPixel = toPixels(closest);
-    if ((distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ) && areBracketsOn){
+    if (areBracketsOn){
+    // if ((distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x ) && areBracketsOn){
         let distFromHighlight = getDistanceInCM(latlng, point, polylineBracket.getLatLngs());
-        if (distFromHighlight > 0.3 || distFromHighlight > 10 && closestPixel.y < point.y){
+        // if (distFromHighlight > 0.3 || distFromHighlight > 10 && closestPixel.y < point.y){
             // console.log("iti click");
             state = "itinerary";
             prevState = "itinerary";
@@ -1943,9 +1960,9 @@ function pointPlacedToItinerary(latlng, point){
                 toggleSupermarketDistribution()
             }
             areBracketsOn = false;
-        }
+        // }
     } else {
-        if (!clickOnCircle && (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x )){
+        // if (!clickOnCircle && (distFromLine < 0.3 || distFromLine < 0.8 && closestPixel.x < point.x )){
             state = "itinerary";
             prevState = "itinerary";
             map.removeLayer(circleZoneOfInterest);
@@ -1972,7 +1989,7 @@ function pointPlacedToItinerary(latlng, point){
                 toggleSupermarketDistribution()
             }
 
-        }
+        // }
     }
 }
 
@@ -2745,37 +2762,67 @@ function toggleSupermarketDistribution(){
  */
 function closestWeatherIcon(){
     const bounds = map.getBounds();
-    const latlngCenter = L.latLng(bounds.getCenter().lat, bounds.getNorthEast().lng);
-    let fraction = L.GeometryUtil.locateOnLine(map, itinerary, L.GeometryUtil.closest(map, allPos, latlngCenter));
+    const latlngEast = L.latLng(bounds.getCenter().lat, bounds.getNorthEast().lng);
+    let fractionEast = L.GeometryUtil.locateOnLine(map, itinerary, L.GeometryUtil.closest(map, allPos, latlngEast));
+
+    console.log("fraction: ", fractionEast);
     
     
-    if (fraction > (6/8)){
+    if (fractionEast > (6/8)){
         // console.log("SIX");
         const pos6 = turf.along(itineraryJSON,(distance*(7)/8)/1000).geometry.coordinates;
         const latlng6 = L.latLng(pos6[1], pos6[0]);
-        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"red"}).addTo(map);
         weatherIconMove(weatherLayerGroup.getLayers()[3], weatherLayerGroupLines.getLayers()[3], weatherLayerGroupLines.getLayers()[7], latlng6);
-    } else if (fraction > (3/8)){
+    } else if (fractionEast > (3/8)){
         // console.log("THREE");
         const pos3 = turf.along(itineraryJSON,(distance*(4.5)/8)/1000).geometry.coordinates;
         const latlng3 = L.latLng(pos3[1], pos3[0]);
-        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"green"}).addTo(map);
-        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], weatherLayerGroupLines.getLayers()[6], latlng3);
-
-    } else if (fraction > (2/8)){
+        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], weatherLayerGroupLines.getLayers()[6], latlng3);  
+    } else if (fractionEast > (2/8)){
         // console.log("TWO");
         const pos2 = turf.along(itineraryJSON,(distance*(2.5)/8)/1000).geometry.coordinates;
         const latlng2 = L.latLng(pos2[1], pos2[0]);
-        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110, color:"black"}).addTo(map);
         weatherIconMove(weatherLayerGroup.getLayers()[1], weatherLayerGroupLines.getLayers()[1], weatherLayerGroupLines.getLayers()[5], latlng2);
-
-    } else{
+    } else {
         // console.log("ONE");
         const pos1 = turf.along(itineraryJSON,(distance*(1)/8)/1000).geometry.coordinates;
         const latlng1 = L.latLng(pos1[1], pos1[0]);
-        // L.circle(L.GeometryUtil.closest(map, allPos, latlngCenter), {radius:110}).addTo(map);
         weatherIconMove(weatherLayerGroup.getLayers()[0], weatherLayerGroupLines.getLayers()[0], weatherLayerGroupLines.getLayers()[4], latlng1);
+        
     }
+
+    const latlngWest = L.latLng(bounds.getCenter().lat, bounds.getNorthWest().lng);
+    let fractionWest = L.GeometryUtil.locateOnLine(map, itinerary, L.GeometryUtil.closest(map, allPos, latlngWest));
+
+    console.log("fraction: ", fractionWest);
+    
+    
+    if (fractionWest < (2/8)){
+        // console.log("SIX");
+        const pos1 = turf.along(itineraryJSON,(distance*(1)/8)/1000).geometry.coordinates;
+        const latlng1 = L.latLng(pos1[1], pos1[0]);
+        weatherIconMove(weatherLayerGroup.getLayers()[0], weatherLayerGroupLines.getLayers()[0], weatherLayerGroupLines.getLayers()[4], latlng1);
+        
+    } else if (fractionWest < (3/8)){
+        // console.log("THREE");
+        const pos2 = turf.along(itineraryJSON,(distance*(2.5)/8)/1000).geometry.coordinates;
+        const latlng2 = L.latLng(pos2[1], pos2[0]);
+        weatherIconMove(weatherLayerGroup.getLayers()[1], weatherLayerGroupLines.getLayers()[1], weatherLayerGroupLines.getLayers()[5], latlng2);
+    } else if (fractionWest < (6/8)){
+        // console.log("TWO");
+       
+        const pos3 = turf.along(itineraryJSON,(distance*(4.5)/8)/1000).geometry.coordinates;
+        const latlng3 = L.latLng(pos3[1], pos3[0]);
+        weatherIconMove(weatherLayerGroup.getLayers()[2], weatherLayerGroupLines.getLayers()[2], weatherLayerGroupLines.getLayers()[6], latlng3); 
+    } else {
+        // console.log("ONE");
+        const pos6 = turf.along(itineraryJSON,(distance*(7)/8)/1000).geometry.coordinates;
+        const latlng6 = L.latLng(pos6[1], pos6[0]);
+        weatherIconMove(weatherLayerGroup.getLayers()[3], weatherLayerGroupLines.getLayers()[3], weatherLayerGroupLines.getLayers()[7], latlng6);
+        
+        
+    }
+
 }
 
 /**
@@ -3480,12 +3527,8 @@ function updateCircleText(){
 function getTimeFromDistance(latlng){
     let dist = getDistanceFromStartLine(latlng, allPos);
     let percent = dist*100/distance;
-    // if (transportationMode == "car"){
-    console.log(inHours(percent*time/100));
     return inHours(percent*time/100);
-    // } else {
-    //     Math.round(dist/100)/10;
-    // }
+    
 }
 
 /**
@@ -3915,6 +3958,9 @@ function toggleRouteInfoVisibility(){
         container.style.visibility = "hidden";
     } else {
         container.style.visibility = "visible";
+        container.onpointerdown = function(e){
+            clickOnLayer = true;
+        }
     }
 }
 
@@ -4045,6 +4091,7 @@ onpointerup = (event) => {
     // console.log(event.target);
     // console.log(clickOnCircle);
    // Get the pointer coords
+   console.log("clickOnMabel: ", clickOnLayer);
     let ETAFloatingText = document.getElementById("cursorText");
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
@@ -4074,7 +4121,8 @@ onpointerup = (event) => {
             markerBracketOpen.dragging.enable();
         }
         clickOnSlider = false;
-    } else if (state == "pointPlaced" && !clickOnLabel){
+    } else if (state == "pointPlaced" && !clickOnLabel && !clickOnLayer){
+        console.log("clickOnMabel: ", clickOnLayer);
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
         // const millis = Date.now() - startTime;
