@@ -486,7 +486,10 @@ function reroute(){
             toggleFuelDistribution();
         } else if (isRestaurantDisplayed){
             isRestaurantDisplayed = false;
-            toggleRestaurantDistribution()
+            toggleRestaurantDistribution();
+        } else if (isSupermarketDisplayed){
+            isSupermarketDisplayed = false;
+            toggleSupermarketDistribution();
         }
     } else {
         //Create the ORS instance
@@ -2418,7 +2421,7 @@ function loadWeather(){
             label1.style.visibility='visible';
             label1.setAttribute("class", "floatingText floatingWeather");
             label1.id="weatherLabel1";
-            label1.innerHTML = getTimeFromDistance(latlng1);
+            label1.innerHTML = getTimeFromDistance(latlng12);
             document.body.appendChild(label1);
 
             let label2=document.createElement('div');
@@ -2426,7 +2429,7 @@ function loadWeather(){
             label2.style.visibility='visible';
             label2.setAttribute("class", "floatingText floatingWeather");
             label2.id="weatherLabel2";
-            label2.innerHTML = getTimeFromDistance(latlng2);
+            label2.innerHTML = getTimeFromDistance(latlng23);
             document.body.appendChild(label2);
             
 
@@ -2435,7 +2438,7 @@ function loadWeather(){
             label3.style.visibility='visible';
             label3.setAttribute("class", "floatingText floatingWeather");
             label3.id="weatherLabel3";
-            label3.innerHTML = getTimeFromDistance(latlng3);
+            label3.innerHTML = getTimeFromDistance(latlng34);
             document.body.appendChild(label3);
 
             let label6=document.createElement('div');
@@ -2443,8 +2446,16 @@ function loadWeather(){
             label6.style.visibility='visible';
             label6.setAttribute("class", "floatingText floatingWeather");
             label6.id="weatherLabel4";
-            label6.innerHTML = getTimeFromDistance(latlng6);
+            label6.innerHTML = getTimeFromDistance(latlngLast);
             document.body.appendChild(label6);
+
+            let label0=document.createElement('div');
+            label0.style.zIndex = 500;
+            label0.style.visibility='visible';
+            label0.setAttribute("class", "floatingText floatingWeather");
+            label0.id="weatherLabelStart";
+            label0.innerHTML = getTimeFromDistance(latlng0);
+            document.body.appendChild(label0);
 
             setLabelWeatherPos();
 
@@ -2498,27 +2509,32 @@ function setLabelWeatherPos(){
     let label2=document.getElementById("weatherLabel2");
     let label3=document.getElementById("weatherLabel3");
     let label4=document.getElementById("weatherLabel4");
-
+    let label0=document.getElementById("weatherLabelStart");
     
-    var layers = weatherLayerGroup.getLayers();
+    var layers = weatherLayerGroupLines.getLayers();
 
-    let pos1 = toPixels(layers[0].getLatLng());
-    label1.style.left = (pos1.x - 15) + "px";
-    label1.style.top = (pos1.y + 50) + "px";
+    getWeatherLabelPos(label0, 4, layers);
+    getWeatherLabelPos(label1, 5, layers);
+    getWeatherLabelPos(label2, 6, layers);
+    getWeatherLabelPos(label3, 7, layers);
+    getWeatherLabelPos(label4, 8, layers);
 
-    let pos2 = toPixels(layers[1].getLatLng());
-    label2.style.left = (pos2.x - 15) + "px";
-    label2.style.top = (pos2.y + 50) + "px";
+}
 
-    let pos3 = toPixels(layers[2].getLatLng());
-    label3.style.left = (pos3.x - 15) + "px";
-    label3.style.top = (pos3.y + 50) + "px";
+function visibilityWeatherLabel(label, pos){
+    if(pos > width){
+        label.style.visibility = "hidden";
+    } else {
+        label.style.visibility = "visible";
+    }
+}
 
-    let pos4 = toPixels(layers[3].getLatLng());
-    label4.style.left = (pos4.x - 15) + "px";
-    label4.style.top = (pos4.y + 50) + "px";
+function getWeatherLabelPos(label, index, layers){
+    let pos = toPixels(layers[index].getLatLngs()[0]);
+    label.style.left = (pos.x - 15) + "px";
+    label.style.top = (pos.y - 50) + "px";
 
-
+    visibilityWeatherLabel(label, (pos.x - 15));
 }
 
 
