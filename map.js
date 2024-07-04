@@ -126,6 +126,8 @@ var hasMovedQueryZone = false;
 
 var oplLayer;
 
+var supprControl = null;
+
 var gradientTH = [{color:"#E6E6FD", stop:0}, {color:"#4849EE", stop:0.32}, {color:"#E6E6FD", stop:1}];
 var gradientWH = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.15}, {color:"#C9C9E4", stop:0.48}, {color:"#C9C9E4", stop:0.59}, {color:"#9B9CD4", stop:0.77}, {color:"#00029C", stop:1}];
 var gradientVH = [{color:"#4849EE", stop:0}, {color:"#C9C9E4", stop:0.21}, {color:"#E6E6FD", stop:0.34}, {color:"#C9C9E4", stop:0.42}, {color:"#8788B7", stop:0.51}, {color:"#00029C", stop:0.69}, {color:"#0000FF", stop:1}];
@@ -355,7 +357,10 @@ L.Control.Clear = L.Control.extend({
         position: 'topright'
     },
     onAdd: function(map) { 
-
+        console.log("i have been called upon, " + state);
+        if (supprControl != null){
+            supprControl.remove();
+        }
         let container = document.createElement("div");
         container.id = "clearDiv";
 
@@ -377,8 +382,11 @@ L.Control.Clear = L.Control.extend({
             console.log("clickOnMabel: ", clickOnLabel);
         }
         container.onclick = function(e){
-            clearQueryResults();
-            this.remove(); 
+            if (state != "preview"){
+                clearQueryResults();
+                this.remove();
+            }
+             
         }
         return container;
     },
@@ -1846,7 +1854,7 @@ function onPressQueryZone(){
  * Create the clear result button
  */
 function makeClearButton(){
-    L.control.clear({}).addTo(map);
+    supprControl = L.control.clear({}).addTo(map);
 }
 
 /**
@@ -2079,6 +2087,7 @@ function itineraryToPointPlaced(latlng, point){
             circleHTML.onpointerdown = function(e){clickOnCircle = true};
             if (queryZone != null){
                 map.removeLayer(queryZone);
+                
             }
 
             // if (isElevationDisplayed || isRestaurantDisplayed || isFuelDisplayed || isSupermarketDisplayed){
@@ -4109,10 +4118,16 @@ onpointerup = (event) => {
     ETAFloatingText.style.visibility='hidden';
     var point = L.point(event.clientX, event.clientY);
     var latlng = map.containerPointToLatLng(point);
+
+    let hasZoom = false;
+    if (prevZoom != map.getZoom()){
+        hasZoom = true;
+    }
     if (state == "circleMove" && prevState == "queryResults"){
+        // supprControl.remove();
         isochronesLocal(queryType, queryRange, queryUnits);
     }
-    if (state == "menu" && !clickOnCircle && !clickOnMenu && !isMovingMap && (prevZoom == map.getZoom())){
+    if (state == "menu" && !clickOnCircle && !clickOnMenu && !isMovingMap && (!hasZoom)){
         console.log("perhaps we arrive here");
         var menuDiv = document.getElementById("menu");
         menuDiv.style.visibility = "hidden";
@@ -4125,7 +4140,7 @@ onpointerup = (event) => {
         
         }
         
-    } else if (state == "slider" && !clickOnSlider && !isMovingMap  && (prevZoom == map.getZoom())){
+    } else if (state == "slider" && !clickOnSlider && !isMovingMap  && (!hasZoom)){
         var sliderDiv = document.getElementById("slider");
         sliderDiv.style.visibility = "hidden";
         state = "pointPlaced";
@@ -4134,7 +4149,7 @@ onpointerup = (event) => {
             markerBracketOpen.dragging.enable();
         }
         clickOnSlider = false;
-    } else if (state == "pointPlaced" && !clickOnLabel && !clickOnLayer){
+    } else if (state == "pointPlaced" && !clickOnLabel && !clickOnLayer && !hasZoom && !(prevCenter.distanceTo(map.getCenter()) >0)){
         console.log("clickOnMabel: ", clickOnLayer);
         pointPlacedToItinerary(latlng, point);
     } else if(state == "itinerary"){
