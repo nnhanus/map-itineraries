@@ -130,7 +130,7 @@ var supprControl = null;
 
 var gradientTH = [{color:"#E6E6FD", stop:0}, {color:"#4849EE", stop:0.32}, {color:"#E6E6FD", stop:1}];
 var gradientWH = [{color:"#00029C", stop:0}, {color:"#7173FF", stop:0.15}, {color:"#C9C9E4", stop:0.48}, {color:"#C9C9E4", stop:0.59}, {color:"#9B9CD4", stop:0.77}, {color:"#00029C", stop:1}];
-var gradientVH = [{color:"#4849EE", stop:0}, {color:"#C9C9E4", stop:0.21}, {color:"#E6E6FD", stop:0.34}, {color:"#C9C9E4", stop:0.42}, {color:"#8788B7", stop:0.51}, {color:"#00029C", stop:0.69}, {color:"#0000FF", stop:1}];
+var gradientVH = [{color:"#4849EE", stop:0}, {color:"#C9C9E4", stop:0.21}, {color:"#E6E6FD", stop:0.34}, {color:"#0000FF", stop:0.42}, {color:"#8788B7", stop:0.51}, {color:"#00029C", stop:0.69}, {color:"#0000FF", stop:1}];
 
 var gradientSW = [{color:"#C9C9E4", stop:0}, {color:"#7173FF", stop:0.14}, {color:"#4849EE", stop:0.4}, {color:"#E6E6FD", stop:1}];
 var gradientBW = [{color:"#0000FF", stop:0}, {color:"#4849EE", stop:0.24}, {color:"#0000FF", stop:0.44}, {color:"#7173FF", stop:0.77}, {color:"#C9C9E4", stop:1}];
