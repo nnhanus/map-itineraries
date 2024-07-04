@@ -3088,7 +3088,12 @@ function distancePixelPoints(latlng, point){
         var percent = dist*100/distance;
         // console.log("percent: " + percent);
         // console.log("% time: " + percent*time/100)
-        let body = inHours(percent*time/100) + "<br>";
+        // let body = inHours(percent*time/100) + "<br>";
+        let distcircle = getDistanceFromStartLine(closest, allPos);
+        let percentCircle = distcircle*100/distance;
+        let timeCircle = Math.round(percentCircle*time/100);
+        let body = toHour(timeCircle) + "<br>";
+        console.log(timeCircle);
         if (transportationMode == "drive"){
             body+= Math.round(dist/1000) +"km";
         } else {
@@ -3531,7 +3536,11 @@ function updateSizeMarkers(){
  */
 function updateCircleText(){
     let circleMarkerText = document.getElementById("circleText");
-    let body = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+    // let body = getTimeFromDistance(circleZoneOfInterest.getLatLng());
+    let distcircle = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
+        let percentCircle = distcircle*100/distance;
+        let timeCircle = Math.round(percentCircle*time/100);
+        let body = toHour(timeCircle);
     let dist = getDistanceFromStartLine(circleZoneOfInterest.getLatLng(), allPos);
     body += '<br>' + distToString(dist, (transportationMode == "walk"));
     circleMarkerText.innerHTML = body;
@@ -3797,7 +3806,7 @@ function toHour(time){
     var mins = Math.floor(time/60);
     var hours = Math.floor(mins/60);
     var rest = (mins - (60*hours)).toFixed(0);
-    return (hours + " h " + rest + " min");;
+    return (hours + " h " + rest);;
 }
 
 /**
