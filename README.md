@@ -14,6 +14,12 @@ The server is managed through a docker image. The corresponding YAML and ENV fil
 
 Launching ORS docker image:
 
+First, make sure the docker daemon is running. If not:
+
+`sudo systemctl start docker`
+
+then:
+
 `sudo docker compose up -d`
 
 See logs:
